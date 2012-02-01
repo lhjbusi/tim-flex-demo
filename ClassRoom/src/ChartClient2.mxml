@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" fontSize="12" creationComplete="initApp()">
+	<mx:Script>
+		<![CDATA[
+			import flash.net.Socket;
+			import flash.utils.ByteArray;
+
+			//定义Socket,准备好情书的信封
+			private var socket:Socket=new Socket();
+			//初始化程序
+			internal function initApp():void {
+			}
+			internal function funConnect(event:Event):void {
+				myText.text+="连接已建立 \n";
+			}
+			internal function funClose(event:Event):void {
+				myText.text+="连接已关闭 \n";
+			}
+			//发送数据对应按钮click事件
+			internal function sendMessage(msg:String):void {
+				if (!socket.connected) {
+					//连接服务器
+					socket.connect("localhost",719);
+					//监听是否连接
+					socket.addEventListener(Event.CONNECT,funConnect);
+					//监听连接关闭
+					socket.addEventListener(Event.CLOSE,funClose);
+				}
+				//新建一个ByteArray存放数据
+				var message:ByteArray=new ByteArray();
+				//写入数据，writeUTFBytes方法，以utf-8格式传数据避免中文乱码
+				message.writeUTFBytes(msg +"\r\n");
+				//写入Socket的缓冲区
+				socket.writeBytes(message);
+				//调用flush方法发送信息
+				socket.flush();
+				//在客户端屏幕上输出发送的内容
+				myText.text += msg+"\r\n";
+				//清空发言框
+				myInput.text="";
+			}
+		]]>
+	</mx:Script>
+	<mx:TextArea x="10" y="10" width="703" height="263" id="myText"/>
+	<mx:TextInput x="10" y="297" width="605" id="myInput"/>
+	<mx:Button x="648" y="297" label="发送情书" id="sendBtn" click="sendMessage(myInput.text)"/>
+</mx:Application>

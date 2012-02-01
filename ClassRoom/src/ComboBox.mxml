@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init();">
+	<mx:Script>
+		<![CDATA[
+			[Bindable] private var provinceProc:Array = getProvinceList();
+			[Bindable] private var cityProc:Array = getCityList();
+			private function getProvinceList():Array {
+				var provinceList:Array = new Array();
+				provinceList.push("湖北");
+				provinceList.push("上海");
+				return provinceList;
+			}
+			private function getCityList():Array {
+				var cityArray:Array = new Array();
+				cityArray.push("襄阳");
+				cityArray.push("枣阳");
+				cityArray.push("宜城");
+				return cityArray;
+			}
+			private function init():void {
+				province.selectedIndex = 0;
+				city.selectedIndex = 0;
+			}
+			private function getSubCityList():Array {
+				var cityArray:Array = new Array();
+				if (province.selectedIndex == 0) {
+					cityArray.push("襄阳");
+					cityArray.push("枣阳");
+					cityArray.push("宜城");
+				} else {
+					cityArray.push("虹口");
+					cityArray.push("闸北");
+					cityArray.push("徐汇");
+					cityArray.push("浦东");
+				}
+				cityProc = cityArray;
+				city.dataProvider = cityProc;
+				return cityArray;
+			}
+		]]>
+	</mx:Script>
+	<mx:ComboBox id="province" x="35" y="55" width="120" change="getSubCityList();" dataProvider="{provinceProc}"></mx:ComboBox>
+	<mx:ComboBox id="city" x="232" y="55" width="120" dataProvider="{cityProc}"></mx:ComboBox>
+</mx:Application>

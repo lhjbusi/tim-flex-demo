@@ -1,0 +1,30 @@
+/* CSS file */
+.main{
+	fontSize:12;
+	backgroundGradientColors: #c0c0c0, #c0c0c0
+}
+
+.windowBar {
+   backgroundColor: #cccccc;
+   shadowDistance: 1;
+   shadowDirection: center;
+   dropShadowColor: #000000;
+   dropShadowEnabled: true;   
+   borderStyle: solid;
+   borderThickness: 0;
+}
+.controlPanel{
+	borderStyle: solid;
+    borderThickness: 4;
+    backgroundColor: #EDEDED;
+}
+.paperPanel{
+	borderStyle: solid;
+    borderThickness: 4;
+    backgroundColor: #EDEDED;
+}
+.paper{
+	borderStyle: solid;
+    borderThickness: 1;
+    borderColor: #ABABAB
+}

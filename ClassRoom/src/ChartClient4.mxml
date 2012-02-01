@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" fontSize="12" creationComplete="initApp()" width="369" height="326"> 
+	<mx:Script>
+		<![CDATA[
+			//导入类包
+			import flash.net.Socket;
+			//ByteArray在读取数据时使用
+			import flash.utils.ByteArray;
+			//定义socket
+			private var socket:Socket=new Socket();
+			internal function initApp():void {
+				//执行连接
+				socket.connect("127.0.0.1",8888);
+				//监听连接成功事件
+				socket.addEventListener(Event.CONNECT,funConnect);
+				//监听关闭事件
+				socket.addEventListener(Event.CLOSE,funClose);
+				//监听服务器新信息
+				socket.addEventListener(ProgressEvent.SOCKET_DATA,funSocket);
+			}
+			internal function funConnect(event:Event):void {
+				myText.text+="连接已建立 n";
+			}
+			internal function funClose(event:Event):void {
+				myText.text+="连接已关闭 n";
+			}
+			//发送数据到服务器 
+			internal function sendMessage(msg:String):void {
+				//新建一个ByteArray来存放数据
+				var message:ByteArray=new ByteArray();
+				//写入数据，使用writeUTFBytes以utf8格式传数据，避免中文乱码
+				message.writeUTFBytes(msg+"n");
+				//写入socket的缓冲区
+				socket.writeBytes(message);
+				//调用flush方法发送信息
+				socket.flush();
+				//清空消息框
+				myInput.text="";
+			}
+			//接受服务器信息
+			internal function funSocket(event:ProgressEvent):void {
+				var msg:String="";
+				//循环读取数据，socket的bytesAvailable对象存放了服务器传来的所有数据
+				while (socket.bytesAvailable) {
+					//强制使用utf8格式，避免中文乱码
+					msg+=socket.readMultiByte(socket.bytesAvailable,"utf8");
+					//使用n换行符号把信息切开
+					var arr:Array=msg.split('n');
+					for (var i:int=0;i<arr.length;i++) {
+						if (arr[i].length>1) {
+							//正则表达式，回车符
+							var myPattern:RegExp=/r/;
+							//删除回车符
+							arr[i]=arr[i].replace(myPattern,'');
+							//在聊天框中输出
+							myText.text+=arr[i]+"n";
+						}
+					}
+					myText.verticalScrollPosition = myText.maxVerticalScrollPosition;//滚动到最下面
+				}
+			}
+		]]>
+	</mx:Script>
+	<mx:TextArea x="10" y="42" width="344" height="247" id="myText"/>
+	<mx:TextInput x="10" y="297" width="270" id="myInput"/>
+	<mx:Button x="288" y="298" label="发送" id="myBtn" click="sendMessage(myName.text+'：'+myInput.text)"/>
+	<mx:TextInput x="10" y="10" width="344" text="名字" id="myName"/>
+</mx:Application>

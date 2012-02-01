@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="605" height="590"
+xmlns:flexpaper="com.devaldi.controls.flexpaper.*" creationComplete="initApp()" backgroundColor="#ffffff" borderStyle="none" >
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.rpc.soap.LoadEvent;
+			import mx.events.ScrollEvent;
+			import com.devaldi.controls.flexpaper.FlexPaperViewer;
+			import com.devaldi.controls.*;
+			import mx.binding.utils.BindingUtils;
+			import mx.events.CloseEvent;
+			import mx.controls.Alert;
+			import flash.events.MouseEvent;
+			import flash.events.Event;		
+			import com.MousePoint;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			private var netConnection:NetConnection;
+			private var netStream:NetStream;
+			private var appServer:String="rtmp://192.168.1.199/userList";
+			private var paint_so:SharedObject;	
+			private var responder:Responder;			
+			private var point_x:Number;
+			private var point_y:Number;
+			private var theId:uint=0;
+			private var paperViewer:FlexPaperViewer = new FlexPaperViewer();
+			private var pageSize:int;
+			[Bindable] private var pageSizeArr:Array = new Array();
+			[Bindable] private var __lineSize:uint;
+			[Bindable] private var __lineColor:uint;
+			[Bindable] private var arrPen:Array = new Array();
+			private var currID:uint;
+
+			internal function initApp():void {
+				paperViewer = new FlexPaperViewer();
+				paperViewer.SwfFile="SEO.swf";
+				paperViewer.height=850;
+				paperViewer.Scale=1;
+				dr.addChild(myPaper);
+				dr.addChildAt(paperViewer, 0);
+				netConnection = new NetConnection();
+				netConnection.connect(appServer);
+				netConnection.addEventListener(NetStatusEvent.NET_STATUS,netStatusHandler);
+				// swf加载完成
+				paperViewer.addEventListener(FlexEvent.CREATION_COMPLETE, loadSwfComplete);
+				// 暴露切换SWF文件方法于JS
+				ExternalInterface.addCallback("changeSwfFile", changeFile);
+			}
+			// swf加载完成
+			private function loadSwfComplete(event:Event):void {
+				changePageSize();
+			}
+			// 切换当前文档页数
+			private function changePageSize():void {
+				Alert.show("准备切换当前文档页数");
+				pageSizeArr = new Array();
+				pageSize = paperViewer.paper1.numPages;
+				// 清空原有绑定页数
+				for(var i:int=0; i<paperViewer.paper1.numPages; i++){
+					var pagenum:Object=new Object();				 
+					pagenum.label=i+1;
+					pagenum.data=i+1;
+					pageSizeArr.push(pagenum);
+				}
+				sp.dataProvider=pageSizeArr;
+			}
+			private function netStatusHandler(evt:NetStatusEvent):void {
+				var info:Object = evt.info;		
+				switch(info.code){
+					case "NetConnection.Connect.Success":
+						myPaper.addEventListener(MouseEvent.MOUSE_DOWN,downHandler);			
+						paint_so = SharedObject.getRemote("paint",netConnection.uri,true);
+						paint_so.addEventListener(SyncEvent.SYNC,paintSoSyncHandler);
+						paint_so.connect(netConnection);
+						paint_so.fps=120;
+						
+					break;
+					case "NetConnection.Connect.Rejected":
+						Alert.show("fms连接被拒绝"+info.code);
+					break;
+					
+					case "NetConnection.Connect.Failed":
+						Alert.show("fms连接失败"+evt.info.code);
+					break;
+					
+					case "NetConnection.Connect.Closed":
+						Alert.show("fms连接已经关闭"+evt.info.code);
+					break;
+				}
+			}
+			private function downHandler(evt:MouseEvent):void {				
+				myPaper.addEventListener(MouseEvent.MOUSE_MOVE,moveHandler);
+				myPaper.removeEventListener(MouseEvent.MOUSE_DOWN,downHandler);
+				theId=paint_so.data.Point_ID++;
+			}
+			private function moveHandler(evt:MouseEvent):void {				
+				myPaper.addEventListener(MouseEvent.MOUSE_UP,upHandler);
+				var MouseArray:ArrayCollection=new ArrayCollection();
+				if (paint_so.data.dataArr!=null) {
+					convertArrayCollection(MouseArray,paint_so.data.dataArr as ArrayCollection);	
+				}
+				var thePoint:MousePoint = new MousePoint();
+				thePoint.point_x=myPaper.mouseX;
+				thePoint.point_y=myPaper.mouseY;
+				thePoint.id=theId;
+				MouseArray.addItem(thePoint);
+				paint(MouseArray,paint_so.data.lineSize,paint_so.data.lineColor);
+				paint_so.setProperty("dataArr",MouseArray);
+			}
+			private function paintSoSyncHandler(evt:SyncEvent):void {
+				for each (var item:Object in evt.changeList) {					
+					switch(item.code){
+						case "change":
+							doAction(item);
+							break;
+						case "success":
+							doAction(item);
+							break;
+						case "reject":
+							trace("====reject====");
+							break;
+						case "delete":
+							trace("====delete====");
+							break;
+					}					
+				}
+			}
+			private function doAction(item:Object):void{
+				if(item.name=="lineSize"){
+					pen_size.selectedItem.data=paint_so.data.lineSize;
+				}
+				if(item.name=="lineColor"){
+					pen_color.selectedColor=paint_so.data.lineColor;
+				}
+				if(item.name=="dataArr" && paint_so.data.dataArr!=null){
+					var success_tmp:ArrayCollection = new ArrayCollection();
+					convertArrayCollection(success_tmp,paint_so.data.dataArr as ArrayCollection);						
+					paint(success_tmp,__lineSize,__lineColor);
+				}
+				if(item.name=="action"){
+					pen_size.selectedItem.data=1;
+					pen_color.selectedColor=0x000000;
+					paint_so.setProperty("lineColor",0x000000);
+					paint_so.setProperty("lineSize",1);
+					myPaper.graphics.clear();
+				}
+			}
+			private function paint(_Arr:ArrayCollection,lineSize:int,lineColor:uint):void{				
+				var len:int=_Arr.length;
+				if(len>0){
+					myPaper.graphics.lineStyle(lineSize,lineColor,1);
+					myPaper.graphics.moveTo(_Arr.getItemAt(0).point_x, _Arr.getItemAt(0).point_y);
+					for(var i:int=0;i<len-1;i++){
+						myPaper.graphics.lineTo(_Arr.getItemAt(i).point_x,_Arr.getItemAt(i).point_y);
+					}
+				}
+			}
+			private function upHandler(evt:MouseEvent):void {
+				myPaper.removeEventListener(MouseEvent.MOUSE_MOVE,moveHandler);
+				myPaper.addEventListener(MouseEvent.MOUSE_DOWN,downHandler); 	
+				//清除上次记录
+				var MouseArray:ArrayCollection=new ArrayCollection();
+				MouseArray.removeAll();
+				paint_so.setProperty("dataArr",MouseArray);
+			}
+			private function convertArrayCollection(arrNew:ArrayCollection,arrOld:ArrayCollection):void {
+				arrNew.removeAll();				
+				for(var i:int=0; i<arrOld.length; i++) {
+					arrNew.addItemAt(arrOld.getItemAt(i),i);
+				}
+			}
+			// 改变画笔颜色
+			private function changeColor():void {							
+				__lineColor=pen_color.selectedColor;
+				paint_so.setProperty("lineColor",__lineColor);
+			}
+			// 改变画笔大小
+			private function changeSize():void {				
+				__lineSize=pen_size.selectedItem.data;
+				paint_so.setProperty("lineSize",__lineSize);
+			}
+			// 询问是否清空画板
+			private function confirmClear():void {				
+				Alert.show("你确定要清除当前画板吗","警告",Alert.YES | Alert.NO,this,closeHandler);				
+			}
+			private function closeHandler(evt:CloseEvent):void {
+				if(evt.detail == Alert.YES) {
+					clearWhiteBoard();
+				}
+			}
+			// 清空写字板
+			private function clearWhiteBoard():void {
+				var rnd:int=Math.random()*1000;
+				if(paint_so.data.action==rnd){
+					rnd=Math.random()*2000+1000;
+				}
+				paint_so.setProperty("action",rnd);
+			}
+			// 转换展示的页码数
+			private function change(event:Event):void {
+		 		clearWhiteBoard();
+				//paperViewer.Scale=sp.selectedItem.data;
+				paperViewer.paper1.gotoPage(sp.selectedItem.data);
+				//paperViewer.paper1.fitHeight();
+				//paperViewer.paper1.fitWidth();
+				paperViewer.paper1.height=1000;
+				//paperViewer.paper1.setActualSize(500,200);
+				//paperViewer.paper1.ViewMode="TwoPage";
+				//pdf 总页数
+				//Alert.show(a.paper1.numPages.toString()+a.paper1.currPage+a.paper1.height);
+				dr.addChild(myPaper);
+				dr.addChildAt(paperViewer, 0);
+			}
+			// 切换展示的文件
+			private function changeFile(absPath:String):void {
+				// 清空画板
+				clearWhiteBoard();
+				paperViewer.SwfFile = absPath;
+			}
+		]]>
+	</mx:Script>
+	<mx:Panel x="1" y="1" id="qq" fontSize="15" fontWeight="bold" width="600" height="550" layout="absolute" title="画板" horizontalScrollPolicy="off" verticalScrollPolicy="on">
+		<!-- 文档播放器 --><mx:Canvas backgroundAlpha="0" id="myPaper" top="22" horizontalScrollPolicy="off" verticalScrollPolicy="off" width="585" height="850" styleName="paper" y="0" x="0"/>
+		<!-- 画板 --><mx:Canvas horizontalScrollPolicy="off" verticalScrollPolicy="off" width="600" height="850" backgroundSize="100%" id="dr" backgroundAlpha="1.0"/>
+	</mx:Panel>
+ 	<mx:HBox x="10" y="30" paddingLeft="50" borderSides="123" width="565" height="30" backgroundColor="#F2F2F2">
+		<mx:Label fontSize="12" text="画笔颜色:"/>
+		<mx:ColorPicker id="pen_color" width="20" height="20" change="changeColor()"/>
+		<mx:Label paddingLeft="10" fontSize="12" text="画笔粗细:"/>
+		<mx:ComboBox dataProvider="{arrPen}" width="50" id="pen_size" change="changeSize();"/>
+		<mx:Label paddingLeft="10" fontSize="12" text="文件页码:"/>
+ 		<mx:ComboBox width="50" id="sp" dataProvider="{pageSizeArr}" change="change(event);"/>
+	 	<mx:VBox paddingLeft="30"><mx:Button id="clearBtn" fontSize="12" label="清除画板" click="confirmClear();"/></mx:VBox>
+	 </mx:HBox>
+</mx:Application>
