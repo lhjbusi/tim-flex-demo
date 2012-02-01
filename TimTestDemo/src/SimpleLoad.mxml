@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="init()" currentState="loginForm" layout="absolute" height="308" width="450">
+	<mx:Style>
+		Label,Button {
+			font-size:18px;
+		}
+	</mx:Style>
+	<mx:states>
+		<mx:State name="loginForm">
+			<mx:SetProperty target="{mainPanel}" name="title" value="登陆框"/>
+			<mx:AddChild relativeTo="{mainPanel}">
+				<mx:TextInput x="149.5" y="35" id="userName"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{mainPanel}">
+				<mx:TextInput x="149.5" y="71" id="userPwd"/>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="loginSuccess">
+			<mx:SetProperty target="{mainPanel}" name="title" value="欢迎信息"/>
+			<mx:RemoveChild target="{userName}"/>
+			<mx:RemoveChild target="{userPwd}"/>
+			<mx:AddChild relativeTo="{mainPanel}" position="lastChild">
+				<mx:Label x="149.5" y="35" text="{userLogin.lastResult.user.userName}"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{mainPanel}" position="lastChild">
+				<mx:Label x="149.5" y="71" text="{userLogin.lastResult.user.userPwd}"/>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			import mx.events.CloseEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.controls.Alert;
+			// 发送出错时处理函数
+			private function faultHandler(event:Event):void {
+				Alert.show("发送请求失败了\n" + event.toString());
+			}
+			private function handlerResult(event:ResultEvent):void {
+				Alert.show("userName：" + userLogin.lastResult.user.userName);
+				currentState = "loginSuccess";
+			}
+			private function login():void {
+				userLogin.send();
+//				var httpService:HTTPService = new HTTPService();
+//				httpService.url = "http://localhost:8080/shdwhy/tim_test.html";
+//				httpService.url += "?userName=" + userName.text;
+//				httpService.url += "&userPwd=" + userPwd.text;
+//				httpService.send();
+			}
+			private function init():void {
+				//Alert.show("Flex加载完成"+(1|2|4),"提示信息",7,this,clickButton);
+				currentState = "loginForm";
+
+				ExternalInterface.addCallback("displayInfo", displayInfo);
+			}
+			private function clickButton(event:CloseEvent):void {
+				switch (event.detail) {
+					case Alert.YES:
+						Alert.show("Alert.Yes");
+						return;
+					case Alert.NO:
+						Alert.show("Alert.No");
+						return;
+					case Alert.OK:
+						Alert.show("Alert.Ok");
+						return;
+					case Alert.CANCEL:
+						Alert.show("Alert.Cancel");
+						return;
+					case Alert.NO:
+						Alert.show("Alert.No");
+						return;
+				}
+			}
+			
+			private function displayInfo(info:String):void {
+				Alert.show("用户名：" + userName.text + "\n密码:" + userPwd.text + "\ninfo:" + info);
+			}
+		]]>
+	</mx:Script>
+	<mx:HTTPService id="userLogin" resultFormat="xml" showBusyCursor="true" url="http://localhost:8080/shdwhy/tim_test.html" useProxy="false" fault="faultHandler(event)" result="handlerResult(event)" method="post">
+		<mx:request xmlns="loginOnly">
+			<userName>{userName.text}</userName>
+			<userPwd>{userPwd.text}</userPwd>
+		</mx:request>
+	</mx:HTTPService>
+	<mx:Panel id="mainPanel" layout="absolute" width="366" height="210" x="42" y="41" title="登陆框">
+		<mx:Label x="66.5" y="35" text="用户名"/>
+		<mx:Label x="84.5" y="71" text="密码"/>
+		<mx:Button x="115" y="117" label="提交" click="login()"/>
+	</mx:Panel>
+	
+</mx:Application>

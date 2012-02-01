@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="388" height="222" creationComplete="initApp()">
+<mx:Style>
+Alert{font-size:12px;}
+</mx:Style>
+<mx:Script>
+<![CDATA[
+	import mx.events.CloseEvent;
+	import mx.rpc.events.FaultEvent;
+	import mx.rpc.events.ResultEvent;
+	import mx.controls.Alert;
+	
+	private static const DEFAULT_CAMERA_WIDTH:Number = 160; //摄像头显示宽度
+	private static const DEFAULT_CAMERA_HEIGHT:Number = 120; //摄像头显示高度
+	private static const DEFAULT_WEBSERVICE_URL:String = "http://localhost:1888/Web/TestWebService.asmx?WSDL"; //WebService地址
+	
+	private var m_camera:Camera; //定义一个摄像头
+	private var m_localVideo:Video; //定义一个本地视频
+	private var m_pictureBitmapData:BitmapData //定义视频截图
+	[Bindable]
+	private var m_pictureData:String;
+	
+	private function initApp():void {
+		t_btn_Shooting.enabled = false;
+		t_ban_Save.enabled = false;
+		initCamera();
+	}
+
+	//初始化摄像头
+	private function initCamera():void {
+		m_camera = Camera.getCamera();
+		if (m_camera != null) {
+			m_camera.addEventListener(StatusEvent.STATUS,__onCameraStatusHandler);
+			
+			m_camera.setMode(DEFAULT_CAMERA_WIDTH,DEFAULT_CAMERA_HEIGHT,30);
+			m_localVideo = new Video();
+			m_localVideo.width = DEFAULT_CAMERA_WIDTH;
+			m_localVideo.height = DEFAULT_CAMERA_HEIGHT;
+			m_localVideo.attachCamera(m_camera);
+			t_vd_Video.addChild(m_localVideo);
+		} else {
+			Alert.show("没有找到摄像头，是否重新查找。","提示：",Alert.OK|Alert.NO,this,__InitCamera);
+			return;
+		}
+	}
+
+	//拍照按钮事件，进行视频截图
+	private function SnapshotPicture():void {
+		m_pictureBitmapData = new BitmapData(DEFAULT_CAMERA_WIDTH,DEFAULT_CAMERA_HEIGHT);
+		m_pictureBitmapData.draw(t_vd_Video,new Matrix());
+		
+		var m_pictureBitmap:Bitmap = new Bitmap(m_pictureBitmapData);
+		t_img_Picture.addChild(m_pictureBitmap);
+		
+		t_panel_Picture.visible = true;
+		t_ban_Save.enabled = true;
+	}
+
+	//保存按钮事件，保存视频截图
+	//通过WebService保存
+	private function SavePicture():void {
+		m_pictureData = "";
+		for(var i:int = 0; i < DEFAULT_CAMERA_WIDTH; i++) {
+			for(var j:int = 0; j < DEFAULT_CAMERA_HEIGHT; j++) {
+				if(m_pictureData.length > 0) 
+					m_pictureData += "," + m_pictureBitmapData.getPixel32(i,j).toString();
+				else 
+					m_pictureData = m_pictureBitmapData.getPixel32(i,j).toString();
+			}
+		}
+		t_ws_SavePicture.SavePicture.send();
+	}
+
+	//检测摄像头权限事件
+	private function __onCameraStatusHandler(event:StatusEvent):void {
+		if(!m_camera.muted)
+			t_btn_Shooting.enabled = true;
+		else
+			Alert.show("无法链接到活动摄像头，是否重新检测。","提示：",Alert.OK|Alert.NO,this,__InitCamera);
+		m_camera.removeEventListener(StatusEvent.STATUS,__onCameraStatusHandler);
+	}
+
+	//当摄像头不存在，或连接不正常时重新获取
+	private function __InitCamera(event:CloseEvent):void {
+		if(event.detail == Alert.OK)
+			initApp();
+	}
+
+	//WebService保存图片成功事件
+	private function __onSavePictureResult(event:ResultEvent):void {
+		//trace(event.result);
+		if(event.result.toString() == "保存成功")
+			Alert.show(event.result.toString(),"提示",Alert.OK,this,__onAlertCloseHandler);
+		else
+			Alert.show(event.result.toString(),"提示",Alert.OK);
+	}
+
+	//连接WebService失败事件
+	private function __onSavePictureFault(event:FaultEvent):void {
+		Alert.show("连接WebService失败。","提示",Alert.OK);
+	}
+
+	//保存图片成功后的弹出窗口确认事件
+	private function __onAlertCloseHandler(event:CloseEvent):void {
+		if(event.detail == Alert.OK) {
+		}
+	}
+]]>
+</mx:Script>
+<mx:WebService id="t_ws_SavePicture" showBusyCursor="true" wsdl="{DEFAULT_WEBSERVICE_URL}" useProxy="false" result="__onSavePictureResult(event)" fault="__onSavePictureFault(event)">
+	<mx:operation name="SavePicture">
+		<mx:request>
+			<pic_width>{DEFAULT_CAMERA_WIDTH}</pic_width>
+			<pic_height>{DEFAULT_CAMERA_HEIGHT}</pic_height>
+			<bitmap_data>{m_pictureData}</bitmap_data>
+		</mx:request>
+	</mx:operation>
+</mx:WebService>
+<mx:Panel x="10" y="10" width="180" height="200" layout="absolute" title="视频拍照" fontSize="12">
+	<mx:VideoDisplay id="t_vd_Video" width="160" height="120"/>
+	<mx:ControlBar horizontalAlign="right">
+	<mx:Button id="t_btn_Shooting" label="拍照" click="SnapshotPicture()"/>
+	</mx:ControlBar>
+</mx:Panel>
+<mx:Panel id="t_panel_Picture" x="198" y="10" width="180" height="200" layout="absolute" title="拍照图片" fontSize="12" visible="false">
+<mx:Image id="t_img_Picture" x="0" y="0" width="160" height="120"/>
+<mx:ControlBar horizontalAlign="right">
+<mx:Button id="t_ban_Save" label="保存" click="SavePicture()" />
+</mx:ControlBar>
+</mx:Panel>
+</mx:Application>

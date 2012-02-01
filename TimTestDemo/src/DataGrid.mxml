@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="691" height="434">
+	<mx:Style>
+		Label,TextInput,DataGrid,RadioButton{
+			font-size:18px;
+		}
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+
+			[Bindable]
+			private var userList:ArrayCollection = new ArrayCollection([
+				{userName:"Tim",userAge:26,userSex:"男"},
+				{userName:"Clivia",userAge:23,userSex:"女"},
+				{userName:"Jerry",userAge:23,userSex:"男"}
+			])
+			
+			private function insertRow():void {
+			}
+		]]>
+	</mx:Script>
+	<mx:DataGrid x="80" y="10" width="497" height="262" dataProvider="{userList}">
+		<mx:columns>
+			<mx:DataGridColumn headerText="姓名" dataField="userName" sortable="false"/>
+			<mx:DataGridColumn headerText="年龄" dataField="userAge"/>
+			<mx:DataGridColumn headerText="性别" dataField="userSex" draggable="false"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Label x="80" y="290" text="姓名" width="48"/>
+	<mx:TextInput x="125" y="288" width="75" id="userName"/>
+	<mx:Label x="226" y="290" text="年龄"/>
+	<mx:TextInput x="275" y="288" width="54" id="userAge"/>
+	<mx:Label x="366" y="290" text="性别"/>
+	<mx:RadioButtonGroup id="userSex"/>
+	<mx:RadioButton x="415" y="288" label="男" groupName="userSex"/> <mx:RadioButton x="466" y="288" label="女" groupName="userSex"/>
+	<mx:Button label="添加一行" click="insertRow()" x="197" y="345"></mx:Button><mx:Button label="删除一行" x="310.5" y="345"></mx:Button>
+</mx:Application>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="918" height="576" creationComplete="init();">
+<mx:Script>
+	<![CDATA[
+		import mx.binding.utils.BindingUtils;
+		import mx.rpc.http.mxml.HTTPService;
+		private var video:Video;
+		[Bindable]
+		private var CAMERA_HEIGHT:int;
+		[Bindable]
+		private var CAMERA_WIDTH:int;
+		private var imgData:BitmapData;
+		[Bindable]
+		private var imgDataStr:String;
+		private function init():void {
+			CAMERA_HEIGHT = videoDisplay.height;
+			CAMERA_WIDTH = videoDisplay.width;
+		}
+		private function openCamera():void {
+			var camera:Camera = Camera.getCamera();
+			if (camera != null) {
+				if (video == null) {
+					video = new Video();
+					video.height = CAMERA_HEIGHT;
+					video.width = CAMERA_WIDTH;
+					// 设置摄像头属性-
+					camera.setMode(CAMERA_HEIGHT, CAMERA_WIDTH, 60);
+					camera.setQuality(25*1024, 80);
+				}
+				video.attachCamera(camera);
+				videoDisplay.addChild(video);
+				open.enabled = false;
+				close.enabled = true;
+			}
+		}
+
+		private function closeCamera():void {
+			// 释放摄像头
+			video.attachCamera(null);
+			videoDisplay.removeChild(video);
+			video.clear();
+			open.enabled = true;
+			close.enabled = false;
+		}
+
+		private function submitCamera():void {
+			imgData = new BitmapData(CAMERA_WIDTH, CAMERA_HEIGHT);
+			imgData.draw(videoDisplay, new Matrix());
+			videoImage.addChild(new Bitmap(imgData));
+		}
+
+		private function uploadImage():void {
+			imgDataStr = "";
+			for(var i:int = 0; i < CAMERA_WIDTH; i++) {
+				for(var j:int = 0; j < CAMERA_HEIGHT; j++) {
+					if(imgDataStr.length > 0) 
+						imgDataStr += "," + imgData.getPixel32(i,j).toString();
+					else 
+						imgDataStr = imgData.getPixel32(i,j).toString();
+				}
+			}
+			webService.send();
+		}
+	]]>
+</mx:Script>
+	<mx:HTTPService id="webService" url="http://localhost:8080/shdwhy/tim_test.html" useProxy="false" method="POST">
+		<mx:request>
+			<userName>timzhao</userName>
+			<userPwd>123456</userPwd>
+			<width>{CAMERA_WIDTH}</width>
+			<height>{CAMERA_HEIGHT}</height>
+			<imgData>{imgDataStr}</imgData>
+		</mx:request>
+	</mx:HTTPService>
+	<mx:VideoDisplay id="videoDisplay" width="386" height="256" x="57" y="32"/>
+	<mx:Image id="videoImage" width="386" height="256" x="475" y="32"/>
+	<mx:Button x="260" y="306" label="打开摄像头" id="open" fontSize="18" click="openCamera();"/>
+	<mx:Button x="389" y="306" label="关闭摄像头" id="close" fontSize="18" click="closeCamera();"/>
+	<mx:Button x="518" y="306" label="拍照" id="close0" fontSize="18" click="submitCamera();"/>
+	<mx:Button x="600" y="306" label="上传" id="close1" fontSize="18" click="uploadImage();"/>
+</mx:Application>

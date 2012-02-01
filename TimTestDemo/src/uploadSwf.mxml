@@ -1,0 +1,119 @@
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="112" height="29" creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			import mx.rpc.events.ResultEvent;
+			import mx.controls.Alert;
+			// 通过Servlet上传文件
+			private const defaultRequestUrl:String = "http://localhost:8080/WebTest/upload";
+			private var file:FileReference;
+			private var resultString:String;
+			private var autoUpload:Boolean = true;
+			// 定时器
+			private var timer:Timer;
+			private function init():void {
+				Security.allowDomain("*");
+				file = new FileReference();
+				// 文件选择监听
+				file.addEventListener(Event.SELECT, onFileSelect);
+				// 文件上传过程中处理
+				file.addEventListener(ProgressEvent.PROGRESS, progressHandle);
+				// 文件上传完毕监听
+				file.addEventListener(Event.COMPLETE, completeHandle);
+				// 文件上传完毕，且服务器端返回信息
+				file.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, completeUploadDataHandler);
+				//file.addEventListener(Event.OPEN, openHandle);
+				// 上传出现IO异常
+				file.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
+				//file.addEventListener(Event.CANCEL, cancelHandler);
+			}
+			/**
+			 * 获取允许上传的文件类型.
+			 */
+			private function getTypeFilter():Array {
+				//FileFilter("用户提示信息"， "用户可上传的文件类型")
+				var docFilter:FileFilter = new FileFilter("Documents (PDF, Office文件)", "*.pdf;*.doc;*.docx;*.ppt;*.ppt;*.pptx;*.xls;*xlsx");
+				return [docFilter];
+			}
+			/**
+			 * 显示文件选择对话框.
+			 */
+			private function showFileDialog():void {
+				// 设置可选文件类型
+				file.browse(getTypeFilter());
+			}
+			/**
+			 * 文件选择后处理. 
+			 */
+			private function onFileSelect(event:Event):void {
+				if (autoUpload) {
+					uploadFile();
+				}
+			}
+			/**
+			 * 上传文件.
+			 */
+			private function uploadFile():void {
+				var request:URLRequest = new URLRequest(defaultRequestUrl);
+				request.data = "userId=123";
+				file.upload(request);
+			}
+			/**
+			 * 文件上传中处理.
+			 */ 
+			private function progressHandle(event:ProgressEvent):void {
+				var fileUploadPercent:uint = event.bytesLoaded / event.bytesTotal * 100;
+				//progressLabel.text = "正在上传文件\n已完成 " + fileUploadPercent + "%";
+			}
+			/**
+			 * 上传过程中服务器出现异常.
+			 */
+			private function ioErrorHandler(error:IOErrorEvent):void {
+				Alert.show("上传文件出现错误：\n" + error, "上传异常");
+			}
+			/**
+			 * 上传文件成功处理.
+			 */
+			private function completeHandle(event:Event):void {
+				// progressLabel.text = "文件已上传成功\n服务器正在帮你转换文件\n请超等...";
+				// 上传中使用Thread处理response时，延迟回复
+				// 暂时解决方法为请求一空返回的Controller
+				timer = new Timer(15000, 0);
+				// 轮询请求服务器
+				timer.addEventListener(TimerEvent.TIMER, getUploadResult);
+				timer.start();
+			}
+			/**
+			 * 上传文件完毕,且服务器端返回信息后处理.
+			 */
+			private function completeUploadDataHandler(uploadData:DataEvent):void {
+				if (timer != null) {
+					timer.stop();
+					timer = null;
+				}
+				// progressLabel.text = uploadData.data;
+			}
+			/**
+			 * 定时请求转换结果.
+			 */
+			private function getUploadResult(event:TimerEvent):void {
+				
+				getLaterResponse.send();
+			}
+			private function handlerResult(event:ResultEvent):void {
+				if (getLaterResponse.lastResult != "") {
+					Alert.show("" + getLaterResponse.lastResult);
+					if (timer != null) {
+						timer.stop();
+						timer = null;
+					}
+				}
+			}
+		]]>
+	</mx:Script>
+	<mx:HTTPService id="getLaterResponse" resultFormat="text" showBusyCursor="false" url="http://localhost:8080/WebTest/upload" useProxy="false" result="handlerResult(event)" method="post">
+		<mx:request xmlns="loginOnly">
+			<getresponse>only</getresponse>
+		</mx:request>
+	</mx:HTTPService>
+	<mx:Button id="browserBtn" x="0" y="0" label="Browser" click="showFileDialog()" width="111" fontSize="16"/>
+</mx:Application>

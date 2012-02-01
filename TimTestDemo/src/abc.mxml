@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" width="400" height="500" layout="absolute" creationComplete="ObjectPoolTest();">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+	        public function ObjectPoolTest():void {
+	            Alert.show("执行了初始化方法了....");
+	            System.ime.addEventListener(Event.ACTIVATE,getActivete);
+	            System.ime.addEventListener(Event.DEACTIVATE,deacTivate);
+	        }
+	        
+	        private function getActivete(evt:Event):void{
+	            testLbl.text = 'flash获得了焦点';
+	        }
+	        private function deacTivate(evt:Event):void{
+	            testLbl.text = 'flash失去了焦点';
+	        }
+		]]>
+	</mx:Script>
+	<mx:Label x="154" y="108" text="这是初始化文本" width="158" height="36" fontSize="20" id="testLbl"/>
+</mx:Application>

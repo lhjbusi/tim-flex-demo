@@ -1,0 +1,81 @@
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			// 通过Servlet上传文件
+			//private const defaultRequestUrl:String = "http://localhost:8080/shdwhy/FileUploaded";
+			// 通过Spring上传文件
+			private const defaultRequestUrl:String = "http://localhost:8080/CG/flexFileUpload";
+			private var file:FileReference;
+			private var resultString:String;
+			private function init():void {
+				Security.allowDomain("*");
+				file = new FileReference();
+				// 文件选择监听
+				file.addEventListener(Event.SELECT, onFileSelect);
+				file.addEventListener(ProgressEvent.PROGRESS, progressHandle);
+				// 文件上传完毕监听
+				file.addEventListener(Event.COMPLETE, completeHandle);
+				// 文件上传完毕，且服务器端返回信息
+				file.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, completeUploadDataHandler);
+				//file.addEventListener(Event.OPEN, openHandle);
+				//file.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
+				//file.addEventListener(Event.CANCEL, cancelHandler);
+			}
+			
+			private function completeUploadDataHandler(uploadData:DataEvent):void {
+				infoText.htmlText += "\n" + uploadData.data;
+			}
+
+			private function onClickBrowserBtn():void {
+				// 设置可选文件类型
+				file.browse(getTypeFilter());
+			}
+
+			private function getTypeFilter():Array {
+				//var imagesFilter:FileFilter = new FileFilter("Images (*.jpg, *.jpeg, *.gif, *.png)", "*.jpg;*.jpeg;*.gif;*.png");
+				//return [imagesFilter];
+				var docFilter:FileFilter = new FileFilter("Documents (*.pdf, *.doc, *.docx, *.ppt, *.ppt, *.pptx)", "*.pdf;*.doc;*.docx;*.ppt;*.ppt;*.pptx");
+				return [docFilter];
+			}
+
+			/**
+			 * 文件选择后处理. 
+			 */
+			private function onFileSelect(event:Event):void {
+				uploadBtn.enabled = true;
+				var htmlText:String = "Name: " + file.name;
+				htmlText += "<br/>Size: " + file.size;
+				htmlText += "<br/>Type: " + file.type;
+				htmlText += "<br/>Date: " + file.creationDate;
+				infoText.htmlText = htmlText;
+			}
+
+			private function onClickUploadBtn():void {
+				var request:URLRequest = new URLRequest(defaultRequestUrl);
+				request.data = "userId=123";
+				file.upload(request);
+			}
+
+			private function progressHandle(event:ProgressEvent):void {
+				progressLabel.text = "complete " + event.bytesLoaded + " bytes";
+				var fileUploadPercent:uint = event.bytesLoaded / event.bytesTotal * 100;
+				uploadProgressBar.setProgress(fileUploadPercent, 100);
+				uploadProgressBar.label = "Complete " + fileUploadPercent + "%";
+			}
+
+			private function completeHandle(event:Event):void {
+				infoText.htmlText = "Upload " + file.name + " Complete!";
+				uploadBtn.enabled = false;
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Button id="browserBtn" x="10" y="69" label="Browser" click="onClickBrowserBtn()"/>
+
+	<mx:Button id="uploadBtn" x="236" y="69" label="Upload" enabled="false" click="onClickUploadBtn()"/>
+
+	<mx:ProgressBar id="uploadProgressBar" x="10" y="33" width="291" themeColor="#009dff" maximum="100" direction="right" mode="manual"/>
+
+	<mx:TextArea id="infoText" x="10" y="99" width="291" height="131"/>
+	<mx:Label id="progressLabel" x="10" y="10" width="291"/>
+</mx:Application>

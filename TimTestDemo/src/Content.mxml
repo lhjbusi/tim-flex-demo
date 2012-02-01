@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" width="498" height="488" layout="absolute" backgroundColor="#6495ED" horizontalAlign="center">
+<mx:Style>
+	Button,.content{
+		font-size:16px;
+	}
+</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import mx.messaging.AbstractConsumer;
+			import mx.controls.Alert;
+			private const CirrusAddress:String = "rtmfp://p2p.rtmfp.net";
+			private const DeveloperKey:String = "6a91aba7ed517ffaa2f08c78-a9d109ffdd82";
+			// 定义Flash客户端和FMS的双向链接
+			private var netConnection:NetConnection;
+			// 定义发送消息流
+			private var sendStream:NetStream;
+			// 定义接收消息流
+			private var reciveStream:NetStream;
+			private var controlStream:NetStream;
+
+			private var remoteVideo:Video;
+			private var localVideo:Video;
+
+			private var myStream:NetStream;
+
+			private function defaultBtnStatus():void {
+				callBtn.enabled = true;
+				sendBtn.enabled = false;
+			}
+			private function init():void {
+				defaultBtnStatus();
+				if (netConnection == null) {
+					netConnection = new NetConnection();
+					// 定义netConnection状态改变时处理事件
+					netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+					// 链接成功-绑定唯一的nearId
+					netConnection.connect(CirrusAddress, DeveloperKey);
+				}
+			}
+
+			// Flash客户端与FMS服务器链接状态改变时处理
+			private function netConnectionHandler(event:NetStatusEvent):void {
+				switch(event.info.code) {
+					// 链接成功
+					case "NetConnection.Connect.Success":
+						roomMessage.text += "你好"+userName.text+"，你已连接上Stratus服务器\n\n";
+						roomMessage.text += "你的peerId是：\n" + netConnection.nearID + "\n对方可以用这个ID呼叫你\n\n";
+						// 初始化发送流
+						initSendStream();
+						this.linkBtn.enabled = false;
+						this.userName.enabled = false;
+						this.callBtn.enabled = true;
+					break;
+				}
+			}
+
+			// 当前用户流初始化
+			private function initSendStream():void {
+				myStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+				myStream.addEventListener(NetStatusEvent.NET_STATUS, netStreamHandler);
+				// 将当前nearId发布出去,供caller接收
+				myStream.publish(netConnection.nearID);
+
+				// 初始化发送流
+				if (sendStream == null) {
+					sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+				}
+
+				var obj:Object = new Object();
+				obj.onPeerConnect = function(subscriberStream:NetStream):Boolean {
+					// 流定向与呼叫者
+					reciveStream = new NetStream(netConnection, subscriberStream.farID);
+					reciveStream.addEventListener(NetStatusEvent.NET_STATUS, reciveStreamHandler);
+					// 播放呼叫者信息
+					reciveStream.play("caller");
+					
+					var recive:Object = new Object();
+					recive.onIm = onIm;
+					recive.onIncomingCall = function(name:String):void {
+						roomMessage.text += name + "已和你建立链接\n";
+						sendStream.publish("callee");
+						sendStream.send("onConnectSuccess", userName.text);
+						callBtn.enabled = false;
+						sendBtn.enabled = true;
+					}
+					recive.exitRoom = exitRoom;
+					reciveStream.client = recive;
+					return true;
+				}
+				myStream.client = obj;
+			}
+			// 
+			private function call():void {
+				// 定向于被呼叫者-唤醒其流的实例化
+				controlStream = new NetStream(netConnection, calleeId.text);
+				controlStream.play(calleeId.text);
+				
+				// 对外发布呼叫者信息-自己
+				sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
+				sendStream.publish("caller");
+
+				// 接收流适配为被呼叫的用户
+				reciveStream = new NetStream(netConnection, calleeId.text);
+				reciveStream.addEventListener(NetStatusEvent.NET_STATUS, reciveStreamHandler);
+				// 尝试播放被呼叫的用户信息
+				reciveStream.play("callee");
+				roomMessage.text += "正在呼叫，请稍等\n\n";
+
+				var recive:Object = new Object();
+				recive.onIm = onIm;
+				recive.onConnectSuccess = function(name:String):void {
+					roomMessage.text += name + "已和你建立链接\n";
+					callBtn.enabled = false;
+				}
+				recive.exitRoom = exitRoom;
+				reciveStream.client = recive;
+				
+			}
+			private function onIm(name:String, content:String):void {
+				roomMessage.text += name + "：" + content + "\n";
+			}
+			private function sendStreamHandler(event:NetStatusEvent):void {
+				if (event.info.code == "NetStream.Play.Start") {
+					sendStream.send("onIncomingCall", userName.text);
+					callBtn.enabled = false;
+					sendBtn.enabled = true;
+				}
+			}
+			private function sendMessage():void {
+				roomMessage.text += userName.text + "：" + message.text + "\n";
+				sendStream.send("onIm", userName.text, message.text);
+			}
+			private function reciveStreamHandler(event:NetStatusEvent):void {
+			}
+			// 发送流状态改变时调用
+			private function netStreamHandler(event:NetStatusEvent):void {
+			}
+			private function handleMessage():void {
+				if (roomMessage.verticalScrollPosition < roomMessage.maxVerticalScrollPosition)
+					roomMessage.verticalScrollPosition = roomMessage.maxVerticalScrollPosition;
+			}
+			private function exitRoom(name:String):void {
+				roomMessage.text += "name》已经离开";
+				sendStream.send("exitRoom", userName.text);
+				sendStream.close();
+				sendStream = null;
+				defaultBtnStatus();
+			}
+			private function closeFream():void {
+				sendStream.send("exitRoom", userName.text);
+				sendStream.close();
+				sendStream = null;
+				defaultBtnStatus();
+			}
+		]]>
+	</mx:Script>
+	<mx:TextArea id="roomMessage" updateComplete="handleMessage();" x="18" y="24" width="464" height="287" editable="false" styleName="content"/>
+	<mx:TextArea id="message" x="18" y="317" width="393" height="86" styleName="content"/>
+	<mx:TextInput x="18" y="408" width="393" styleName="content" id="userName"/>
+	<mx:TextInput x="18" y="442" width="393" styleName="content" id="calleeId"/>
+	<mx:Button x="419" y="408" id="linkBtn" enabled="true" label="链接" click="init();" width="63"/>
+	<mx:Button x="419" y="375" id="sendBtn" enabled="false" label="发送" click="sendMessage();" width="63"/>
+	<mx:Button x="419" y="442" id="callBtn" enabled="false" label="呼叫" click="call();" width="63"/>
+</mx:Application>

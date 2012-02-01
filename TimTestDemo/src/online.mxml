@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="400" height="300" creationComplete="initLoad()">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			private var netConnection:NetConnection;
+			private const SERVER:String = "rtmfp://stratus.adobe.com/";
+			private const DEVKEY:String = "6b754e9d85b872b8f9c55a69-da4e8ad8ec29";
+			private function initLoad():void {
+				ExternalInterface.addCallback("callByScript", callByScript);
+				if (netConnection == null) {
+					netConnection = new NetConnection();
+					netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+					netConnection.connect(SERVER, DEVKEY);
+				}
+			}
+			private function netConnectionHandler(event:NetStatusEvent):void {
+				switch(event.info.code) {
+					case "NetConnection.Connect.Success":
+						Alert.show("连接RTMFP服务器成功....");
+					break;
+					case "NetConnection.Connect.Closed":
+						ExternalInterface.call("logout");
+					break;
+					case "NetStream.Connect.Closed":
+						ExternalInterface.call("logout");
+					break;
+				}
+			}
+			private function userExit():void {
+				ExternalInterface.call("logout");
+			}
+			public function callByScript():void {
+				Alert.show("这个是Flex的方法");
+			}
+		]]>
+	</mx:Script>
+	<mx:Button x="153" y="63" label="Button" click="userExit()"/>
+</mx:Application>

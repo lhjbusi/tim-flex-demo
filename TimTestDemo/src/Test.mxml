@@ -1,0 +1,745 @@
+<?xml version="1.0" encoding="utf-8"?>
+ 
+<mx:Application backgroundColor="#f7faff" xmlns:mx="http://www.adobe.com/2006/mxml"
+	creationComplete="returnUserName()" layout="vertical" paddingLeft="5" paddingRight="5">
+<mx:Script>
+	<![CDATA[
+		import mx.controls.Alert;
+		import mx.events.FlexEvent; 
+		import mx.formatters.DateFormatter; 
+		import flash.utils.Timer;
+		import flash.events.TimerEvent; 
+		import mx.events.CloseEvent;
+		import mx.controls.dataGridClasses.DataGridColumn; 
+		import mx.events.SliderEvent;
+		import org.bytearray.gif.player.GIFPlayer; 
+		import org.bytearray.gif.decoder.GIFDecoder; 
+		import org.bytearray.gif.events.GIFPlayerEvent; 
+		import org.bytearray.gif.events.FileTypeEvent; 
+		import org.bytearray.gif.events.FrameEvent; 
+		import org.bytearray.gif.events.TimeoutEvent;
+
+		private const StratusAddress:String="rtmfp://p2p.rtmfp.net";
+		private const DeveloperKey:String="6a91aba7ed517ffaa2f08c78-a9d109ffdd82";
+		private var netConnection:NetConnection;
+		private var myStream:NetStream;
+		// 输出流
+		private var sendStream:NetStream;
+		// 输入流
+		private var reciveStream:NetStream;
+		private var controlStream:NetStream;
+		private var keyCode:int;
+		private var shiftKey:Boolean;
+		private var ctrlKey:Boolean;
+		private var NetStreamClose:int;
+		private var remoteVideo:Video;
+		private var localVideo:Video;
+		private var localSO:SharedObject;
+		private var micIndex:int=0;	
+	
+	 	public function returnUserName():void {
+			init();
+		}
+
+		private function init():void {
+			netConnection = new NetConnection();
+			netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+			netConnection.connect(StratusAddress, DeveloperKey);
+		}
+
+	 	private function handleMessage(event:Event):void {
+			if (info.verticalScrollPosition < info.maxVerticalScrollPosition)
+				info.verticalScrollPosition=info.maxVerticalScrollPosition;
+	 	}
+
+		private function netConnectionHandler(e:NetStatusEvent):void{
+			switch (e.info.code) {
+				//链接成功后的初始化
+				case "NetConnection.Connect.Success":
+					info.text += "你的PeerId是:\n"+netConnection.nearID+"\n对方可以用这个ID呼叫你\n\n"
+					initSendStream();
+					// 公共消息改变-文本自动换行
+					info.addEventListener(FlexEvent.UPDATE_COMPLETE,handleMessage);
+					// 富文本框文本换行
+					message.textArea.addEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
+					message.textArea.addEventListener(TextEvent.TEXT_INPUT,onTextInput);
+					break;
+				case "NetConnection.Connect.Closed":
+					break;
+				case "NetStream.Connect.Success":
+					break;
+				case "NetConnection.Connect.Failed":
+					Alert.show("连接错误","连接错误")
+					break;
+				case "NetStream.Connect.Closed":
+					NetStreamClose=NetStreamClose+1;
+				 	if (NetStreamClose == 1) {
+				 		Alert.yesLabel="确定";
+				 		Alert.noLabel="取消";
+				 		Alert.show("是否要关闭本窗口?", "对方已断开连接");
+				 	}
+					break;
+			}
+		}
+		private function onKeyDown(e:KeyboardEvent):void{
+			//如果按下Enter时还按下Shift/Ctrl，则换行
+			if(e.keyCode == Keyboard.ENTER && (e.shiftKey || e.ctrlKey) ){
+				callLater(function():void { //注意这个callLater				 
+					var msg:String=message.text;				 
+					var part1:String=msg.substring(0, message.textArea.selectionBeginIndex);			 
+					var part2:String=msg.substring(message.textArea.selectionEndIndex, 0x7fffffff);			 
+					var selIndex:int=message.textArea.selectionBeginIndex + 1;		
+					message.text=part1 + "\n" + part2;
+					message.textArea.setSelection(selIndex,selIndex);		
+				});			 
+				keyCode=-1; //标识本次按键不需要TEXT_INPUT事件配合处理			 
+				return;
+			}
+			shiftKey=e.shiftKey;
+			ctrlKey=e.ctrlKey;
+			keyCode=e.keyCode;
+		}
+
+		private function onTextInput(evt:TextEvent):void{
+			if (keyCode == -1)	 
+				return;
+			if (keyCode == Keyboard.ENTER && !shiftKey && !ctrlKey && message.text != "") {
+				evt.preventDefault();		 
+				callLater(function():void {		 
+					if (send()) {
+						message.text="";
+						message.htmlText="";
+						message.textArea.setSelection(0,0);		 
+					}
+				});
+			}
+		}
+
+		private function initSendStream():void {
+			myStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+			myStream.addEventListener(NetStatusEvent.NET_STATUS, netStreamHandler);
+			myStream.publish(netConnection.nearID);
+
+			var o:Object = new Object();
+			o.onPeerConnect=function(subscriberStream:NetStream):Boolean {
+				reciveStream = new NetStream(netConnection, subscriberStream.farID);
+				reciveStream.addEventListener(NetStatusEvent.NET_STATUS, reciveStreamHandler);
+				reciveStream.play("caller");
+
+				var incoming:Object = new Object;
+				incoming.onIm = function(name:String, value:String):void {
+					var dateFormatter:DateFormatter = new DateFormatter(); 
+					dateFormatter.formatString="YYYY/MM/DD HH:NN:SS";
+					var time:String = new Date().toLocaleTimeString();
+					var date:String=dateFormatter.format(new Date());
+				 	info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>"+ "\n"; 
+				}
+				incoming.onIncomingCall=function():void {
+					sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+					sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
+					sendStream.publish("callee");
+					sendStream.send("onConnectSuccess",userName.text);
+				}
+				incoming.requestVideo = requestVideo;
+				incoming.requestAudio = requestAudio;
+				incoming.videoConnectSuccess=function():void {
+					reciveStream.receiveAudio(true)
+					reciveStream.receiveVideo(true)
+					remoteVideo = new Video();
+					remoteVideo.width=198;
+					remoteVideo.height=192;
+					remoteVideo.x=4;
+					remoteVideo.y=4;
+					remoteVideo.attachNetStream(reciveStream);
+					remoteVideoDisplay.addChild(remoteVideo);	 
+				}
+				incoming.audioConnectSuccess=function():void {
+					reciveStream.receiveAudio(true) 	 
+				} 
+				incoming.rejectAudioStream=function():void {
+					audioArea.visible=false;	
+					requestAudioArea.visible=false;		
+					audioArea.width=0;	
+				 	videoArea.width=0;
+				 	requestAudioArea.width=0;
+				 	requestArea.width=0;
+					totalArea.width=453;
+					multiMedia.enabled=true;		 
+				}
+				incoming.rejectVideoStream=function():void {
+					videoArea.visible=false;			
+					audioArea.width=0;
+				 	videoArea.width=0;
+				 	requestAudioArea.width=0;
+				 	requestArea.width=0;
+					totalArea.width=453;
+					multiMedia.enabled=true;
+					localVideoDisplay.removeChild(localVideo);
+				}
+				incoming.closeVideoStream=function():void {
+			 		videoArea.visible=false;
+					audioArea.width=0;
+				 	videoArea.width=0;
+				 	requestAudioArea.width=0;
+				 	requestArea.width=0;
+					totalArea.width=453;
+					multiMedia.enabled=true;
+					localVideoDisplay.removeChild(localVideo); 
+					reciveStream.receiveAudio(false);
+					reciveStream.receiveVideo(false); 
+					if (localVideo != null) {
+						localVideo.attachCamera(null);
+						localVideoDisplay.close();
+		 			}
+					if (remoteVideo != null) {
+						remoteVideo.attachCamera(null);
+						remoteVideoDisplay.close();
+					}
+				}
+	 			incoming.closeAudioStream=function():void {
+					audioArea.visible=false;
+					audioArea.width=0;
+					videoArea.width=0;
+					requestAudioArea.width=0;
+					requestArea.width=0;
+					totalArea.width=453;
+					multiMedia.enabled=true;
+				 	reciveStream.receiveAudio(false);	 
+		 		}
+				incoming.onHangup=function():void {
+					hangup();
+				}
+				reciveStream.client=incoming;
+				return true;
+			}
+			myStream.client=o; 
+		}
+		private function netStreamHandler(e:NetStatusEvent):void {
+		}
+		private function sendStreamHandler(e:NetStatusEvent):void {
+			if (e.info.code == "NetStream.Play.Start")
+				sendStream.send("onIncomingCall")
+		}
+		private function reciveStreamHandler(e:NetStatusEvent):void {
+		}
+		//呼叫对方的方法，现在是呼叫者角色
+		private function call():void { 
+			//通过对方的peerId链接被呼叫者，播放对方的身份信息流
+			controlStream = new NetStream(netConnection,peerId.text);
+			controlStream.addEventListener(NetStatusEvent.NET_STATUS, netStreamHandler);
+			controlStream.play(peerId.text);
+
+			//同时对外发布呼叫者的信息流
+			sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+			sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
+			sendStream.publish("caller");
+
+			//尝试播放被呼叫者的信息流
+			reciveStream = new NetStream(netConnection, peerId.text);
+			reciveStream.addEventListener(NetStatusEvent.NET_STATUS, reciveStreamHandler);
+			reciveStream.play("callee");
+			var recive:Object = new Object;
+			//监听信息发布事件
+			recive.onIm=function(name:String, value:String):void {
+				var dateFormatter:DateFormatter = new DateFormatter(); 
+				dateFormatter.formatString="YYYY/MM/DD HH:NN:SS";
+				var time:String = new Date().toLocaleTimeString();
+				var date:String=dateFormatter.format(new Date());
+				//info.text += name + ": " + value + "\n";
+			 	info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>"+ "\n"; 
+			}
+			//监听onConnectSuccess事件，确定链接成功
+			recive.onConnectSuccess=function(name:String):void {
+			  info.text += "与"+name + "链接成功\n";
+			}
+			recive.videoConnectSuccess=function():void {
+				reciveStream.receiveAudio(true)
+				reciveStream.receiveVideo(true)
+				remoteVideo = new Video();
+				remoteVideo.width=198;
+				remoteVideo.height=192;
+				remoteVideo.x=4;
+				remoteVideo.y=4;
+				remoteVideo.attachNetStream(reciveStream);
+				remoteVideoDisplay.addChild(remoteVideo);	 
+			}
+			recive.requestVideo = requestVideo;
+	 		recive.requestAudio = requestAudio;
+		 	recive.onHangup=function():void {
+				hangup()
+			}
+			recive.rejectVideoStream=function():void { 
+				videoArea.visible=false;			
+				audioArea.width=0;
+				videoArea.width=0;
+				requestAudioArea.width=0;
+				requestArea.width=0;
+				totalArea.width=453;
+				multiMedia.enabled=true;
+				localVideoDisplay.removeChild(localVideo);
+			}
+	 		recive.audioConnectSuccess=function():void { 
+				reciveStream.receiveAudio(true) 	 
+			}
+			recive.rejectAudioStream=function():void { 
+				audioArea.visible=false;
+				requestAudioArea.visible=false;				
+				audioArea.width=0;
+			 	videoArea.width=0;
+			 	requestAudioArea.width=0;
+			 	requestArea.width=0;
+				totalArea.width=453;
+				multiMedia.enabled=true;		 
+			} 
+			recive.closeVideoStream=function():void { 
+				videoArea.visible=false;
+		 		audioArea.width=0;
+		 		videoArea.width=0;
+				requestAudioArea.width=0;
+				requestArea.width=0;
+				totalArea.width=453;
+				multiMedia.enabled=true;
+				localVideoDisplay.removeChild(localVideo); 
+				reciveStream.receiveAudio(false);
+				reciveStream.receiveVideo(false);
+				if (localVideo != null)
+					localVideo.attachCamera(null)
+	 		}
+		 	recive.closeAudioStream=function():void { 
+				audioArea.visible=false;
+				audioArea.width=0;
+			 	videoArea.width=0;
+			 	requestAudioArea.width=0;
+			 	requestArea.width=0;
+				totalArea.width=453;
+				reciveStream.receiveAudio(false);	 
+				multiMedia.enabled=true;
+		 	}
+			if(remoteVideo != null)
+				remoteVideo.attachCamera(null)
+			reciveStream.client=recive;
+		}
+		private function requestVideo():void {
+			requestArea.visible=true;
+		 	totalArea.width=612;
+		 	audioArea.width=0;
+		 	videoArea.width=0;
+		 	requestAudioArea.width=0;
+		 	requestArea.width=150;
+			multiMedia.enabled=false;
+		}
+		private function requestAudio():void {
+ 			requestAudioArea.visible=true;
+			totalArea.width=612;
+			audioArea.width=0;
+			videoArea.width=0;
+			requestArea.width=0;
+			requestAudioArea.width=150;
+			multiMedia.enabled=false;
+		}
+		//用sendStream对外发布信息流
+		private function send():Boolean {
+			if(message.text == "") {
+				//ExternalInterface.call("showMsg");
+				return false;
+			} else {
+				var dateFormatter:DateFormatter = new DateFormatter(); 
+				dateFormatter.formatString="YYYY/MM/DD HH:NN:SS";
+				var time:String = new Date().toLocaleTimeString();
+				var date:String=dateFormatter.format(new Date());
+				info.htmlText+="<font color='#008040' face='Arial' size='13'>"+userName.text +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>"+ message.htmlText + "</textformat>\n";
+				sendStream.send("onIm",userName.text,message.htmlText);
+				message.text="";
+				return true;
+			}
+		}
+	 	// 说话音量调节
+	 	private function speakerVolumeChanged(e:SliderEvent):void {
+ 			if (reciveStream) {
+				var st:SoundTransform = new SoundTransform(e.value);
+			 	reciveStream.soundTransform=st;		
+			}		
+			localSO.data.speakerVolume=e.value;
+			localSO.flush();
+		}
+	 	// 耳麦音量调节
+	 	private function micVolumeChanged(e:SliderEvent):void {
+	 		var mic:Microphone=Microphone.getMicrophone(micIndex);
+	 		if (mic) {
+	 			mic.gain=e.value;
+	 			localSO.data.micVolume=e.value;
+	 			localSO.flush();				
+			}
+		} 
+
+ 		private function openAudio():void {
+			audioArea.visible=true; 
+		 	totalArea.width=612;
+		 	audioArea.width=150;
+		 	videoArea.width=0;
+		 	requestArea.width=0;
+		 	requestAudioArea.width=0;
+			multiMedia.enabled=false;
+			publishAudio();	
+			sendStream.send("requestAudio");
+		} 
+
+	 	private function openVideo():void{
+		 	// 播放GIF格式图片
+		 	var myGIFPlayer:GIFPlayer = new GIFPlayer(true);
+		 	var myGIFPlayer1:GIFPlayer = new GIFPlayer(true);
+		 	var request:URLRequest = new URLRequest("assert/loading.gif");
+		 	myGIFPlayer.load(request);
+		 	myGIFPlayer.visible=true;
+		 	myGIFPlayer.x=72;
+		 	myGIFPlayer.y=72;
+		 	remoteVideoDisplay.addChild(myGIFPlayer);
+		 	var request1:URLRequest = new URLRequest("assert/loading2.gif");
+		 	myGIFPlayer1.load(request1);
+		 	myGIFPlayer1.visible=true;
+		 	myGIFPlayer1.x=35;
+		 	myGIFPlayer1.y=35;
+		 	localVideoDisplay.addChild(myGIFPlayer1);
+		 	videoArea.visible=true;
+			audioArea.width=0;
+			requestArea.width=0;
+			requestAudioArea.width=0;
+			videoArea.width=206;
+			totalArea.width=672;
+			multiMedia.enabled=false;
+			// 发送视频请求文本
+			sendStream.send("requestVideo");
+			//发送视频
+			publishVideo();
+			//发送音频
+			publishAudio();
+	 	}
+ 		//挂断电话，清空所有stream，只保持于stratus的链接
+		public function hangup():void {
+			if (reciveStream) {
+				reciveStream.close();
+				reciveStream.removeEventListener(NetStatusEvent.NET_STATUS, reciveStreamHandler);
+			}
+			if (sendStream) {
+				sendStream.close();
+				sendStream.removeEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
+			}
+			if (controlStream) {
+				controlStream.close();
+				controlStream.removeEventListener(NetStatusEvent.NET_STATUS, netStreamHandler);
+			}
+			reciveStream=null;
+			sendStream=null;
+			controlStream=null;
+			if(localVideo != null)
+				localVideo.attachCamera(null);
+			if(remoteVideo != null)
+				remoteVideo.attachCamera(null)
+		}
+
+		private function publishVideo():void {
+			var cameras:Array=Camera.names;
+			var camera:Camera;
+			var findDefaultCamera:Boolean=false
+			if (cameras && cameras.length > 0) {
+				for(var j:int=0; j < cameras.length; j++) {
+					if(cameras[j].toString() == "USB Video Class Video") {
+						camera=Camera.getCamera(j.toString())
+						sendStream.attachCamera(camera);
+						findDefaultCamera=true
+					}
+				}
+				if(!findDefaultCamera) {
+					camera=Camera.getCamera();
+					sendStream.attachCamera(camera);
+				}
+				camera.setQuality(0, 100);
+				camera.setMode(320, 240, 15);
+				localVideo = new Video();
+				localVideo.width=92;
+				localVideo.height=93;
+				localVideo.x=4;
+				localVideo.y=4; 
+				localVideo.attachCamera(camera)
+				localVideoDisplay.addChild(localVideo);
+			}
+		}
+
+		private function publishAudio():void{
+			var mics:Array=Microphone.names;
+			if (mics && mics.length > 0)
+		 		sendStream.attachAudio(Microphone.getMicrophone(0))
+		}
+
+		//用sendStream对外接受信息流
+		private function accpetHandle():void{
+			//向呼叫端发送信息流
+			requestArea.visible=false;
+			videoArea.visible=true;
+			requestArea.width=0;
+			audioArea.width=0;
+			requestAudioArea.width=0;
+			videoArea.width=206;
+			totalArea.width=672;
+			multiMedia.enabled=false;
+			publishAudio();
+			publishVideo();
+			//播放接受到的视频，音频
+			reciveStream.receiveAudio(true);
+			reciveStream.receiveVideo(true);
+			remoteVideo = new Video();
+			remoteVideo.width=198;
+			remoteVideo.height=192;
+			remoteVideo.x=4;
+			remoteVideo.y=4;
+			remoteVideo.attachNetStream(reciveStream);
+			remoteVideoDisplay.addChild(remoteVideo);
+			//链接成功事件，呼叫端响应
+			sendStream.send("videoConnectSuccess");	
+		}
+		//用sendStream对外接受信息流
+		private function rejectHandle():void{
+			//向呼叫端发送信息流		
+			requestArea.visible=false;			
+			requestArea.width=0;
+			audioArea.width=0;	
+		 	videoArea.width=0;
+		 	requestAudioArea.width=0;	 
+			totalArea.width=453;
+			multiMedia.enabled=true;			
+			sendStream.send("onIm",userName.text,"对方拒绝视频"); 
+			sendStream.send("rejectVideoStream"); 	 
+		}
+		private function accpetAudioHandle():void{
+			//向呼叫端发送信息流
+			audioArea.visible=true;
+		 	totalArea.width=612;
+		 	audioArea.width=150;
+		 	requestAudioArea.width=0;
+		 	requestArea.width=0;
+			videoArea.width=0;
+			multiMedia.enabled=false;
+			publishAudio();
+			//播放接受到的视频，音频
+			reciveStream.receiveAudio(true);
+			//链接成功事件，呼叫端响应
+			sendStream.send("audioConnectSuccess");
+		}
+		//用sendStream对外接受信息流
+		private function rejectAudioHandle():void{
+			//向呼叫端发送信息流
+			requestAudioArea.visible=false;
+			requestAudioArea.width=0;
+			videoArea.width=0;
+			audioArea.width=0;
+			requestArea.width=0;
+			totalArea.width=453;
+			multiMedia.enabled=true;
+			sendStream.send("onIm",userName.text,"对方拒绝语音");
+			sendStream.send("rejectAudioStream");
+		}
+		private function showControlBar():void { 
+		 	message.toolbar.parent.removeChild(message.toolbar);
+			message.toolbar.removeChild(message.linkTextInput);
+		 	message.toolbar.removeChild(message.bulletButton);
+		 	message.toolbar.removeChild(message.alignButtons);
+		 	message._RichTextEditor_VRule1.visible=false;
+		 	message._RichTextEditor_VRule2.visible=false;
+		 	message.textArea.height=102;
+		 	message.colorPicker.width=24;
+		 	message.colorPicker.height=24;
+		 	message.italicButton.width=24;
+		 	message.italicButton.height=24;
+		 	message.boldButton.width=24;
+		 	message.boldButton.height=24;
+		 	message.underlineButton.width=24;
+		 	message.underlineButton.height=24;
+		 	message.toolbar.addChild(popUpButton_pic);
+		 	message.addChildAt(message.toolbar,0);
+		} 
+ 		private function closeVideo():void {
+			videoArea.visible=false;
+			requestAudioArea.width=0;
+			videoArea.width=0;
+			audioArea.width=0;
+			requestArea.width=0;
+			totalArea.width=453;
+			multiMedia.enabled=true;
+			localVideoDisplay.removeChild(localVideo);
+			if(localVideo != null)
+				localVideo.attachCamera(null)
+			if(remoteVideo != null)
+				remoteVideo.attachCamera(null)
+		 	reciveStream.receiveAudio(false);
+		 	reciveStream.receiveVideo(false);
+	 		sendStream.send("onIm",userName.text,"对方已关闭视频"); 
+	 		sendStream.send("closeVideoStream");
+		}
+		private function closeAudio():void{
+			audioArea.visible=false;
+			requestAudioArea.width=0;
+			videoArea.width=0;
+			audioArea.width=0;
+			requestArea.width=0;
+			totalArea.width=453;
+			multiMedia.enabled=true;
+			reciveStream.receiveAudio(false);
+		 	sendStream.send("onIm",userName.text,"对方已关闭语音");
+		 	sendStream.send("closeAudioStream");
+		}
+	]]>
+</mx:Script>
+
+<mx:Panel layout="vertical" horizontalScrollPolicy="off" verticalScrollPolicy="off"
+	id="totalArea" backgroundColor="#F7FAFF" borderColor="#ACC6FC" paddingLeft="5"
+	paddingTop="5" paddingRight="5" paddingBottom="0" title="chinesegreat" width="450"
+	backgroundAlpha="0.92" alpha="1.0" fontSize="14" fontFamily="Arial" themeColor="#F7FAFF" height="502">
+	<mx:HBox>
+		<mx:VBox>
+			<mx:HBox paddingLeft="8" id="multiMedia">
+				<mx:VideoDisplay useHandCursor="true" buttonMode="true" id="videoButton" width="33"
+					height="25" click="openVideo()" backgroundImage="@Embed(source='/assert/video.gif')"
+					backgroundColor="#F7FAFF"/>
+				<mx:Label width="6"/>
+				<mx:VideoDisplay useHandCursor="true" buttonMode="true" id="audioButton" width="30"
+					height="25" click="openAudio()" backgroundImage="@Embed(source='/assert/audio.gif')"
+					backgroundColor="#F7FAFF"/>
+				<mx:Label width="6" height="0"/>
+				<mx:PopUpButton id="popUpButton_pic" enabled="false" icon="@Embed('/assert/face.gif')"
+					openAlways="true" toolTip="请选择表情图片" paddingLeft="20" width="20" height="20">	
+					<mx:popUp>
+						<mx:TitleWindow id="titleWindow_popUp" headerHeight="9" width="260" height="200"
+							borderColor="#ACC6FC" verticalScrollPolicy="on" horizontalScrollPolicy="off"
+							close="popUpButton_pic.close();">
+							<mx:ToolBar width="221">
+								<mx:Repeater id="myRep" dataProvider="{arrColl}">
+									<mx:Image click="imageclick(event)" buttonMode="true"
+										data="{myRep.currentIndex}" toolTip="{myRep.currentItem.tp}"
+										source="{myRep.currentItem.icon}"/>
+								</mx:Repeater>
+							</mx:ToolBar>
+						</mx:TitleWindow>
+					</mx:popUp>
+				</mx:PopUpButton>
+			</mx:HBox>
+
+			<mx:HBox paddingLeft="10"><mx:TextArea id="info" width="400" height="200" editable="false"/></mx:HBox>
+			<mx:HBox paddingBottom="-18">
+				<mx:RichTextEditor borderStyle="none" id="message" creationComplete="showControlBar();"
+					width="420" height="158" backgroundColor="#F7FAFF" textAlign="left" fontStyle="normal"
+					fontFamily="Verdana" horizontalScrollPolicy="off" verticalScrollPolicy="off"
+					paddingLeft="0" paddingRight="0" headerHeight="0" fontSize="12"/>
+			</mx:HBox>
+			<mx:HBox paddingLeft="10" paddingTop="0">
+				<mx:Button id="sendMessageBtn" label="发送" width="60" click="send()"
+					fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8"
+					fontFamily="Arial" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+					<mx:Label text="用户名："/><mx:TextInput width="194" id="userName"/>
+					<mx:Button id="closeBtn" label="连接" click="init()" fontFamily="Arial"
+						width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]"
+						alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Label text="PeerId："/><mx:TextInput id="peerId" width="194"/>
+					<mx:Button label="连接" click="call()" fontFamily="Arial"
+						width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]"
+						alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+			</mx:HBox>
+		</mx:VBox>
+
+		<!--视频聊天区域-->
+		<mx:VBox id="videoArea" creationComplete="videoArea.visible=false" includeInLayout="{videoArea.visible}">
+		<mx:VBox >
+		<mx:Label id="localVideLabel" height="25"/>
+		<mx:VideoDisplay id="remoteVideoDisplay" borderStyle="solid" borderThickness="4"
+			cornerRadius="5" borderColor="#A3A4A9" width="206" height="200"/>
+		</mx:VBox>
+		<mx:HBox paddingTop="25">
+				<mx:VBox width="98">
+					<mx:Image source="@Embed('/assert/micVol.gif')" width="95" height="22"/> 
+					<mx:HSlider id="micVolumeSlider" showDataTip="false" width="95" minimum="0" maximum="100" change="micVolumeChanged(event)"/>
+					<mx:Image source="@Embed('/assert/speakVol.gif')" width="95" height="22"/> 
+					<mx:HSlider id="speakerVolumeSlider" showDataTip="false" width="95" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/>				
+				</mx:VBox>
+				<mx:VideoDisplay borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" id="localVideoDisplay" width="100" height="101"/>
+			</mx:HBox>
+ 			<mx:HBox paddingLeft="80" paddingTop="14">
+				<mx:Button click="closeVideo();" label="关闭" fontFamily="Arial" width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+			</mx:HBox>
+		</mx:VBox>
+
+		<!--语音聊天区域-->
+		<mx:VBox id="audioArea" paddingTop="31" creationComplete="audioArea.visible=false" includeInLayout="{audioArea.visible}">
+			<mx:VBox><mx:Image source="@Embed('/assert/audio1.gif')" width="143" height="143"/></mx:VBox>
+			<mx:VBox width="98">
+				<mx:Image source="@Embed('/assert/micVol.gif')"/> 
+				<mx:HSlider id="micVolumeSlider1" showDataTip="false" width="95" minimum="0" maximum="100" change="micVolumeChanged(event)"/>
+				<mx:Image source="@Embed('/assert/speakVol.gif')"/> 
+				<mx:HSlider id="speakerVolumeSlider1" showDataTip="false" width="95" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/>			
+			</mx:VBox>
+			<mx:HBox paddingLeft="40" paddingTop="14"><mx:Button click="closeAudio();" label="关闭" fontFamily="Arial" width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/></mx:HBox>
+		</mx:VBox>
+
+		<!--视频请求区域-->
+		<mx:VBox paddingTop="31" id="requestArea" horizontalScrollPolicy="off" verticalScrollPolicy="off" creationComplete="requestArea.visible=false" includeInLayout="{requestArea.visible}">
+			<mx:VBox><mx:Image source="@Embed('/assert/video1.gif')" width="143" height="143"/></mx:VBox>
+			<mx:VBox paddingLeft="36" paddingTop="14">
+				<mx:Button id="acceptBtn" click="accpetHandle();" label="接受" fontFamily="Arial" width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+				<mx:Button id="rejectBtn" click="rejectHandle();" label="拒绝" fontFamily="Arial" width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+			</mx:VBox>
+			<mx:VBox paddingTop="9"><mx:Image source="@Embed('/assert/bottom.gif')" width="143" height="143"/></mx:VBox>
+		</mx:VBox>
+
+		<!--语音请求区域-->
+		<mx:VBox paddingTop="31" id="requestAudioArea" horizontalScrollPolicy="off" verticalScrollPolicy="off" creationComplete="requestAudioArea.visible=false" includeInLayout="{requestAudioArea.visible}">
+			<mx:VBox><mx:Image source="@Embed('/assert/audio1.gif')" width="143" height="143"/></mx:VBox>
+			<mx:VBox paddingLeft="40" paddingTop="14">
+				<mx:Button id="acceptAudioBtn" click="accpetAudioHandle();" label="接受" fontFamily="Arial" width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+				<mx:Button id="rejectAudioBtn" click="rejectAudioHandle();" label="拒绝" fontFamily="Arial" width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+			</mx:VBox>
+			<mx:VBox paddingTop="9"><mx:Image source="@Embed('/assert/bottom.gif')" width="143" height="143"/></mx:VBox>
+		</mx:VBox>
+</mx:HBox>
+</mx:Panel>
+<!--聊天表情图片-->
+<mx:ArrayCollection id="arrColl"><mx:source><mx:Array id="arr">
+	<mx:Object data="0" tp="撇嘴" label="" icon="assert/0.gif"/>
+	<mx:Object data="1" tp="撇嘴" label="" icon="assert/1.gif"/>
+	<mx:Object data="2" tp="撇嘴" label="" icon="assert/2.gif"/>
+	<mx:Object data="3" tp="撇嘴" label="" icon="assert/3.gif"/>
+	<mx:Object data="4" tp="撇嘴" label="" icon="assert/4.gif"/>
+	<mx:Object data="5" tp="撇嘴" label="" icon="assert/5.gif"/>
+	<mx:Object data="6" tp="撇嘴" label="" icon="assert/6.gif"/>
+	<mx:Object data="7" tp="撇嘴" label="" icon="assert/7.gif"/>
+	<mx:Object data="8" tp="撇嘴" label="" icon="assert/8.gif"/>
+	<mx:Object data="9" tp="撇嘴" label="" icon="assert/9.gif"/>
+	<mx:Object data="10" tp="撇嘴" label="" icon="assert/10.gif"/>
+	<mx:Object data="11" tp="撇嘴" label="" icon="assert/11.gif"/>
+	<mx:Object data="12" tp="撇嘴" label="" icon="assert/12.gif"/>
+	<mx:Object data="13" tp="撇嘴" label="" icon="assert/13.gif"/>
+	<mx:Object data="14" tp="撇嘴" label="" icon="assert/14.gif"/>
+	<mx:Object data="15" tp="撇嘴" label="" icon="assert/15.gif"/>
+</mx:Array></mx:source>
+</mx:ArrayCollection>
+	<mx:Script>
+		<![CDATA[
+			private var placeholder:String="[img:{0}]";
+			private function imageclick(evt:Event):void {
+				var img:Image=evt.currentTarget as Image;
+				var idx:int=int(img.data);
+				this.insertString(idx.toString());
+				this.popUpButton_pic.close();
+		 	}
+	 	private function insertString(insertStr:String):void {
+			if (this.message.textArea.selectionBeginIndex == this.message.textArea.selectionEndIndex) {
+				var startPart:String=this.message.textArea.text.substring(0, this.message.textArea.selectionBeginIndex);
+				var endPart:String=this.message.textArea.text.substring(this.message.textArea.selectionEndIndex, this.message.textArea.text.length);
+				startPart+="\<img src=\'assert/"+insertStr+".gif\'/\>";
+				startPart+=endPart;
+				this.message.htmlText=startPart;
+			} else
+				this.message.htmlText="\<img src=\'assert/"+insertStr+".gif\'/\>";
+			}
+		]]>
+	</mx:Script>
+</mx:Application>
