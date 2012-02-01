@@ -1,0 +1,3 @@
+ClassPath		E:\Program Files\Java\jdk1.5.0_07\bin;
+JAVA_HOME	E:\Program Files\Java\jdk1.5.0_07
+Path		E:\Program Files\Java\jdk1.5.0_07\bin;

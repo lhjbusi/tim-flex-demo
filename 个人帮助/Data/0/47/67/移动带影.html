@@ -1,0 +1,13 @@
+<script type="text/javascript">
+	function myTest(){
+		myDiv.style.filter = "progid:DXImageTransform.Microsoft.motionblur()";
+		myDiv.filters.item("DXImageTransform.Microsoft.motionblur").strength = 130;
+		myDiv.filters.item("DXImageTransform.Microsoft.motionblur").direction = 135;
+		myDiv.filters.item("DXImageTransform.Microsoft.motionblur").enabled = true;
+	}
+</script>
+
+<img id="myDiv" src="180_135_1107054210zhuang.jpg" />
+<br />
+<button onClick="myTest()">应用</button>
+<button onClick="myDiv.filters.item('DXImageTransform.Microsoft.motionblur').enabled = false;">取消</button>

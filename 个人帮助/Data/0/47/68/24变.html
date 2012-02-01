@@ -1,0 +1,14 @@
+<script type="text/javascript">
+	function myTest(){
+		myDiv.style.filter = "progid:DXImageTransform.Microsoft.revealtrans();";
+		myDiv.filters.item("DXImageTransform.Microsoft.revealtrans").transition = 3;
+		myDiv.filters.item("DXImageTransform.Microsoft.revealtrans").apply();
+		myDiv.style.backgroundColor = "blue";
+		myDiv.filters.item("DXImageTransform.Microsoft.revealtrans").play();
+	}
+</script>
+
+<div id="myDiv" style="width:200px; height:200px;"></div>
+<br>
+<button onClick="myTest()">应用</button>
+<button onClick="myDiv.filters.item('DXImageTransform.Microsoft.revealtrans').enabled = false; myDiv.style.backgroundColor = 'white';">还原</button>

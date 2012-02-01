@@ -1,0 +1,21 @@
+<script type="text/javascript">
+	function myTest(){
+		myDiv.style.filter = "progid:DXImageTransform.Microsoft.matrix();";
+		myDiv.filters.item("DXImageTransform.Microsoft.matrix").M11 = 3;
+		myDiv.filters.item("DXImageTransform.Microsoft.matrix").M22 = 3;
+		myDiv.filters.item("DXImageTransform.Microsoft.matrix").M21 = 0;
+		myDiv.filters.item("DXImageTransform.Microsoft.matrix").M12 = 0;
+		myDiv.filters.item("DXImageTransform.Microsoft.matrix").DX = 0;
+		myDiv.filters.item("DXImageTransform.Microsoft.matrix").DY = 0;
+		
+		myDiv.filters.item("DXImageTransform.Microsoft.matrix").FilterType = "bilinear";
+		//元素是否改变大小
+		myDiv.filters.item("DXImageTransform.Microsoft.matrix").sizingMethod = "auto expand";
+		myDiv.filters.item("DXImageTransform.Microsoft.matrix").enabled = true;
+	}
+</script>
+
+<img id="myDiv" src="180_135_1107054210zhuang.jpg" />
+<br />
+<button onClick="myTest()">应用</button>
+<button onClick="myDiv.filters.item('DXImageTransform.Microsoft.matrix').enabled = false;">取消</button>

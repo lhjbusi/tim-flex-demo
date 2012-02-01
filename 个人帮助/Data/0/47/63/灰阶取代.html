@@ -1,0 +1,11 @@
+<script type="text/javascript">
+	function myTest(){
+		myDiv.style.filter = "gray()";
+		myDiv.filters.item("gray").enabled = true;
+	}
+</script>
+
+<img id="myDiv" src="180_135_1107054210zhuang.jpg" />
+<br />
+<button onClick="myTest()">应用</button>
+<button onClick="myDiv.filters.item('gray').enabled = false;">取消</button>

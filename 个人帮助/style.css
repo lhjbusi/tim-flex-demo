@@ -1,0 +1,349 @@
+TD {
+	FONT-SIZE: 12px
+}
+P {
+	FONT-SIZE: 12px
+}
+LI {
+	FONT-SIZE: 12px
+}
+INPUT {
+	FONT-SIZE: 12px
+}
+SELECT {
+	FONT-SIZE: 12px
+}
+BODY {
+	SCROLLBAR-FACE-COLOR: #ffffff; FONT-SIZE: 9pt; SCROLLBAR-HIGHLIGHT-COLOR: #ffffff; SCROLLBAR-SHADOW-COLOR: #ffffff; COLOR: #000000; SCROLLBAR-3DLIGHT-COLOR: #c0c0c0; SCROLLBAR-ARROW-COLOR: #ef4f6b; SCROLLBAR-TRACK-COLOR: #e0e0e0; FONT-FAMILY: Verdana, Arial, Helvetica, sans-serif; SCROLLBAR-DARKSHADOW-COLOR: #b0b0b0; HEIGHT: 100%; BACKGROUND-COLOR: #fff
+}
+.nav{
+	padding:2px 0px 0px 3px; 
+	border-bottom:1px solid #DBE9F4;
+	background-color: #DBE9F4;
+	FILTER: progid:DXImageTransform.Microsoft.Gradient(startColorStr=#DBE9F4, endColorStr=#FFFFFF, gradientType=0);
+    background-image: url(../images/bg_nav00.gif);
+	}
+.text_a01 {
+	COLOR: #000000
+}
+.text_a02 {
+	COLOR: #ffffff
+}
+.text_a03 {
+	COLOR: #6b6d6b
+}
+.text_b01 {
+	COLOR: #4a1e06
+}
+.text_b02 {
+	COLOR: #c72f07
+}
+.text_b03 {
+	COLOR: #ff6707
+}
+.text_b04 {
+	COLOR: #ff7f07
+}
+.text_b05 {
+	COLOR: #ff0000
+}
+.text_b06 {
+	COLOR: #ff0767
+}
+.text_b07 {
+	COLOR: #005d94
+}
+.text_b08 {
+	COLOR: #0000ff
+}
+.text_b09 {
+	COLOR: #178f07
+}
+.text_b10 {
+	COLOR: #669900
+}
+.text_b11 {
+	COLOR: #c57cac
+}
+.link_a01:link {
+	COLOR: #000000; TEXT-DECORATION: none
+}
+.link_a01:visited {
+	COLOR: #000000; TEXT-DECORATION: none
+}
+.link_a01:active {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_a01:hover {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_a02:link {
+	COLOR: #ffffff; TEXT-DECORATION: none
+}
+.link_a02:visited {
+	COLOR: #ffffff; TEXT-DECORATION: none
+}
+.link_a02:active {
+	COLOR: #ffffcc; TEXT-DECORATION: none
+}
+.link_a02:hover {
+	COLOR: #ffffcc; TEXT-DECORATION: none
+}
+.link_a03:link {
+	COLOR: #6b6d6b; TEXT-DECORATION: none
+}
+.link_a03:visited {
+	COLOR: #6b6d6b; TEXT-DECORATION: none
+}
+.link_a03:active {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_a03:hover {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_b01:link {
+	COLOR: #4a1e06; TEXT-DECORATION: none
+}
+.link_b01:visited {
+	COLOR: #4a1e06; TEXT-DECORATION: none
+}
+.link_b01:active {
+	COLOR: #ff0000; TEXT-DECORATION: none
+}
+.link_b01:hover {
+	COLOR: #ff0000; TEXT-DECORATION: none
+}
+.link_b02:link {
+	COLOR: #c72f07; TEXT-DECORATION: none
+}
+.link_b02:visited {
+	COLOR: #c72f07; TEXT-DECORATION: none
+}
+.link_b02:active {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b02:hover {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b03:link {
+	COLOR: #ff6707; TEXT-DECORATION: none
+}
+.link_b03:visited {
+	COLOR: #ff6707; TEXT-DECORATION: none
+}
+.link_b03:active {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_b03:hover {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_b04:link {
+	COLOR: #ff7f07; TEXT-DECORATION: none
+}
+.link_b04:visited {
+	COLOR: #ff7f07; TEXT-DECORATION: none
+}
+.link_b04:active {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_b04:hover {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_b05:link {
+	COLOR: #ff0000; TEXT-DECORATION: none
+}
+.link_b05:visited {
+	COLOR: #ff0000; TEXT-DECORATION: none
+}
+.link_b05:active {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b05:hover {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b06:link {
+	COLOR: #ff0767; TEXT-DECORATION: none
+}
+.link_b06:visited {
+	COLOR: #ff0767; TEXT-DECORATION: none
+}
+.link_b06:active {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_b06:hover {
+	COLOR: #ff0000; TEXT-DECORATION: underline
+}
+.link_b07:link {
+	COLOR: #005d94; TEXT-DECORATION: none
+}
+.link_b07:visited {
+	COLOR: #005d94; TEXT-DECORATION: none
+}
+.link_b07:active {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b07:hover {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b08:link {
+	COLOR: #0000ff; TEXT-DECORATION: none
+}
+.link_b08:visited {
+	COLOR: #0000ff; TEXT-DECORATION: none
+}
+.link_b08:active {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b08:hover {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b09:link {
+	COLOR: #178f07; TEXT-DECORATION: none
+}
+.link_b09:visited {
+	COLOR: #178f07; TEXT-DECORATION: none
+}
+.link_b09:active {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b09:hover {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b10:link {
+	COLOR: #669900; TEXT-DECORATION: none
+}
+.link_b10:visited {
+	COLOR: #669900; TEXT-DECORATION: none
+}
+.link_b10:active {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+.link_b10:hover {
+	COLOR: #ff6707; TEXT-DECORATION: underline
+}
+
+.link_b11:link {
+	COLOR: #c57cac; TEXT-DECORATION: none
+}
+.link_b11:visited {
+	COLOR: #c57cac; TEXT-DECORATION: none
+}
+.link_b11:active {
+	COLOR: #ff0767; TEXT-DECORATION: underline
+}
+.link_b11:hover {
+	COLOR: #ff0767; TEXT-DECORATION: underline
+}
+
+.link_noUnder:link {
+	COLOR: #000000; TEXT-DECORATION: none
+}
+.link_noUnder:visited {
+	COLOR: #000000; TEXT-DECORATION: none
+}
+.link_noUnder:hover {
+	COLOR: #fb4402; TEXT-DECORATION: none
+}
+
+.bg_a01 {
+	BACKGROUND-COLOR: #adaaad
+}
+.bg_a02 {
+	BACKGROUND-COLOR: #cccccc
+}
+.bg_a03 {
+	BACKGROUND-COLOR: #eeeeee
+}
+.bg_a04 {
+	BACKGROUND-COLOR: #f3f3f3
+}
+.bg_a05 {
+	BACKGROUND-COLOR: #ffffff
+}
+.bg_b01 {
+	BACKGROUND-COLOR: #a21c33
+}
+.bg_b02 {
+	BACKGROUND-COLOR: #ef4f6b
+}
+.bg_b03 {
+	BACKGROUND-COLOR: #fa768d
+}
+.bg_b04 {
+	BACKGROUND-COLOR: #fbd4db
+}
+.bg_b05 {
+	BACKGROUND-COLOR: #efffff
+}
+.bg_b06 {
+	BACKGROUND-COLOR:#FF99CC
+}
+.border {
+	border: 1px solid d2d2d2;
+}
+
+.t_red {
+	BORDER-RIGHT: #ff0000 1px solid; BORDER-TOP: #ff0000 1px solid; BORDER-LEFT: #ff0000 1px solid; BORDER-BOTTOM: #ff0000 1px solid
+}
+
+.t_gray {
+	BORDER-RIGHT: #dddddd 1px solid; BORDER-TOP: #dddddd 1px solid; BORDER-LEFT: #dddddd 1px solid; BORDER-BOTTOM: #dddddd 1px solid
+}
+
+.t_green {
+	BORDER-RIGHT: #b7e284 1px solid; BORDER-TOP: #b7e284 1px solid; BORDER-LEFT: #b7e284 1px solid; BORDER-BOTTOM: #b7e284 1px solid
+}
+.t_green1 {
+	BORDER-RIGHT: #8ed233 1px solid; BORDER-TOP: #8ed233 1px solid; BORDER-LEFT: #8ed233 1px solid; BORDER-BOTTOM: #8ed233 1px solid
+}
+.t_blue {
+	BORDER-RIGHT: #7bd7e7 1px solid; BORDER-TOP: #7bd7e7 1px solid; BORDER-LEFT: #7bd7e7 1px solid; BORDER-BOTTOM: #7bd7e7 1px solid
+}
+.t_blue1 {
+	BORDER-RIGHT: #4f7fc7 1px solid; BORDER-TOP: #4f7fc7 1px solid; BORDER-LEFT: #4f7fc7 1px solid; BORDER-BOTTOM: #4f7fc7 1px solid
+}
+.t_blue2 {
+	BORDER-RIGHT: #60A8E1 1px solid; BORDER-TOP: #60A8E1 1px solid; BORDER-LEFT: #60A8E1 1px solid; BORDER-BOTTOM: #60A8E1 1px solid
+}
+.t_orange {
+	BORDER-RIGHT: #ffc94a 1px solid; BORDER-TOP: #ffc94a 1px solid; BORDER-LEFT: #ffc94a 1px solid; BORDER-BOTTOM: #ffc94a 1px solid
+}
+.t_red_dot {
+	BORDER-RIGHT: #ff0000 1px dotted; BORDER-TOP: #ff0000 1px dotted; BORDER-LEFT: #ff0000 1px dotted; BORDER-BOTTOM: #ff0000 1px dotted
+}
+.t_purple {
+	BORDER-RIGHT: #c57cac 1px solid; BORDER-TOP: #c57cac 1px solid; BORDER-LEFT: #c57cac 1px solid; BORDER-BOTTOM: #c57cac 1px solid
+}
+
+.t_purple1 {
+	BORDER-RIGHT: #d2a6c7 1px solid; BORDER-TOP: #d2a6c7 1px solid; BORDER-LEFT: #d2a6c7 1px solid; BORDER-BOTTOM: #d2a6c7 1px solid
+}
+
+.t_yellow {
+	BORDER-RIGHT: #f9cc76 1px solid; BORDER-TOP: #f9cc76 1px solid; BORDER-LEFT: #f9cc76 1px solid; BORDER-BOTTOM: #f9cc76 1px solid
+}
+
+.t_yellow1 {
+	BORDER-RIGHT: #d59b00 1px solid; BORDER-TOP: #d59b00 1px solid; BORDER-LEFT: #d59b00 1px solid; BORDER-BOTTOM: #d59b00 1px solid
+}
+
+.t_blue3 {
+	BORDER-RIGHT: #6ec3c9 1px solid; BORDER-TOP: #6ec3c9 1px solid; BORDER-LEFT: #6ec3c9 1px solid; BORDER-BOTTOM: #6ec3c9 1px solid
+}
+
+.t_blue4 {
+	BORDER-RIGHT: #cae5e8 1px solid; BORDER-TOP: #cae5e8 1px solid; BORDER-LEFT: #cae5e8 1px solid; BORDER-BOTTOM: #cae5e8 1px solid
+}
+.t_blue5{border:1px solid #C2D6E0;}
+
+.t_pink {
+	BORDER-RIGHT:#FF66CC 1px solid; BORDER-TOP: #FF66CC 1px solid; BORDER-LEFT: #FF66CC 1px solid; BORDER-BOTTOM: #FF66CC 1px solid
+}
+
+.t_gray_no {
+	BORDER-RIGHT: #dddddd 1px solid; BORDER-TOP: #dddddd 1px solid; BORDER-LEFT: #dddddd 1px solid;
+}
+
+.t_purple_no {
+	BORDER-RIGHT: #c57cac 1px solid; BORDER-TOP: #c57cac 1px solid; BORDER-LEFT: #c57cac 1px solid;
+}

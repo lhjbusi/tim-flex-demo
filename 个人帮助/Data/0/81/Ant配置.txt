@@ -1,0 +1,6 @@
+假如ant安装目录为E:\Program Files\apache-ant-1.7.0，按下面方法设置 
+
+运行：cmd
+set  ANT_HOME=E:\Program Files\apache-ant-1.7.0
+set  JAVA_HOME=E:\Program Files\Java\jdk1.5.0_07	**JDK位置
+set  PATH=%PATH%;%ANT_HOME%\bin

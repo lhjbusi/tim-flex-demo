@@ -1,0 +1,30 @@
+<script type="text/javascript">	
+	function myTest(){
+		trans.style.filter = "progid:DXImageTransform.Microsoft.gradientwipe();";
+		trans.filters[0].gradientsize = .5;
+		
+		trans.filters[0].Apply();
+		myImg2.style.visibility = "visible";
+		myImg1.style.visibility = "hidden";
+		trans.filters[0].Play(duration = 2);
+	}
+	
+	function changeBackground(){
+		document.body.style.filter = "progid:DXImageTransform.Microsoft.gradientwipe();";
+		document.body.filters[0].gradientsize = .5;
+		
+		document.body.filters[0].apply();
+		document.body.filters[0].play(duraction = 5);
+		document.body.background = "../180_135_1107054210zhuang.jpg";
+	}
+</script>
+<body>
+	<button onclick="myTest()">应用</button>
+	<button onclick="myImg1.style.visibility = 'visible'; myImg2.style.visibility = 'hidden';">还原</button>
+	<button onclick="changeBackground()">换肤</button>
+	<br />
+	<div id="trans" style="position:absolute; top:50; left:50; width:320; height:240;">
+		<img id="myImg1" src="../180_135_1107054210zhuang.jpg" style="position:absolute; top:0; left:0;"/>
+		<img id="myImg2" src="../../琳儿/1194855640_0.70391900.jpg" style="visibility:hidden; position:absolute; top:0; left:0;"/>
+	</div>
+</body>

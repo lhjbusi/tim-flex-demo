@@ -1,0 +1,12 @@
+<html xmlns:t="urn:schemas-microsoft-com:time">
+	<head>
+		<?import namespace="t" implementation="#default#time2">
+	</head>
+    <body>
+		<button id="myButton" style="position:absolute">Path运动开始</button>
+		<div id="myDiv1" style="position:absolute; top:200px; width:200px; height:100px; background-color:blue;"></div>
+		<div id="myDiv2" style="position:absolute; top:200px; width:200px; height:100px; background-color:red;"></div>
+		<t:animatemotion targetElement="myDiv1" begin="myButton.click" path="m 150 150 l 350 30 v 100 h -100 V 30" dur="3" fill="freeze">
+		<t:animatemotion targetElement="myDiv2" begin="myButton.click" path="M 30 30 C 350 30 10 450 170 450" dur="5">
+	</body>
+</html>

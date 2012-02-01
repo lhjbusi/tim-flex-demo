@@ -1,0 +1,13 @@
+    <validator name="指定验证规则的逻辑名，且唯一"
+	classname="指定实现验证规则的逻辑类"
+	method="指定实现验证规则的类中的方法"
+	msg="指定资源文件中的key。验证提交失败时，则根据该key查资源文本"
+	depends="指定在调用本个验证规则前要必须先调用的其它验证规则的key。多个的用','分割"
+	methodParams="java.lang.Object,
+			org.apache.commons.validator.ValidatorAction,
+			org.apache.commons.validator.Field,
+			org.apache.struts.action.ActionErrors,
+			javax.servlet.http.HttpServletRequest"
+    >---------------------------对应于一个唯一的验证规则
+	
+    </validator>

@@ -1,0 +1,15 @@
+
+<script language='JavaScript'>
+	function applyChroma(elem) {
+		elem.style.filter="Chroma(color='blue')";
+	}
+function disableChroma(elem){
+	elem.style.filter="Chroma(enabled='false')";
+}
+</script>
+
+<div id="myDiv" style="fillter:progid:DxmageTransform.Microsoft.chroma(enabled='false');background:blue;width:100;height:100;">
+</div>
+<br>
+<button onclick="applyChroma(myDiv);">ÆÁ±ÎÀ¶É«</button>
+<button onclick="disableChroma(myDiv);">»¹Ô­</button>

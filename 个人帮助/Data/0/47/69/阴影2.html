@@ -1,0 +1,13 @@
+<script type="text/javascript">
+	function myTest(){
+		myDiv.style.filter = "progid:DXImageTransform.Microsoft.shadow();";
+		myDiv.filters.item("DXImageTransform.Microsoft.shadow").direction = 45;
+		myDiv.filters.item("DXImageTransform.Microsoft.shadow").color = "red";
+		myDiv.filters.item("DXImageTransform.Microsoft.shadow").enabled = true;
+	}
+</script>
+
+<img id="myDiv" src="180_135_1107054210zhuang.jpg">
+<br>
+<button onClick="myTest()">应用</button>
+<button onClick="myDiv.filters.item('DXImageTransform.Microsoft.shadow').enabled = false;">取消</button>

@@ -1,0 +1,20 @@
+<script type="text/javascript">
+//水平翻转
+	function myTest(){
+		myDiv.style.filter = "FlipH();";
+		myDiv.filters.item("FlipH").enabled = true;
+	}
+//垂直翻转
+	function mySecond(){
+		myDiv.style.filter = "FlipV();";
+		myDiv.filters.item("FlipV").enabled = true;
+	}
+</script>
+
+<img src="180_135_1107054210zhuang.jpg" id="myDiv" />
+<br />
+<button onClick="myTest()">水平翻转</button>
+<button onClick="myDiv.filters.item('FlipH').enabled = false;">取消</button>
+<br>
+<button onClick="mySecond()">垂直翻转</button>
+<button onClick="myDiv.filters.item('FlipV').enabled = false;">取消</button>

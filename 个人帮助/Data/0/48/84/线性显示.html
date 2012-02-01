@@ -1,0 +1,18 @@
+<script type="text/javascript">
+	function myTest(){
+		trans.style.filter = "progid:DXImageTransform.Microsoft.randombars();";
+
+		trans.filters[0].Apply();
+		myDiv2.style.visibility = "visible";
+		myDiv1.style.visibility = "hidden";
+		trans.filters[0].Play(duration = 3);
+	}
+</script>
+
+<button onclick="myTest()">应用</button>
+<button onclick="myDiv1.style.visibility = 'visible'; myDiv2.style.visibility = 'hidden';">还原</button>
+<br />
+<div id="trans" style="position:absolute; top:50; left:50; width:240; height:180;">
+	<div id="myDiv1" style="position:absolute; top:0; left:0; width:240px; height:180; background:red; padding:10px; font-size:15pt; border:2px solid black; font-size:12pt; font-family:Verdana; color:white;">first div</div>
+	<div id="myDiv2" style="visibility:hidden; position:absolute; top:0; left:0; width:240; height:180; color:black; background:beige; padding:10px; font-size:12pt; font-family:Verdana; border:2px solid black;">second div</div>
+</div>

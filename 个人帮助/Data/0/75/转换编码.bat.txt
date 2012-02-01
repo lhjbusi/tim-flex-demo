@@ -1,0 +1,1 @@
+native2ascii -encoding gb2312 中间文件.properties 最终资源文件.properties

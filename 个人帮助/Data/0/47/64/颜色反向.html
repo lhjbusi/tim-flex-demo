@@ -1,0 +1,11 @@
+<script type="text/javascript">
+	function myTest(){
+		myDiv.style.filter = "invert();";
+		myDiv.filters.item("invert").enabled = true;
+	}
+</script>
+
+<img src="180_135_1107054210zhuang.jpg" id="myDiv">
+<br>
+<button onClick="myTest()">应用</button>
+<button onClick="myDiv.filters.item('invert').enabled = false;">取消</button>

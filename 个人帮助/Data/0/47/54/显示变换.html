@@ -1,0 +1,31 @@
+<div id="myDiv" style="position:absolute; top:80px; left:40px; filter:progid:DXImageTransform.Microsoft.BasicImage(enabled=false;);">
+	<img src="180_135_1107054210zhuang.jpg" />
+</div>
+<script type="text/javascript">
+//显示变换
+	function resetImg(){
+		myDiv.filters[0].enabled = true;
+		myDiv.filters[0].Mask = 0;
+		myDiv.filters[0].grayscale = 0;
+		myDiv.filters[0].invert = 0;
+		myDiv.filters[0].xray = 0;
+		
+		//下面是翻转用
+		myDiv.filters[0].rotation = 0;
+		myDiv.filters[0].mirror = 0;
+	}
+//翻转
+	function myTest(){
+		myDiv.filters[0].enabled = true;
+		myDiv.filters[0].rotation = 2;
+		myDiv.filters[0].mirror = 1;
+	}
+</script>
+
+<button onClick="resetImg(); myDiv.filters[0].maskColor = 0x00ffff00; myDiv.filters[0].Mask=1;">蓝色屏蔽</button>
+<button onClick="resetImg(); myDiv.filters[0].grayScale = 1;">灰阶Grayscale</button>
+<button onClick="resetImg(); myDiv.filters[0].xray = 1;">X光效果</button>
+<button onClick="resetImg(); myDiv.filters[0].invert = 1;">颜色反向</button>
+<button onclick="myTest();">水平翻转</button>
+<button onClick="resetImg();">复原图片</button>
+<br />

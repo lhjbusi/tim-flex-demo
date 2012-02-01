@@ -1,0 +1,70 @@
+{\rtf1\ansi\ansicpg936\deff0\deflang1033\deflangfe2052{\fonttbl{\f0\fnil\fprq2\fcharset134 \'cb\'ce\'cc\'e5;}{\f1\fnil\fprq2\fcharset0 ??;}{\f2\fswiss\fcharset134 Arial;}{\f3\fnil\fcharset134 \'cb\'ce\'cc\'e5;}{\f4\fnil Courier New;}{\f5\fnil\fcharset0 ??;}{\f6\froman\fcharset134 Times New Roman;}{\f7\fswiss\fprq2\fcharset0 Arial;}{\f8\fnil\fcharset0 Courier New;}}
+{\colortbl ;\red255\green0\blue0;\red0\green0\blue0;\red128\green0\blue128;\red0\green0\blue255;\red0\green128\blue128;\red63\green127\blue127;\red127\green0\blue127;\red42\green0\blue255;\red63\green95\blue191;}
+\viewkind4\uc1\pard\cf1\lang2052\f0\fs28\'cc\'d8\'ca\'e2\'b7\'fb\'ba\'c5\'b5\'c4\f1 sql\f0\'d3\'ef\'be\'e4\'a3\'ba\par
+\tab\tab\cf2\fs21 <\f1 select \cf3\fs32 ......\cf2\fs21 >\par
+\tab\tab\tab\cf4\b\f2\fs18 <![CDATA[\cf2  \par
+\tab\tab\tab\tab\b0\f1\fs21 SELECT * FROM USERINFO WHERE \fs20 age\f2  \cf1 >\cf2  #\f1 age#\fs21  \par
+\tab\tab\tab\cf4\b\f2\fs18 ]]> \cf2\b0\f1\fs21\par
+\tab\tab </select>\par
+\cf0\f3\fs18\tab\cf1\'b7\'b5\'bb\'d8\'d6\'b5\'c0\'e0\'d0\'cd\cf0\'a3\'ba\par
+\tab\tab\cf4\f0\fs28 resultClass\cf0\f3\fs18\tab\'bf\'c9\'d2\'d4\'c8\'c3\'c4\'fa\'d6\'b8\'b6\'a8\'d2\'bb\'b8\'f6Java\'c0\'e0,\'d6\'bb\'d2\'aa\'ca\'c7Java Bean\'b5\'c4\'ca\'f4\'d0\'d4\'c3\'fb\'b3\'c6\'ba\'cdResultSet\'b5\'c4\'c1\'d0\'c3\'fb\'c6\'a5\'c5\'e4\'a3\'ac\'ca\'f4\'d0\'d4\'d7\'d4\'b6\'af\'b8\'b3\'d6\'b5\'b8\'f8\'c1\'d0\'d6\'b5\par
+\tab\tab\tab\'c0\'fd\'a3\'ba\par
+\tab\tab\tab\tab\cf5\f4\fs20 <\cf6 statement \cf7 id\cf2 =\cf8 "getPerson" \cf7 parameterClass\cf2 =\cf8 "int" \cf7 resultClass\cf2 =\cf8 "examples.domain.Person"\cf5 >\cf0\par
+\cf2\tab\tab\f5\tab\tab\tab\f4 SELECT PER_ID as id, PER_FIRST_NAME as firstName FROM PERSON WHERE PER_ID = #value#\cf0\par
+\cf2\tab\f5\tab\tab\tab\cf5\f4 </\cf6 statement\cf5 >\par
+\f5\tab\tab\tab resultClass\f3\'b5\'c4\'d7\'d4\'b6\'af\'d3\'b3\'c9\'e4\'b4\'e6\'d4\'da\'d2\'bb\'d0\'a9\'cf\'de\'d6\'c6\'a3\'ac\'ce\'de\'b7\'a8\'d6\'b8\'b6\'a8\'ca\'e4\'b3\'f6\'d7\'d6\'b6\'ce\'b5\'c4\'ca\'fd\'be\'dd\'c0\'e0\'d0\'cd(\'c8\'e7\'b9\'fb\'d0\'e8\'d2\'aa\'b5\'c4\'bb\'b0)\'a3\'ac\'ce\'de\'b7\'a8\'d7\'d4\'b6\'af\'d7\'b0\'c8\'eb\'cf\'e0\'b9\'d8\'b5\'c4\'ca\'fd\'be\'dd(\'b8\'b4\'d4\'d3\'ca\'f4\'d0\'d4)\'a1\'a3\par
+\tab\tab\tab\'b2\'a2\'c7\'d2\'d2\'f2\'ce\'aa\'d0\'e8\'d2\'aaResultSetMetaData\'b5\'c4\'d0\'c5\'cf\'a2\'a3\'ac\'bb\'e1\'b6\'d4\'d0\'d4\'c4\'dc\'d3\'d0\'c7\'e1\'ce\'a2\'b5\'c4\'b2\'bb\'c0\'fb\'d3\'b0\'cf\'ec\'a1\'a3\par
+\tab\tab\cf1\f6\fs32 resultMap\tab\cf2\fs20 resultMap\'ca\'f4\'d0\'d4\'bf\'c9\'d2\'d4\'d4\'ca\'d0\'ed\'d6\'b8\'b6\'a8\'d7\'d6\'b6\'ce\'b5\'c4\'ca\'fd\'be\'dd\'c0\'e0\'d0\'cd\'a3\'acNULL\'b5\'c4\'cc\'e6\'b4\'fa\'d6\'b5\'b8\'b4\'d4\'d3\'c0\'e0\'d0\'cd\'d3\'b3\'c9\'e4(\'b0\'fc\'c0\'a8\'c6\'e4\'cb\'fbJava Bean\'a3\'ac\'bc\'af\'ba\'cf\'c0\'e0\'d0\'cd\'ba\'cd\'bb\'f9\'b1\'be\'c0\'e0\'d0\'cd\'b0\'fc\'d7\'b0\'c0\'e0)\par
+\tab\tab\tab\cf0\f3\fs18\'c0\'fd\'a3\'ba\par
+\cf2\fs20\tab\tab\tab\tab\cf5\f4 <\cf6 resultMap \cf7 id\cf2 =\cf8 "get-product-result"\cf0\f5  \cf7\f4 class\cf2 =\cf8 "com.ibatis.example.Product"\cf5 >\cf0\par
+\cf2\tab\tab\f5\tab\tab\tab\cf5\f4 <\cf6 result \cf7 property\cf2 =\cf8 "id" \cf7 column\cf2 =\cf8 "PRD_ID" \cf5 />\cf0\par
+\cf2\tab\tab\f5\tab\tab\tab\cf5\f4 <\cf6 result \cf7 property\cf2 =\cf8 "description" \cf7 column\cf2 =\cf8 "PRD_DESCRIPTION" \cf5 />\cf0\par
+\cf2\tab\f5\tab\tab\tab\cf5\f4 </\cf6 resultMap\cf5 >\cf0\par
+\cf2\tab\f5\tab\tab\tab\cf5\f4 <\cf6 statement \cf7 id\cf2 =\cf8 "getProduct" \cf7 resultMap\cf2 =\cf8 "get-product-result"\cf5 >\cf0\par
+\cf2\tab\tab\f5\tab\tab\tab\f4 select * from PRODUCT\cf0\par
+\cf2\tab\f5\tab\tab\tab\cf5\f4 </\cf6 statement\cf5 >\par
+\f5\tab\tab\cf4\f0\fs28 xmlResultName\cf1\tab\cf2\fs18\'b5\'b1\'d6\'b1\'bd\'d3\'b0\'d1\'b2\'e9\'d1\'af\'bd\'e1\'b9\'fb\'d3\'b3\'c9\'e4\'b3\'c9XML document\'ca\'b1\'a3\'ac\'ca\'f4\'d0\'d4xmlResultName\'b5\'c4\'d6\'b5\'b5\'c8\'d3\'daXML document\'b8\'f9\'d4\'aa\'cb\'d8\'b5\'c4\'c3\'fb\'b3\'c6\par
+\tab\tab\tab\cf0\f3\'c0\'fd\'a3\'ba\par
+\cf2\fs20\tab\tab\tab\tab\cf5\f4 <\cf6 select \cf7 id\cf2 =\cf8 "getPerson" \cf7 parameterClass\cf2 =\cf8 "int" \cf7 resultClass\cf2 =\cf8 "xml"\cf0\f5  \cf7\f4 xmlResultName\cf2 =\cf8 "person"\cf5 >\cf0\par
+\cf2\tab\tab\f5\tab\tab\tab\f4 SELECT PER_ID as id, PER_FIRST_NAME as firstName FROM PERSON WHERE PER_ID = #value#\cf0\par
+\cf2\tab\f5\tab\tab\tab\cf5\f4 </\cf6 select\cf5 >\par
+\f5\tab\tab\tab\cf2\f3\'bd\'e1\'b9\'fb\cf5\par
+\tab\tab\tab\tab\f4 <\cf6 person\cf5 >\cf0\par
+\cf2\tab\tab\f5\tab\tab\tab\cf5\f4 <\cf6 id\cf5 >\cf2 1\cf5 </\cf6 id\cf5 >\cf0\par
+\cf2\tab\tab\f5\tab\tab\tab\cf5\f4 <\cf6 firstName\cf5 >\cf2 Clinton\cf5 </\cf6 firstName\cf5 >\cf0\par
+\cf2\tab\f5\tab\tab\tab\cf5\f4 </\cf6 person\cf5 >\par
+\f5\tab\tab\cf4\f7\fs28 cacheModel\cf2\f2\fs18\tab\'d6\'b8\'b6\'a8\'d2\'aa\'b2\'e9\'d5\'d2\'b5\'c4\'ca\'fd\'be\'dd\'bb\'ba\'b4\'e6\par
+\par
+\cf1\b\f0\fs24\'b6\'e0\'b1\'ed\'b2\'e9\'d1\'af\'a3\'ac\'cd\'c6\'bc\'f6\'b5\'c4\'b7\'bd\'ca\'bd:\cf5\b0\f4\fs20\par
+\f5\tab\f4 <\cf6 resultMap \cf7 id\cf2 =\cf8 "get-product-result" \cf7 class\cf2 =\cf8 "com.ibatis.example.Product"\cf5 >\cf0\par
+\cf2\tab\tab\cf5 <\cf6 result \cf7 property\cf2 =\cf8 "id" \cf7 column\cf2 =\cf8 "PRD_ID" \cf5 />\cf0\par
+\cf2\tab\tab\cf5 <\cf6 result \cf7 property\cf2 =\cf8 "description" \cf7 column\cf2 =\cf8 "PRD_DESCRIPTION" \cf5 />\cf0\par
+\cf2\tab\tab\cf5 <\cf6 result \cf7 property\cf2 =\cf8 "category.id" \cf7 column\cf2 =\cf8 "CAT_ID" \cf5 />\cf0\par
+\cf2\tab\tab\cf5 <\cf6 result \cf7 property\cf2 =\cf8 "category.description" \cf7 column\cf2 =\cf8 "CAT_DESCRIPTION" \cf5 />\cf0\par
+\cf2\tab\cf5 </\cf6 resultMap\cf5 >\cf0\par
+\cf2\tab\cf5 <\cf6 statement \cf7 id\cf2 =\cf8 "getProduct" \cf7 parameterClass\cf2 =\cf8 "int" \cf7 resultMap\cf2 =\cf8 "get-product-result"\cf5 >\cf0\par
+\cf2\tab\tab select * from PRODUCT, CATEGORY where PRD_CAT_ID=CAT_ID and PRD_ID = #value#\cf0\par
+\cf2\tab\cf5 </\cf6 statement\cf5 >\par
+\par
+\cf1\b\f0\fs24\'ca\'fd\'be\'dd\'bb\'ba\'b4\'e6\'a3\'ba\par
+\tab\cf9\b0\f8\fs20 <!-- \f0\'bd\'fc\'c6\'da\'d7\'ee\'c9\'d9\'ca\'b9\'d3\'c3(LRU)\f8  -->\cf0\f4\par
+\cf2\tab\cf5 <\cf6 cacheModel \cf7 id\cf2 =\cf8 "product-cache" \cf7 type\cf2 =\cf8 "LRU" \cf7 readOnly\cf2 =\cf8 "true" \cf7 serialize\cf2 =\cf8 "false"\cf5 >\cf0\par
+\cf2\tab\tab\cf5 <\cf6 flushInterval \cf7 hours\cf2 =\cf8 "24" \cf5 />\cf0\par
+\cf2\tab\tab\cf9\f8 <!-- \f0\'d6\'b8\'b6\'a8\'d0\'e8\'d2\'aa\'b8\'fc\'d0\'c2\'bb\'ba\'b4\'e6\'b5\'c4\'d6\'b4\'d0\'d0\'d3\'ef\'be\'e4\f8  -->\cf0\f4\par
+\cf2\tab\tab\cf5 <\cf6 flushOnExecute \cf7 statement\cf2 =\cf8 "insertProduct" \cf5 />\cf0\par
+\cf2\tab\tab\cf5 <\cf6 flushOnExecute \cf7 statement\cf2 =\cf8 "updateProduct" \cf5 />\cf0\par
+\cf2\tab\tab\cf5 <\cf6 flushOnExecute \cf7 statement\cf2 =\cf8 "deleteProduct" \cf5 />\cf0\par
+\cf2\tab\tab\cf9\f8 <!-- \f0\'d6\'b8\'b6\'a8\'bb\'ba\'b4\'e6\'b5\'c4\'ca\'fd\'be\'dd\'c1\'bf\f8  -->\cf0\f4\par
+\cf2\tab\tab\cf5 <\cf6 property \cf7 name\cf2 =\cf8 "cache-size" \cf7 value\cf2 =\cf8 "1000" \cf5 />\cf0\par
+\cf2\tab\cf5 </\cf6 cacheModel\cf5 >\par
+\f1\tab\cf1\f0\'bb\'ba\'b4\'e6\'c4\'a3\'ca\'bd\par
+\tab\tab\cf4 MEMORY\tab\tab\cf2\'ca\'ca\'d3\'c3\'d3\'da\'c3\'bb\'d3\'d0\'cd\'b3\'d2\'bb\'b5\'c4\'b6\'d4\'cf\'f3\'d6\'d8\'d3\'c3\'c4\'a3\'ca\'bd\'b5\'c4\'d3\'a6\'d3\'c3\'a3\'ac\'bb\'f2\'c4\'da\'b4\'e6\'b2\'bb\'d7\'e3\'b5\'c4\'d3\'a6\'d3\'c3\cf0\f4\par
+\cf2\tab\tab\f1\tab\cf5\f4 <\cf6 property \cf7 name\cf2 =\cf8 "reference-type" \cf7 value\cf2 =\cf8 "WEAK" \cf5 />\par
+\f1\tab\tab\tab reference-type\tab\cf2\f0\'c8\'b1\'ca\'a1\'c0\'e0\'d0\'cd\'be\'cd\'ca\'c7\cf3 WEAK\cf2\'a3\'ac\'cb\'fc\'c4\'dc\'b4\'f3\'b4\'f3\'cc\'e1\'b8\'df\'b3\'a3\'d3\'c3\'b2\'e9\'d1\'af\'b5\'c4\'d0\'d4\'c4\'dc\'a1\'a3\'b5\'ab\'b6\'d4\'d3\'da\'b2\'bb\'b1\'bb\'ca\'b9\'d3\'c3\'b5\'c4\'b2\'e9\'d1\'af\'bd\'e1\'b9\'fb\'ca\'fd\'be\'dd\'a3\'ac\'bd\'ab\'b1\'bb\'c7\'e5\'b3\'fd\'d2\'d4\'ca\'cd\'b7\'c5\'c4\'da\'b4\'e6\'d3\'c3\'c0\'b4\'b7\'d6\'c5\'e4\'c6\'e4\'cb\'fb\'b6\'d4\'cf\'f3\par
+\tab\tab\tab\tab\tab\cf3 SOFT\cf2\'d4\'da\'b2\'e9\'d1\'af\'ca\'fd\'be\'dd\'b2\'bb\'b1\'bb\'ca\'b9\'d3\'c3\'a3\'ac\'cd\'ac\'ca\'b1\'d0\'e8\'d2\'aa\'c4\'da\'b4\'e6\'b7\'d6\'c5\'e4\'c6\'e4\'cb\'fb\'b6\'d4\'cf\'f3\'b5\'c4\'c7\'e9\'bf\'f6\'cf\'c2\'a3\'acSOFT\'c0\'e0\'d0\'cd\'bd\'ab\'bc\'f5\'c9\'d9\'c4\'da\'b4\'e6\'b2\'bb\'d7\'e3\'b5\'c4\'bf\'c9\'c4\'dc\'d0\'d4\'a1\'a3\'c8\'bb\'b6\'f8\'a3\'ac\'bd\'e1\'b9\'fb\'ca\'fd\'be\'dd\'d2\'c0\'c8\'bb\'bf\'c9\'c4\'dc\'b1\'bb\'c7\'e5\'b3\'fd\'a1\'a3\par
+\tab\tab\tab\tab\tab\cf3 STRONG\cf2\'bf\'c9\'d2\'d4\'c8\'b7\'b1\'a3\'b2\'e9\'d1\'af\'bd\'e1\'b9\'fb\'ca\'fd\'be\'dd\'d2\'bb\'d6\'b1\'b1\'a3\'c1\'f4\'d4\'da\'c4\'da\'b4\'e6\'d6\'d0\'a3\'ac\'b3\'fd\'b7\'c7Cache\'b1\'bb\'cb\'a2\'d0\'c2\'a1\'a3\'c0\'ed\'cf\'eb\'b5\'c4\'d1\'a1\'d4\'f1\'a3\'ba1>\'bd\'e1\'b9\'fb\'c4\'da\'c8\'dd\'ca\'fd\'be\'dd\'ba\'dc\'c9\'d9\'a3\'ac2>\'cd\'ea\'c8\'ab\'be\'b2\'cc\'ac\'b5\'c4\'ca\'fd\'be\'dd\'a3\'ac3>\'c6\'b5\'b7\'b1\'ca\'b9\'d3\'c3\'b5\'c4\'ca\'fd\'be\'dd\par
+\cf4\tab\tab LRU\tab\tab\cf2\'b5\'b1Cache\'d2\'e7\'b3\'f6\'ca\'b1\'a3\'ac\'d7\'ee\'bd\'fc\'d7\'ee\'c9\'d9\'ca\'b9\'d3\'c3\'b5\'c4\'b6\'d4\'cf\'f3\'bd\'ab\'b1\'bb\'b4\'d3Cache\'d6\'d0\'c7\'e5\'b3\'fd\'a1\'a3\'b2\'bb\'d2\'aaCache\'cc\'ab\'b6\'e0\'b5\'c4\'b6\'d4\'cf\'f3\'a3\'ac\'d2\'d4\'c3\'e2\'c4\'da\'b4\'e6\'b2\'bb\'d7\'e3\'a1\'a3\cf4\par
+\tab\tab FIFO\tab\tab\cf2\'b5\'b1Cache\'d2\'e7\'b3\'f6\'ca\'b1\'a3\'ac\'d7\'ee\'cf\'c8\'bd\'f8\'c8\'ebCache\'b5\'c4\'b6\'d4\'cf\'f3\'bd\'ab\'b4\'d3Cache\'d6\'d0\'c7\'e5\'b3\'fd\'a1\'a3\cf4\par
+\tab\tab OSCACHE\cf2\f3\par
+}
+ 

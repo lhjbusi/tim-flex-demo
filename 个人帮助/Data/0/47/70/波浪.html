@@ -1,0 +1,16 @@
+<script type="text/javascript">
+	function myTest(){
+		myDiv.style.filter = "progid:DXImageTransform.Microsoft.wave();";
+		myDiv.filters.item("DXImageTransform.Microsoft.wave").strength = 4;
+		myDiv.filters.item("DXImageTransform.Microsoft.wave").freq = 3;
+		myDiv.filters.item("DXImageTransform.Microsoft.wave").lightstrength = 20;
+		myDiv.filters.item("DXImageTransform.Microsoft.wave").add = 0;
+		myDiv.filters.item("DXImageTransform.Microsoft.wave").phase = 90;
+		myDiv.filters.item("DXImageTransform.Microsoft.wave").enabled = true;
+	}
+</script>
+
+<img id="myDiv" src="180_135_1107054210zhuang.jpg">
+<br>
+<button onClick="myTest()">应用</button>
+<button onClick="myDiv.filters.item('DXImageTransform.Microsoft.wave').enabled = false;">取消</button>

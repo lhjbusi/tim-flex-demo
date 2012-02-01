@@ -1,0 +1,21 @@
+<html>
+	<head>
+		<script language ="JavaScript">
+			function applyFilter(){
+			    myDiv.style.filter="progid:DXImageTransform.Microsoft.dropshadow();";
+			    myDiv.filters.item("DXImageTransform.Microsoft.dropshadow").offX = 3; 
+			    myDiv.filters.item("DXImageTransform.Microsoft.dropshadow").offY = 3; 
+			    myDiv.filters.item("DXImageTransform.Microsoft.dropshadow").positive = true;
+			    myDiv.filters.item("DXImageTransform.Microsoft.dropshadow").color = "blue";
+				myDiv.filters.item("DXImageTransform.Microsoft.dropshadow").enabled = true;
+			}
+		</script>
+	</head>
+
+	<body>
+		<img id="myDiv" src="180_135_1107054210zhuang.jpg">
+		<br><br>
+		<button onClick="applyFilter();">应用</button>
+		<button onClick="myDiv.filters.item('DXImageTransform.Microsoft.dropshadow').enabled=false;">还原</button>
+	</body>
+</html>

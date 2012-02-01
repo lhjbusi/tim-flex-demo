@@ -1,0 +1,100 @@
+{\rtf1\ansi\ansicpg936\deff0\deflang1033\deflangfe2052{\fonttbl{\f0\fnil\fprq2\fcharset134 \'cb\'ce\'cc\'e5;}{\f1\fnil\fcharset134 \'cb\'ce\'cc\'e5;}{\f2\fnil\fcharset0 ??;}{\f3\fnil Courier New;}{\f4\fnil\fcharset0 Courier New;}{\f5\fswiss\fcharset0 Arial;}}
+{\colortbl ;\red0\green0\blue0;\red0\green128\blue128;\red63\green127\blue127;\red127\green0\blue127;\red42\green0\blue255;\red0\green0\blue128;\red128\green128\blue128;\red63\green127\blue95;\red63\green95\blue191;\red232\green242\blue254;\red255\green0\blue0;\red127\green0\blue85;\red0\green0\blue192;}
+\viewkind4\uc1\pard\cf1\lang2052\b\f0\fs28\'b9\'a4\'b3\'cc\'b4\'b4\'bd\'a8\b0\f1\fs20\'a3\'ba\par
+\cf2\f2     \f1\'a1\'be1\'a1\'bf\'b5\'bc\'c8\'eb\f2 ibatis\f1 .\f2 jar\f1\'b0\'fc\'a3\'ac\'ba\'cd\'ca\'fd\'be\'dd\'bf\'e2\'c7\'fd\'b6\'af\'a3\'bb\par
+\f2     \f1\'a1\'be2\'a1\'bf\'b4\'b4\'bd\'a8SqlMapConfig.xml\'ce\'c4\'bc\'fe\'a3\'ac\'d3\'da\f2 WEB-INF\f1\'cf\'c2\'a3\'bb\par
+\f2\tab\f3 <?\cf3 xml \cf4 version\cf1 =\cf5 "1.0" \cf4 encoding\cf1 =\cf5 "UTF-8"\cf2 ?>\cf0\par
+\cf2\f2\tab\f3 <!\cf3 DOCTYPE \cf6 sqlMapConfig      \cf0\par
+\cf6\f2\tab\f3     \cf7 PUBLIC \cf6 "-//ibatis.apache.org//DTD SQL Map Config 2.0//EN"      \cf0\par
+\cf6\f2\tab      \cf8\f3 "http://ibatis.apache.org/dtd/sql-map-config-2.dtd"\cf2 >\cf0\par
+\par
+\cf2\f2\tab\f3 <\cf3 sqlMapConfig\cf2 >\cf0\par
+\cf1\tab\f2\tab\cf2\f3 <\cf3 settings \cf4 useStatementNamespaces\cf1 =\cf5 "true" \cf4 cacheModelsEnabled\cf1 =\cf5 "true" \cf2 />\cf0\par
+\cf1\tab\f2\tab\cf2\f3 <\cf3 transactionManager \cf4 type\cf1 =\cf5 "JDBC" \cf4 commitRequired\cf1 =\cf5 "false"\cf2 >\cf0\par
+\cf1\tab\f2\tab\f3\tab\cf2 <\cf3 dataSource \cf4 type\cf1 =\cf5 "SIMPLE"\cf2 >\cf0\par
+\cf1\tab\tab\f2\tab\f3\tab\cf2 <\cf3 property \cf4 name\cf1 =\cf5 "JDBC.Driver"\cf0\par
+\cf5\tab\tab\tab\f2\tab\f3\tab\cf4 value\cf1 =\cf5 "oracle.jdbc.driver.OracleDriver" \cf2 />\cf0\par
+\cf1\tab\tab\f2\tab\f3\tab\cf2 <\cf3 property \cf4 name\cf1 =\cf5 "JDBC.ConnectionURL"\cf0\par
+\cf5\tab\tab\tab\f2\tab\f3\tab\cf4 value\cf1 =\cf5 "jdbc:oracle:thin:@192.168.0.111:1521:yikaidb" \cf2 />\cf0\par
+\cf1\f2\tab\f3\tab\tab\tab\cf2 <\cf3 property \cf4 name\cf1 =\cf5 "JDBC.Username" \cf4 value\cf1 =\cf5 "sa" \cf2 />\cf0\par
+\cf1\tab\f2\tab\f3\tab\tab\cf2 <\cf3 property \cf4 name\cf1 =\cf5 "JDBC.Password" \cf4 value\cf1 =\cf5 "a1111" \cf2 />\cf0\par
+\cf1\tab\tab\f2\tab\cf2\f3 </\cf3 dataSource\cf2 >\cf0\par
+\cf1\f2\tab\f3\tab\cf2 </\cf3 transactionManager\cf2 >\par
+\f2\tab\tab\cf9\f4 <!-- \highlight10\f1\'b6\'a8\'d2\'e5\f4 sql\f1\'d3\'ef\'be\'e4\'b5\'c4\'c5\'e4\'d6\'c3\'ce\'c4\'bc\'fe\'b5\'d8\'d6\'b7\highlight0\f4  \highlight10 ../\f1\'cb\'f9\'d6\'b8\'cf\'f2\'b5\'c4\'ca\'c7\f4 WEB-INF\f1\'c4\'bf\'c2\'bc \highlight0\f4 -->\cf0\f3\par
+\cf1\tab\f2\tab\cf2\f3 <\cf3 sqlMap \cf4 resource\cf1 =\cf5 "../test.xml"\cf2 />\cf0\par
+\cf2\f2\tab\f3 </\cf3 sqlMapConfig\cf2 >\par
+\f2     \f1\'a1\'be3\'a1\'bf\'b4\'b4\'bd\'a8\'b7\'e2\'d7\'b0\f2 sql\f1\'b5\'c4\f2 xml\f1\'ce\'c4\'bc\'fe\f3\par
+\f2     \f3 <?\cf3 xml \cf4 version\cf1 =\cf5 "1.0" \cf4 encoding\cf1 =\cf5 "UTF-8" \cf2 ?>\cf0\par
+\par
+\cf2\f2     \f3 <!\cf3 DOCTYPE \cf6 sqlMap      \cf0\par
+\cf6     \f2     \cf7\f3 PUBLIC \cf6 "-//ibatis.apache.org//DTD SQL Map 2.0//EN"      \cf0\par
+\cf6     \f2     \cf8\f3 "http://ibatis.apache.org/dtd/sql-map-2.dtd"\cf2 >\cf0\par
+\cf2\f2     \f3 <\cf3 sqlMap \cf4 namespace\cf1 =\cf5 "test"\cf2 >\cf0\par
+\cf1\tab\f2     \cf2\f3 <\cf3 resultMap \cf4 class\cf1 =\cf5 "com.yikai.struts.model.MktReplyinfo"\cf0\f2  \cf4\f3 id\cf1 =\cf5 "replyInfoList"\cf2 >\cf0\par
+\cf1\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "REPLY_ID" \cf4 property\cf1 =\cf5 "replyId" \cf2 />\cf0\par
+\cf1\f2     \f3\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "SURVEY_ID" \cf4 property\cf1 =\cf5 "surveyId" \cf2 />\cf0\par
+\cf1\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "COLLECT_ID" \cf4 property\cf1 =\cf5 "collectId" \cf2 />\cf0\par
+\cf1\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "USER_ID" \cf4 property\cf1 =\cf5 "userId" \cf2 />\cf0\par
+\cf1\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "IP" \cf4 property\cf1 =\cf5 "ip" \cf2 />\cf0\par
+\cf1\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "INS_USER" \cf4 property\cf1 =\cf5 "insUser" \cf2 />\cf0\par
+\cf1\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "INS_DATE" \cf4 property\cf1 =\cf5 "insDate" \cf2 />\cf0\par
+\cf1\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "UPD_USER" \cf4 property\cf1 =\cf5 "updUser" \cf2 />\cf0\par
+\cf1\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "UPD_DATE" \cf4 property\cf1 =\cf5 "updDate" \cf2 />\cf0\par
+\cf1\tab\tab\f2     \cf2\f3 <\cf3 result \cf4 column\cf1 =\cf5 "DEL_FLG" \cf4 property\cf1 =\cf5 "delFlg" \cf2 />\cf0\par
+\cf1\tab\f1     \cf2\f3 </\cf3 resultMap\cf2 >\par
+\f1\tab     \cf9\f4 <!-- \cf11 resultClass\cf9\f1\'a3\'ac\'d3\'c3\'d3\'da\'d6\'c6\'b6\'a8\f4 sql\f1\'d3\'ef\'be\'e4\'d6\'b4\'d0\'d0\'cd\'ea\'b1\'cf\'ba\'f3\'b5\'c4\'b7\'b5\'bb\'d8\'c0\'e0\'d0\'cd\'a3\'bb\par
+\tab\tab    \cf11\f4 resultMap\cf9\f1\'a3\'ac\'d3\'c3\'d3\'da\'d6\'c6\'b6\'a8\f4 sql\f1\'d3\'ef\'be\'e4\'d6\'b4\'d0\'d0\'cd\'ea\'b1\'cf\'ba\'f3\'d2\'aa\'b7\'b5\'bb\'d8\'b5\'c4\f4 resultMap\f1\'c5\'e4\'d6\'c3\'b5\'c4\f4 java\f1\'c0\'e0\par
+\tab\tab    \'c1\'bd\'ca\'f4\'d0\'d4\'a3\'ac\'d2\'bb\'b0\'e3\'d6\'bb\'d6\'b8\'b6\'a8\'c6\'e4\'d2\'bb\'a1\'a3\'b5\'b1\'c1\'bd\'b8\'f6\'b6\'bc\'b4\'e6\'d4\'da\'ca\'b1\'a3\'ac\'b7\'b5\'bb\'d8\'d2\'d4\f4 resultMap\f1\'ce\'aa\'d6\'f7\f4  -->\cf0\f3\par
+\cf1\tab\f1     \cf2\f3 <\cf3 select \cf4 id\cf1 =\cf5 "findAll"\f2  \cf4\f3 resultClass\cf1 =\cf5 "hashmap"\cf0\f2  \cf4\f3 resultMap\cf1 =\cf5 "replyInfoList"\cf2 >\cf0\par
+\cf1\tab\tab\f1     \f3 SELECT * FROM MKT_REPLYINFO\cf0\par
+\cf1\tab\f1     \cf2\f3 </\cf3 select\cf2 >\cf0\par
+\cf1\tab\f1     \cf2\f3 <\cf3 select \cf4 id\cf1 =\cf5 "findById" \cf4 resultMap\cf1 =\cf5 "replyInfoList" \cf4 parameterClass\cf1 =\cf5 "Long"\cf2 >\cf0\par
+\cf1\tab\tab\f1     \f3 SELECT * FROM MKT_REPLYINFO WHERE REPLY_ID = #id#\cf0\par
+\cf1\tab\f1     \cf2\f3 </\cf3 select\cf2 >\cf0\par
+\cf1\tab\f1     \cf2\f3 <\cf3 select \cf4 id\cf1 =\cf5 "findByMap" \cf4 resultMap\cf1 =\cf5 "replyInfoList" \cf4 parameterClass\cf1 =\cf5 "hashmap"\cf2 >\cf0\par
+\cf1\tab\tab\f1     \f3 SELECT * FROM MKT_REPLYINFO WHERE REPLY_ID = #id# AND IP = #ip#\cf0\par
+\cf1\tab\f1     \cf2\f3 </\cf3 select\cf2 >\cf0\par
+\cf1\f1     \cf2\f3 </\cf3 sqlMap\cf2 >\par
+\cf1\b\f0\fs28\'bc\'f2\'b5\'a5\'ca\'b9\'d3\'c3\cf2\b0\f1\fs20\'a3\'ba\f3\par
+\f2\tab\f1\'b5\'a5\'c0\'fdDao\'a3\'ba\par
+\tab\tab\cf12\b\f3 public\cf1\b0  \cf12\b class\cf1\b0  IbatisDao \cf12\b implements\cf1\b0  java.io.Serializable \{\cf0\par
+\cf1     \f2\tab\tab\tab\cf12\b\f3 private\cf1\b0  \cf12\b static\cf1\b0  \cf12\b final\cf1\b0  \cf12\b long\cf1\b0  \cf13\i serialVersionUID\cf1\i0  = 1L;\cf0\par
+\cf1     \f2\tab\tab\tab\cf12\b\f3 private\cf1\b0  \cf12\b static\cf1\b0  SqlMapClient \cf13\i dao\cf1\i0 ;\cf0\par
+\cf1     \f2\tab\tab\tab\cf12\b\f3 public\cf1\b0  \cf12\b static\cf1\b0  SqlMapClient getDao() \{\cf0\par
+\cf1         \f2\tab\tab\tab\cf12\b\f3 return\cf1\b0  \cf13\i dao\cf1\i0 ; \cf0\par
+\cf1     \f2\tab\tab\tab\f3\}\cf0\par
+\cf1    \f2\tab\tab\tab\cf12\b\f3 protected\cf1\b0  \cf12\b static\cf1\b0  \cf12\b void\cf1\b0  setDao(SqlMapClient smc) \{\cf0\par
+\cf1         \f2\tab\tab\tab\cf12\b\f3 if\cf1\b0  (\cf13\i dao\cf1\i0  == \cf12\b null\cf1\b0 ) \{\cf0\par
+\cf1\f2\tab\tab\tab\f3             \cf13\i dao\cf1\i0  = smc;\cf0\par
+\cf1\f2\tab\tab\tab\f3       \}\cf0\par
+\cf1\f2\tab\tab\tab\f3\}\cf0\par
+\cf1\f2\tab\tab\f3\}\cf2\par
+\f2\tab\f1 java\'c0\'e0\'ca\'b9\'d3\'c3\'a3\'ba\par
+\tab\tab\cf12\b\f3 try\cf1\b0  \{\cf0\par
+\cf1\tab\tab\tab Reader reader = Resources.\i getResourceAsReader\i0 (\cf5 "../SqlMapConfig.xml"\cf1 );\cf0\par
+\cf1\tab\tab\tab SqlMapClient sc = SqlMapClientBuilder.\i buildSqlMapClient\i0 (reader);\cf0\par
+\cf1\tab\tab\tab IbatisDao.\i setDao\i0 (sc);\cf0\par
+\cf1\tab\tab\tab reader.close();\cf0\par
+\cf1\tab\tab\} \cf12\b catch\cf1\b0  (IOException e) \{\cf0\par
+\cf1\tab\tab\tab\cf13\i log\cf1\i0 .error(\cf5\f4 "\f1\'b3\'f5\'ca\'bc\'bb\'af\f4 IBatis\f1\'c5\'e4\'d6\'c3\'b3\'f6\'b4\'ed\f4 !!! "\cf1\f3  + e.toString());\cf0\par
+\cf1\tab\tab\}\par
+\f2\tab\tab\f3 SqlMapClient dao = IbatisDao.\i getDao\i0 ();\cf0\par
+\cf1\tab\tab\cf12\b if\cf1\b0  (dao != \cf12\b null\cf1\b0 ) \{\cf0\par
+\cf1\tab\tab\tab\cf12\b try\cf1\b0  \{\par
+\f2\tab\tab\tab\tab\cf8\f4 // \f1\'b5\'f7\'d3\'c3\'ce\'de\'b2\'ce\'b2\'e9\'d1\'af\f4 sql\cf0\f3\par
+\cf1\tab\tab\tab\tab List list = dao.queryForList(\cf5 "test.findAll"\cf1 );\cf0\par
+\cf1\tab\tab\tab\tab\cf8\f4 // \f1\'b5\'f7\'d3\'c3\'d2\'bb\'b2\'ce\'b2\'e9\'d1\'af\f4 sql\cf0\f3\par
+\cf1\tab\tab\tab\tab List list2 = dao.queryForList(\cf5 "test.findById"\cf1 , 1L);\cf0\par
+\cf1\tab\tab\tab\tab\cf8\f4 // \f1\'b5\'f7\'d3\'c3\'b6\'e0\'b2\'ce\'b2\'e9\'d1\'af\f4 sql\cf0\f3\par
+\cf1\tab\tab\tab\tab HashMap<String, Object> map = \cf12\b new\cf1\b0  HashMap<String, Object>();\cf0\par
+\cf1\tab\tab\tab\tab map.put(\cf5 "id"\cf1 , 1L);\cf0\par
+\cf1\tab\tab\tab\tab map.put(\cf5 "ip"\cf1 , \cf5 "192.168.1.1"\cf1 );\cf0\par
+\cf1\tab\tab\tab\tab List list3 = dao.queryForList(\cf5 "test.findByMap"\cf1 , map);\cf0\par
+\cf1\tab\tab\tab\} \cf12\b catch\cf1\b0  (SQLException e) \{\cf0\par
+\cf1\tab\tab\tab\tab e.printStackTrace();\cf0\par
+\cf1\tab\tab\tab\}\cf0\par
+\cf1\tab\tab\} \cf12\b else\cf1\b0  \{\cf0\par
+\cf1\tab\tab\tab\cf13\i log\cf1\i0 .error(\cf5 "dao is null"\cf1 );\cf0\par
+\cf1\tab\tab\}\cf2\f5\par
+}
+ 

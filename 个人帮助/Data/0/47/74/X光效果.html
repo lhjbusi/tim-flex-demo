@@ -1,0 +1,11 @@
+<script type="text/javascript">
+	function myTest(){
+		myDiv.style.filter = "xray();";
+		myDiv.filters.item("xray").enabled = true;
+	}
+</script>
+
+<img id="myDiv" src="180_135_1107054210zhuang.jpg">
+<br>
+<button onClick="myTest()">应用</button>
+<button onClick="myDiv.filters.item('xray').enabled = false;">取消</button>

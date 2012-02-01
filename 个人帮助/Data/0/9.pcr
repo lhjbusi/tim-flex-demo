@@ -1,0 +1,497 @@
+{\rtf1\ansi\ansicpg936\deff0\deflang1033\deflangfe2052{\fonttbl{\f0\fnil\fprq2\fcharset134 \'cb\'ce\'cc\'e5;}}
+{\colortbl ;\red0\green0\blue0;}
+\viewkind4\uc1\pard\cf1\lang2052\f0\fs24 ######################\par
+### Query Language ###\par
+######################\par
+\par
+## define query language constants / function names\par
+\par
+hibernate.query.substitutions yes 'Y', no 'N'\par
+\par
+\par
+## select the classic query parser\par
+\par
+#hibernate.query.factory_class org.hibernate.hql.classic.ClassicQueryTranslatorFactory\par
+\par
+\par
+\par
+#################\par
+### Platforms ###\par
+#################\par
+\par
+## JNDI Datasource\par
+\par
+#hibernate.connection.datasource jdbc/test\par
+#hibernate.connection.username db2\par
+#hibernate.connection.password db2\par
+\par
+\par
+## HypersonicSQL\par
+\par
+#hibernate.dialect org.hibernate.dialect.HSQLDialect\par
+#hibernate.connection.driver_class org.hsqldb.jdbcDriver\par
+#hibernate.connection.username sa\par
+#hibernate.connection.password\par
+#hibernate.connection.url jdbc:hsqldb:hsql://localhost\par
+#hibernate.connection.url jdbc:hsqldb:test\par
+#hibernate.connection.url jdbc:hsqldb:.\par
+\par
+\par
+## MySQL\par
+\par
+#hibernate.dialect org.hibernate.dialect.MySQLDialect\par
+#hibernate.dialect org.hibernate.dialect.MySQLInnoDBDialect\par
+#hibernate.dialect org.hibernate.dialect.MySQLMyISAMDialect\par
+#hibernate.connection.driver_class com.mysql.jdbc.Driver\par
+#hibernate.connection.url jdbc:mysql://localhost:3306/prop\par
+#hibernate.connection.username root\par
+#hibernate.connection.password 123456\par
+\par
+\par
+## Oracle\par
+\par
+#hibernate.dialect org.hibernate.dialect.OracleDialect\par
+#hibernate.dialect org.hibernate.dialect.Oracle9Dialect\par
+#hibernate.connection.driver_class oracle.jdbc.driver.OracleDriver\par
+#hibernate.connection.username ora\par
+#hibernate.connection.password ora\par
+#hibernate.connection.url jdbc:oracle:thin:@localhost:1521:orcl\par
+\par
+\par
+## PostgreSQL\par
+\par
+#hibernate.dialect org.hibernate.dialect.PostgreSQLDialect\par
+#hibernate.connection.driver_class org.postgresql.Driver\par
+#hibernate.connection.url jdbc:postgresql:template1\par
+#hibernate.connection.username pg\par
+#hibernate.connection.password\par
+\par
+\par
+## DB2\par
+\par
+#hibernate.dialect org.hibernate.dialect.DB2Dialect\par
+#hibernate.connection.driver_class COM.ibm.db2.jdbc.app.DB2Driver\par
+#hibernate.connection.url jdbc:db2:test\par
+#hibernate.connection.username db2\par
+#hibernate.connection.password db2\par
+\par
+## TimesTen (not supported yet)\par
+\par
+#hibernate.dialect org.hibernate.dialect.TimesTenDialect\par
+#hibernate.connection.driver_class com.timesten.jdbc.TimesTenDriver\par
+#hibernate.connection.url jdbc:timesten:direct:test\par
+#hibernate.connection.username\par
+#hibernate.connection.password \par
+\par
+## DB2/400\par
+\par
+#hibernate.dialect org.hibernate.dialect.DB2400Dialect\par
+#hibernate.connection.username user\par
+#hibernate.connection.password password\par
+\par
+## Native driver\par
+#hibernate.connection.driver_class COM.ibm.db2.jdbc.app.DB2Driver\par
+#hibernate.connection.url jdbc:db2://systemname\par
+\par
+## Toolbox driver\par
+#hibernate.connection.driver_class com.ibm.as400.access.AS400JDBCDriver\par
+#hibernate.connection.url jdbc:as400://systemname\par
+\par
+\par
+## Derby (Not supported!)\par
+\par
+#hibernate.dialect org.hibernate.dialect.DerbyDialect\par
+#hibernate.connection.driver_class org.apache.derby.jdbc.EmbeddedDriver\par
+#hibernate.connection.username\par
+#hibernate.connection.password\par
+#hibernate.connection.url jdbc:derby:/test;create=true\par
+\par
+\par
+## Sybase\par
+\par
+#hibernate.dialect org.hibernate.dialect.SybaseDialect\par
+#hibernate.connection.driver_class com.sybase.jdbc2.jdbc.SybDriver\par
+#hibernate.connection.username sa\par
+#hibernate.connection.password sasasa\par
+#hibernate.connection.url jdbc:sybase:Tds:co3061835-a:5000/tempdb\par
+\par
+\par
+## Mckoi SQL\par
+\par
+#hibernate.dialect org.hibernate.dialect.MckoiDialect\par
+#hibernate.connection.driver_class com.mckoi.JDBCDriver\par
+#hibernate.connection.url jdbc:mckoi:///\par
+#hibernate.connection.url jdbc:mckoi:local://C:/mckoi1.0.3/db.conf\par
+#hibernate.connection.username admin\par
+#hibernate.connection.password nimda\par
+\par
+\par
+## SAP DB\par
+\par
+#hibernate.dialect org.hibernate.dialect.SAPDBDialect\par
+#hibernate.connection.driver_class com.sap.dbtech.jdbc.DriverSapDB\par
+#hibernate.connection.url jdbc:sapdb://localhost/TST\par
+#hibernate.connection.username TEST\par
+#hibernate.connection.password TEST\par
+#hibernate.query.substitutions yes 'Y', no 'N'\par
+\par
+\par
+## MS SQL Server\par
+\par
+hibernate.dialect org.hibernate.dialect.SQLServerDialect\par
+hibernate.connection.driver_class com.microsoft.jdbc.sqlserver.SQLServerDriver\par
+hibernate.connection.url jdbc:microsoft:sqlserver://localhost:1433;databaseName=pubs\par
+hibernate.connection.username sa\par
+hibernate.connection.password sa\par
+hibernate.show_sql true\par
+\par
+## JSQL Driver\par
+#hibernate.connection.driver_class com.jnetdirect.jsql.JSQLDriver\par
+#hibernate.connection.url jdbc:JSQLConnect://1E1/test\par
+\par
+## JTURBO Driver\par
+#hibernate.connection.driver_class com.newatlanta.jturbo.driver.Driver\par
+#hibernate.connection.url jdbc:JTurbo://1E1:1433/test\par
+\par
+## WebLogic Driver\par
+#hibernate.connection.driver_class weblogic.jdbc.mssqlserver4.Driver\par
+#hibernate.connection.url jdbc:weblogic:mssqlserver4:1E1:1433\par
+\par
+## Microsoft Driver (not recommended!)\par
+#hibernate.connection.driver_class com.microsoft.jdbc.sqlserver.SQLServerDriver\par
+#hibernate.connection.url jdbc:microsoft:sqlserver://1E1;DatabaseName=test;SelectMethod=cursor\par
+\par
+## jTDS (since version 0.9)\par
+#hibernate.connection.driver_class net.sourceforge.jtds.jdbc.Driver\par
+#hibernate.connection.url jdbc:jtds:sqlserver://1E1/test\par
+\par
+## Interbase\par
+\par
+#hibernate.dialect org.hibernate.dialect.InterbaseDialect\par
+#hibernate.connection.username sysdba\par
+#hibernate.connection.password masterkey\par
+\par
+## DO NOT specify hibernate.connection.sqlDialect\par
+\par
+## InterClient\par
+\par
+#hibernate.connection.driver_class interbase.interclient.Driver\par
+#hibernate.connection.url jdbc:interbase://localhost:3060/C:/firebird/test.gdb\par
+\par
+## Pure Java\par
+\par
+#hibernate.connection.driver_class org.firebirdsql.jdbc.FBDriver\par
+#hibernate.connection.url jdbc:firebirdsql:localhost/3050:/firebird/test.gdb\par
+\par
+\par
+## Pointbase\par
+\par
+#hibernate.dialect org.hibernate.dialect.PointbaseDialect\par
+#hibernate.connection.driver_class com.pointbase.jdbc.jdbcUniversalDriver\par
+#hibernate.connection.url jdbc:pointbase:embedded:sample\par
+#hibernate.connection.username PBPUBLIC\par
+#hibernate.connection.password PBPUBLIC\par
+\par
+\par
+## Ingres\par
+\par
+#hibernate.dialect org.hibernate.dialect.IngresDialect \par
+#hibernate.connection.driver_class ca.edbc.jdbc.EdbcDriver \par
+#hibernate.connection.url jdbc:edbc://localhost:II7/database \par
+#hibernate.connection.username user \par
+#hibernate.connection.password password\par
+\par
+\par
+## Mimer SQL\par
+\par
+#hibernate.dialect org.hibernate.dialect.MimerSQLDialect\par
+#hibernate.connection.driver_class com.mimer.jdbc.Driver\par
+#hibernate.connection.url jdbc:mimer:multi1\par
+#hibernate.connection.username hibernate\par
+#hibernate.connection.password hibernate\par
+\par
+\par
+\par
+#################################\par
+### Hibernate Connection Pool ###\par
+#################################\par
+\par
+hibernate.connection.pool_size 1\par
+\par
+\par
+\par
+###########################\par
+### C3P0 Connection Pool###\par
+###########################\par
+\par
+#hibernate.c3p0.max_size 2\par
+#hibernate.c3p0.min_size 2\par
+#hibernate.c3p0.timeout 5000\par
+#hibernate.c3p0.max_statements 100\par
+#hibernate.c3p0.idle_test_period 3000\par
+#hibernate.c3p0.acquire_increment 2\par
+#hibernate.c3p0.validate false\par
+\par
+\par
+\par
+##############################\par
+### Proxool Connection Pool###\par
+##############################\par
+\par
+## Properties for external configuration of Proxool\par
+\par
+hibernate.proxool.pool_alias pool1\par
+\par
+## Only need one of the following\par
+\par
+#hibernate.proxool.existing_pool true\par
+#hibernate.proxool.xml proxool.xml\par
+#hibernate.proxool.properties proxool.properties\par
+\par
+\par
+\par
+#################################\par
+### Plugin ConnectionProvider ###\par
+#################################\par
+\par
+## use a custom ConnectionProvider (if not set, Hibernate will choose a built-in ConnectionProvider using hueristics)\par
+\par
+#hibernate.connection.provider_class org.hibernate.connection.DriverManagerConnectionProvider\par
+#hibernate.connection.provider_class org.hibernate.connection.DatasourceConnectionProvider\par
+#hibernate.connection.provider_class org.hibernate.connection.C3P0ConnectionProvider\par
+#hibernate.connection.provider_class org.hibernate.connection.ProxoolConnectionProvider\par
+\par
+\par
+\par
+#######################\par
+### Transaction API ###\par
+#######################\par
+\par
+## Enable automatic flush during the JTA beforeCompletion() callback\par
+## (This setting is relevant with or without the Transaction API)\par
+\par
+#hibernate.transaction.flush_before_completion\par
+\par
+\par
+## Enable automatic session close at the end of transaction\par
+## (This setting is relevant with or without the Transaction API)\par
+\par
+#hibernate.transaction.auto_close_session\par
+\par
+\par
+## the Transaction API abstracts application code from the underlying JTA or JDBC transactions\par
+\par
+#hibernate.transaction.factory_class org.hibernate.transaction.JTATransactionFactory\par
+#hibernate.transaction.factory_class org.hibernate.transaction.JDBCTransactionFactory\par
+\par
+\par
+## to use JTATransactionFactory, Hibernate must be able to locate the UserTransaction in JNDI\par
+## default is java:comp/UserTransaction\par
+## you do NOT need this setting if you specify hibernate.transaction.manager_lookup_class\par
+\par
+#jta.UserTransaction jta/usertransaction\par
+#jta.UserTransaction javax.transaction.UserTransaction\par
+#jta.UserTransaction UserTransaction\par
+\par
+\par
+## to use the second-level cache with JTA, Hibernate must be able to obtain the JTA TransactionManager\par
+\par
+#hibernate.transaction.manager_lookup_class org.hibernate.transaction.JBossTransactionManagerLookup\par
+#hibernate.transaction.manager_lookup_class org.hibernate.transaction.WeblogicTransactionManagerLookup\par
+#hibernate.transaction.manager_lookup_class org.hibernate.transaction.WebSphereTransactionManagerLookup\par
+#hibernate.transaction.manager_lookup_class org.hibernate.transaction.OrionTransactionManagerLookup\par
+#hibernate.transaction.manager_lookup_class org.hibernate.transaction.ResinTransactionManagerLookup\par
+\par
+\par
+\par
+##############################\par
+### Miscellaneous Settings ###\par
+##############################\par
+\par
+## print all generated SQL to the console\par
+\par
+#hibernate.show_sql true\par
+\par
+\par
+## format SQL in log and console\par
+\par
+hibernate.format_sql true\par
+\par
+\par
+## add comments to the generated SQL\par
+\par
+#hibernate.use_sql_comments true\par
+\par
+\par
+## generate statistics\par
+\par
+#hibernate.generate_statistics true\par
+\par
+\par
+## auto schema export\par
+\par
+#hibernate.hbm2ddl.auto create-drop\par
+#hibernate.hbm2ddl.auto create\par
+#hibernate.hbm2ddl.auto update\par
+#hibernate.hbm2ddl.auto validate\par
+\par
+\par
+## specify a default schema and catalog for unqualified tablenames\par
+\par
+#hibernate.default_schema test\par
+#hibernate.default_catalog test\par
+\par
+\par
+## enable ordering of SQL UPDATEs by primary key\par
+\par
+#hibernate.order_updates true\par
+\par
+\par
+## set the maximum depth of the outer join fetch tree\par
+\par
+hibernate.max_fetch_depth 1\par
+\par
+\par
+## set the default batch size for batch fetching\par
+\par
+#hibernate.default_batch_fetch_size 8\par
+\par
+\par
+## rollback generated identifier values of deleted entities to default values\par
+\par
+#hibernate.use_identifer_rollback true\par
+\par
+\par
+## enable CGLIB reflection optimizer (enabled by default)\par
+\par
+#hibernate.cglib.use_reflection_optimizer false\par
+\par
+\par
+\par
+#####################\par
+### JDBC Settings ###\par
+#####################\par
+\par
+## specify a JDBC isolation level\par
+\par
+#hibernate.connection.isolation 4\par
+\par
+\par
+## enable JDBC autocommit (not recommended!)\par
+\par
+#hibernate.connection.autocommit true\par
+\par
+\par
+## set the JDBC fetch size\par
+\par
+#hibernate.jdbc.fetch_size 25\par
+\par
+\par
+## set the maximum JDBC 2 batch size (a nonzero value enables batching)\par
+\par
+#hibernate.jdbc.batch_size 5\par
+#hibernate.jdbc.batch_size 0\par
+\par
+\par
+## enable batch updates even for versioned data\par
+\par
+hibernate.jdbc.batch_versioned_data true\par
+\par
+\par
+## enable use of JDBC 2 scrollable ResultSets (specifying a Dialect will cause Hibernate to use a sensible default)\par
+\par
+#hibernate.jdbc.use_scrollable_resultset true\par
+\par
+\par
+## use streams when writing binary types to / from JDBC\par
+\par
+hibernate.jdbc.use_streams_for_binary true\par
+\par
+\par
+## use JDBC 3 PreparedStatement.getGeneratedKeys() to get the identifier of an inserted row\par
+\par
+#hibernate.jdbc.use_get_generated_keys false\par
+\par
+\par
+## choose a custom JDBC batcher\par
+\par
+# hibernate.jdbc.factory_class\par
+\par
+\par
+## enable JDBC result set column alias caching \par
+## (minor performance enhancement for broken JDBC drivers)\par
+\par
+# hibernate.jdbc.wrap_result_sets\par
+\par
+\par
+## choose a custom SQL exception converter\par
+\par
+#hibernate.jdbc.sql_exception_converter\par
+\par
+\par
+\par
+##########################\par
+### Second-level Cache ###\par
+##########################\par
+\par
+## optimize chache for minimal "puts" instead of minimal "gets" (good for clustered cache)\par
+\par
+#hibernate.cache.use_minimal_puts true\par
+\par
+\par
+## set a prefix for cache region names\par
+\par
+hibernate.cache.region_prefix hibernate.test\par
+\par
+\par
+## disable the second-level cache\par
+\par
+#hibernate.cache.use_second_level_cache false\par
+\par
+\par
+## enable the query cache\par
+\par
+#hibernate.cache.use_query_cache true\par
+\par
+\par
+## store the second-level cache entries in a more human-friendly format\par
+\par
+#hibernate.cache.use_structured_entries true\par
+\par
+\par
+## choose a cache implementation\par
+\par
+#hibernate.cache.provider_class org.hibernate.cache.EhCacheProvider\par
+#hibernate.cache.provider_class org.hibernate.cache.EmptyCacheProvider\par
+hibernate.cache.provider_class org.hibernate.cache.HashtableCacheProvider\par
+#hibernate.cache.provider_class org.hibernate.cache.TreeCacheProvider\par
+#hibernate.cache.provider_class org.hibernate.cache.OSCacheProvider\par
+#hibernate.cache.provider_class org.hibernate.cache.SwarmCacheProvider\par
+\par
+\par
+## choose a custom query cache implementation\par
+\par
+#hibernate.cache.query_cache_factory\par
+\par
+\par
+\par
+############\par
+### JNDI ###\par
+############\par
+\par
+## specify a JNDI name for the SessionFactory\par
+\par
+#hibernate.session_factory_name hibernate/session_factory\par
+## Hibernate uses JNDI to bind a name to a SessionFactory and to look up the JTA UserTransaction;\par
+## if hibernate.jndi.* are not specified, Hibernate will use the default InitialContext() which\par
+## is the best approach in an application server\par
+\par
+#file system\par
+#hibernate.jndi.class com.sun.jndi.fscontext.RefFSContextFactory\par
+#hibernate.jndi.url file:/\par
+\par
+#WebSphere\par
+#hibernate.jndi.class com.ibm.websphere.naming.WsnInitialContextFactory\par
+#hibernate.jndi.url iiop://localhost:900/\par
+}
+ 
