@@ -3,8 +3,7 @@ package com.codyy.ppmeet
     import flash.media.*;
     import flash.net.*;
 
-    public class Constans extends Object
-    {
+    public class Constans extends Object {
         public static var RTMFP_SERVER:String = "rtmfp://stratus.adobe.com/";
         public static var RTMFP_DEVKEY:String = "c50af1426e2afbd7d1147903-e331e5f149d2";
         public static var RTMP_SERVER:String = "rtmp://rtmp.codyy.net/oflaDemo";
@@ -34,28 +33,23 @@ package com.codyy.ppmeet
         public static var IS_AEC:Number = 0;
         public static var GROUP_ID:String = "";
 
-        public function Constans()
-        {
+        public function Constans() {
             return;
         }// end function
 
-        public static function pushConnection(param1:NetConnection)
-        {
+        public static function pushConnection(param1:NetConnection) {
             CONNECTIONS.push(param1);
             return;
         }// end function
 
-        public static function pushNetStream(param1:NetStream)
-        {
+        public static function pushNetStream(param1:NetStream) {
             NET_STREAMS.push(param1);
             return;
         }// end function
 
-        public static function setMic(param1:Microphone)
-        {
+        public static function setMic(param1:Microphone) {
             PUBLIC_MIC = param1;
             return;
         }// end function
-
     }
 }

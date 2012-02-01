@@ -8,8 +8,7 @@ package com.codyy.ppmeet.p2p
     import flash.net.*;
     import flash.utils.*;
 
-    public class P2pSmallVideo extends Sprite
-    {
+    public class P2pSmallVideo extends Sprite {
         private var sv:SpeakerVideo = null;
         private var minVideo:Video = null;
         private var Num:Number;
@@ -26,15 +25,13 @@ package com.codyy.ppmeet.p2p
         private var maxBandWidth:int = 512;
         private var videoSize:int = 100;
 
-        public function P2pSmallVideo(param1:SpeakerVideo)
-        {
+        public function P2pSmallVideo(param1:SpeakerVideo) {
             this.sv = param1;
             this.minVideo = param1.PublishMc.showAndPublish_Video;
             return;
         }// end function
 
-        public function init(param1:Number = 1)
-        {
+        public function init(param1:Number = 1) {
             this.sv.pauseMC.visible = false;
             this.minVideo.smoothing = true;
             this.sv.PublishMc.addEventListener(MouseEvent.MOUSE_DOWN, this.onMousedown);
@@ -44,18 +41,14 @@ package com.codyy.ppmeet.p2p
             return;
         }// end function
 
-        private function initRTMFP()
-        {
-            if (this._netConnection)
-            {
+        private function initRTMFP() {
+            if (this._netConnection) {
                 this._netConnection.close();
                 this._netConnection = null;
             }
             this._netConnection = new NetConnection();
-            if (this.sv.getParam("maxPeer"))
-            {
+            if (this.sv.getParam("maxPeer")) {
                 this._netConnection.maxPeerConnections = parseInt(this.sv.getParam("maxPeer"));
-                ;
             }
             this._netConnection.objectEncoding = ObjectEncoding.AMF0;
             this._netConnection.addEventListener(NetStatusEvent.NET_STATUS, this.onNetStatus);
@@ -65,12 +58,9 @@ package com.codyy.ppmeet.p2p
             return;
         }// end function
 
-        private function onNetStatus(event:NetStatusEvent) : void
-        {
-            switch(event.info.code)
-            {
-                case "NetConnection.Connect.Success":
-                {
+        private function onNetStatus(event:NetStatusEvent):void {
+            switch(event.info.code) {
+                case "NetConnection.Connect.Success": {
                     WebHelp.nd("��ʼ��������Ƶ�ɹ���");
                     WebUtil.sendMsg({act:"sys", say:"��ȡ��ݱ�ʶ�ųɹ���"});
                     this._createGroupSpec();
@@ -80,78 +70,55 @@ package com.codyy.ppmeet.p2p
                 case "NetConnection.Connect.Failed":
                 case "NetConnection.Connect.Rejected":
                 case "NetConnection.Connect.AppShutdown":
-                case "NetConnection.Connect.InvalidApp":
-                {
-                    if (Constans.IS_CLOSE)
-                    {
+                case "NetConnection.Connect.InvalidApp": {
+                    if (Constans.IS_CLOSE) {
                         return;
                     }
                     WebHelp.nd("������Ƶl��ʧ�ܣ�ʹ��NetGroupl�ӣ�");
                     WebUtil.sendMsg({act:"sys", say:"l�ӷ�����ʧ�ܣ�" + event.info.code});
-                    if (this._netGroup)
-                    {
+                    if (this._netGroup) {
                         this.clearNetGroup();
                     }
                     this._outgoingStream = null;
                     break;
                 }
-                case "NetStream.Connect.Success":
-                {
+                case "NetStream.Connect.Success": {
                     WebHelp.nd("������ƵNetStream�ɹ�");
-                    if (this.Num == 1)
-                    {
+                    if (this.Num == 1) {
                         this.clearVideo();
-                    }
-                    else
-                    {
+                    } else {
                         this.publishVideo();
                     }
                     break;
                 }
                 case "NetStream.Connect.Rejected":
-                case "NetStream.Connect.Failed":
-                {
+                case "NetStream.Connect.Failed": {
                     WebHelp.nd("������ƵNetStreamʧ��");
                     break;
                 }
                 case "NetStream.Publish.Start":
-                {
                     break;
-                }
                 case "NetStream.MulticastStream.Reset":
                 case "NetStream.Buffer.Full":
-                {
-                }
                 default:
-                {
                     break;
-                }
-                case "NetGroup.Connect.Rejected":
-                {
+                case "NetGroup.Connect.Rejected": {
                     WebHelp.nd("������ƵNetGroup�ɹ�");
                     WebUtil.sendMsg({act:"sys", say:"���Ѽ��������" + this.getKey()});
                     this._estimatedP2PMembers = this._netGroup.estimatedMemberCount;
-                    if (this.Num == 1)
-                    {
+                    if (this.Num == 1) {
                         this.clearVideo();
-                    }
-                    else
-                    {
+                    } else {
                         this.onStartOutgoingStream();
                     }
                     break;
                 }
                 case "NetGroup.Connect.Failed":
-                case :
-                {
+                case : {
                     WebHelp.nd("������ƵNetGroupʧ��");
-                    try
-                    {
+                    try {
                         WebUtil.sendMsg({type:"group", act:"speakerNetGroupDown", from:"sys", to:"sys", say:"", data:new Date().getTime()});
-                    }
-                    catch (e)
-                    {
-                    }
+                    } catch (e) {}
                     this.clearNetGroup();
                     break;
                     break;
@@ -160,35 +127,28 @@ package com.codyy.ppmeet.p2p
             return;
         }// end function
 
-        private function onStartOutgoingStream() : void
-        {
-            try
-            {
+        private function onStartOutgoingStream():void {
+            try {
                 this.clearVideo();
+                // 实例化输出流
                 this._outgoingStream = new NetStream(this._netConnection, this._groupSpec);
                 this._outgoingStream.addEventListener(NetStatusEvent.NET_STATUS, this.onNetStatus);
                 this._outgoingStream.client = this;
                 Constans.pushNetStream(this._outgoingStream);
-            }
-            catch (e)
-            {
+            } catch (e) {
                 WebUtil.info("_outgoingStream=" + e.message);
             }
             return;
         }// end function
 
-        private function _createGroupSpec() : void
-        {
+        private function _createGroupSpec():void {
             this._groupSpecifier = new GroupSpecifier("%E9%98%94%E5%9C%B0" + this.sv.getParam("meetId"));
             this._groupSpecifier.postingEnabled = true;
             this._groupSpecifier.multicastEnabled = true;
-            if (this.sv.getParam("intranet"))
-            {
+            if (this.sv.getParam("intranet")) {
                 this._groupSpecifier.ipMulticastMemberUpdatesEnabled = true;
                 this._groupSpecifier.addIPMulticastAddress("224.0.1.200:3000");
-            }
-            else
-            {
+            } else {
                 this._groupSpecifier.serverChannelEnabled = true;
             }
             this._groupSpec = this._groupSpecifier.groupspecWithoutAuthorizations();
@@ -196,54 +156,49 @@ package com.codyy.ppmeet.p2p
             return;
         }// end function
 
-        private function onJoinNetGroup() : void
-        {
+        private function onJoinNetGroup():void {
             this._netGroup = new NetGroup(this._netConnection, this._groupSpec);
             return;
         }// end function
 
-        private function onMousedown(event:MouseEvent) : void
-        {
+        private function onMousedown(event:MouseEvent):void {
             Constans.MIX_VIDEO = true;
             this.sv.PublishMc.startDrag(false);
             return;
         }// end function
 
-        private function onMouseup(event:MouseEvent) : void
-        {
+        private function onMouseup(event:MouseEvent):void {
             Constans.MIX_VIDEO = false;
             this.sv.PublishMc.stopDrag();
             return;
         }// end function
 
-        private function publishVideo()
-        {
-            try
-            {
+        private function publishVideo() {
+            try {
                 WebHelp.nd("���˷�����Ƶ��" + this.getKey() + "_video");
+                // 获取摄像头
                 this.camera = this.getCam();
                 this.minVideo.attachCamera(null);
                 this.minVideo.attachCamera(this.camera);
                 // 设置输出流
                 this._outgoingStream = WebUtil.setCamH264Setting(this._outgoingStream);
+                // 输出视频流
                 this._outgoingStream.attachCamera(this.camera);
                 WebUtil.info("����С��Ƶ1��" + this.getKey());
                 this._outgoingStream.publish(this.getKey(), "live");
-                this._outgoingStream.addEventListener(NetStatusEvent.NET_STATUS, function (event:NetStatusEvent)
-            {
-                WebUtil.info("pub : " + event.info.code);
-                return;
-            }// end function
-            );
-            }
-            catch (e)
-            {
+                this._outgoingStream.addEventListener(NetStatusEvent.NET_STATUS, function (event:NetStatusEvent) {
+	                WebUtil.info("pub:" + event.info.code);
+	                return;
+	            }// end function
+            	);
+            } catch (e) {
                 WebUtil.info("publishVideo:" + e.message);
             }
             return;
         }// end function
 
-        private function getCam() : Camera {
+        private function getCam():Camera {
+        	// 获取/初始化视频对象，并设置关键贴.
             this.camera = WebHelp.getCam(this.camera);
             WebHelp.info("cam:" + Constans.IS_CAMERA_CHECK);
             if (!Constans.IS_CAMERA_CHECK) {
@@ -256,63 +211,46 @@ package com.codyy.ppmeet.p2p
                 return this.camera;
             }
             this.camera.setQuality((parseFloat(this.sv.getParam("limitBandWidth")) || this.maxBandWidth) * 1024, Math.floor(parseFloat(this.sv.getParam("lQuality")) || 85));
-            this.videoSize = this.sv.getParam("lSize") ? (parseInt(this.sv.getParam("lSize"))) : (this.videoSize);
+            this.videoSize = this.sv.getParam("lSize") ? (parseInt(this.sv.getParam("lSize"))):(this.videoSize);
             this.camera.setMode(this.videoSize, this.videoSize * this.sv.videoShow.height / this.sv.videoShow.width, Math.floor(parseFloat(this.sv.getParam("frames")) || 12));
             return this.camera;
         }// end function
 
-        private function checkCamBusy() : void
-        {
+        private function checkCamBusy():void {
             var intelvalTimes:*;
             var afun:*;
-            WebUtil.info("camera length : " + Camera.names.length);
-            if (Camera.names.length)
-            {
+            WebUtil.info("camera length:" + Camera.names.length);
+            if (Camera.names.length) {
                 intelvalTimes;
-                this.intervalId = setInterval(function ()
-            {
-                var _loc_2:* = intelvalTimes + 1;
-                intelvalTimes = _loc_2;
-                WebUtil.info("camera FPS : " + intelvalTimes + "---" + camera.currentFPS);
-                if (camera.currentFPS < 1)
-                {
-                    if (intelvalTimes >= 80)
-                    {
-                        if (camera.name.indexOf("17") > -1)
-                        {
-                            WebHelp.callJS("flashAV", "visual_camera");
-                        }
-                        else
-                        {
-                            WebHelp.callJS("flashAV", "camera_busy");
-                        }
-                        clearInterval(intervalId);
-                    }
-                }
-                else
-                {
-                    WebHelp.callJS("flashAV", "");
-                    clearInterval(intervalId);
-                }
-                return;
-            }// end function
-            , 100);
-            }
-            else
-            {
+                this.intervalId = setInterval(function () {
+	                var _loc_2:* = intelvalTimes + 1;
+	                intelvalTimes = _loc_2;
+	                WebUtil.info("camera FPS:" + intelvalTimes + "---" + camera.currentFPS);
+	                if (camera.currentFPS < 1) {
+	                    if (intelvalTimes >= 80) {
+	                        if (camera.name.indexOf("17") > -1)
+	                            WebHelp.callJS("flashAV", "visual_camera");
+	                        else
+	                            WebHelp.callJS("flashAV", "camera_busy");
+	                        clearInterval(intervalId);
+	                    }
+	                } else {
+	                    WebHelp.callJS("flashAV", "");
+	                    clearInterval(intervalId);
+	                }
+	                return;
+	            }// end function
+            	, 100);
+            } else
                 WebHelp.callJS("flashAV", "");
-            }
             return;
         }// end function
 
-        private function clearVideo()
-        {
-            try
-            {
+        private function clearVideo() {
+            try {
                 this.minVideo.attachCamera(null);
                 this.minVideo.clear();
-                if (this._outgoingStream)
-                {
+                if (this._outgoingStream) {
                     this._outgoingStream.attachCamera(null);
                     this._outgoingStream.attachAudio(null);
                     this._outgoingStream.receiveAudio(false);
@@ -320,25 +258,20 @@ package com.codyy.ppmeet.p2p
                     this._outgoingStream.close();
                     this._outgoingStream = null;
                 }
-            }
-            catch (e)
-            {
+            } catch (e) {
                 WebUtil.info("clearVideo��" + e.message);
             }
             return;
         }// end function
 
-        private function clearNetGroup() : void
-        {
+        private function clearNetGroup():void {
             this._netGroup.close();
             this._netGroup = null;
             return;
         }// end function
 
-        private function getKey() : String
-        {
+        private function getKey():String {
             return Constans.E_CODE + "meet_" + this.sv.getParam("meetId") + "_" + this.sv.getParam("myid") + "_video";
         }// end function
-
     }
 }
