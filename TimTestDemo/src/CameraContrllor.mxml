@@ -31,7 +31,7 @@
 		private var audioInd1:Indicator;
 		private var mic:Microphone;
 		private var uc:UIComponent= new UIComponent(); 
-		[Bindable] private var camera:Camera; 
+		[Bindable] private var camera:Camera;
 		[Bindable]private var myId:String;
 		//视频关闭按钮标识 0 发送视频 ，1 停止视频
 		[Bindable]private var flag:Number=0;
@@ -75,6 +75,8 @@
 		 */
 		private function initAudio():void {
 			mic= Microphone.getMicrophone();
+		 	mic.addEventListener(ActivityEvent.ACTIVITY, activity);
+
 			audioInd=new Indicator(70,7,0x000000,0xffffff); 
 			audioInd.Current = 0.05 + mic.activityLevel/100; 
 			uc.addChild(audioInd); 
@@ -87,8 +89,7 @@
 			uc1.addChild(audioInd1); 
 		 	uc1.x=35;
 		 	uc1.y=13;	
-		 	speakerVolumeSlider.addChildAt(uc1,0); 	 
-		 	mic.addEventListener(ActivityEvent.ACTIVITY, activity);	
+		 	speakerVolumeSlider.addChildAt(uc1,0);	
 		}
 		private function init():void {
 			if (userName.text == "") {
@@ -300,15 +301,13 @@
 			camera=Camera.getCamera();
 			if (camera) {
 				outgoingStream.attachCamera(camera);
-				// 画质优先
-				camera.setQuality(0, 100);
 				// 设置关键帧
 				camera.setKeyFrameInterval(15);
 				// 设置拍摄模式
-				camera.setMode(200, 150, 10);
-				videoWidth.text = "200";
-				videoHeight.text = "150";
-				videoFPS.text = "10";
+				camera.setMode(120, 100, 12);
+				videoWidth.text = "120";
+				videoHeight.text = "100";
+				videoFPS.text = "12";
 			}
 			localVideo = new Video();
 			localVideo.width = 125;
@@ -323,7 +322,39 @@
 		private function publishAudio():void {
 			var mics:Array = Microphone.names;
 			if (mics && mics.length>0) {
-				outgoingStream.attachAudio(Microphone.getMicrophone(0))
+				var micPhone:Microphone= Microphone.getMicrophone();
+				
+				micPhone.setLoopBack(false);
+				// 麦克风捕获声音的频率
+				micPhone.rate = 44;
+				// 麦克风增益
+				micPhone.gain=60;
+				// 设置噪音衰减分贝数，可选值：-30~0(不衰减)
+				micPhone.noiseSuppressionLevel = -10;
+				// 设置可认定为有声的最低音量输入水平，可选值0~100
+            	// 以及实际静音前需经历的无声时间长度(毫秒)
+				micPhone.setSilenceLevel(1, 1000);
+				micPhone.setUseEchoSuppression(true);
+
+				/**micPhone.setUseEchoSuppression(true);
+				//使用Speex编码，无需指定取样速率
+				micPhone.codec = SoundCodec.SPEEX;
+				micPhone.setLoopBack(false);
+				micPhone.noiseSuppressionLevel=-30
+				
+				var options:MicrophoneEnhancedOptions = new MicrophoneEnhancedOptions();
+				//模式，默认使用全双工模式
+				options.mode = MicrophoneEnhancedMode.FULL_DUPLEX;
+				//是否启用自动增益控制
+				options.autoGain = false;
+				//回声路径,值越大，回声抑制效果越好，但声音的延迟会越大，消耗的资源会越多，值取128或256
+				options.echoPath = 128;
+				//非线性处理，处理乐音时最好关闭
+				options.nonLinearProcessing = true;
+				micPhone.enhancedOptions=options*/
+
+				outgoingStream.attachAudio(micPhone)
+
 			}
 		}
 		//显示文本控制按钮
