@@ -44,52 +44,55 @@
 	 	[Bindable]private var credits:Number=0;
 
 		public function returnUserName():void {
-			//var ss:String=ExternalInterface.call("returnTheName");
-			var ss:String="12;154;123;12123;234";
+			// 初始化麦克风设置
+			initAudio();
+			getuser.url = ClassRoomConstant.SERVER_URL + "/CG/chat.do?p=updateUserCredits";
+			var ss:String=ExternalInterface.call("returnTheName");
+			//var ss:String="12;154;123;12123;234";
 			var ss1:Array=ss.split(";");
 			userName.text=ss1[0]; 
 			if (ss1[3] != null) {
 				// 教师权限
 				// 设置被呼叫者ID
-				//peerId.text=ss1[1];
+				peerId.text=ss1[1];
 				// 设置教师扣费基数
 				roomFee=ss1[2];
 				// 设置自身ID
-				//myId=ss1[3];
+				myId=ss1[3];
 				// 点数余额
 				credits=ss1[4];
 				loginState=0;
 			} else {// 学生权限
 				loginState=1;
 				fee.visible=false;
-				//myId=ss1[1];
+				myId=ss1[1];
 				credits=ss1[2];
 			}
 			init();
 			feeArea.text=credits.toString();
 			changeCredits();
-			this.addEventListener(FlexEvent.CREATION_COMPLETE, initAudio);
 		}
 		/**
 		 * 初始化麦克风设置.
 		 */
 		private function initAudio():void {
 			mic= Microphone.getMicrophone();
-		 	mic.addEventListener(ActivityEvent.ACTIVITY, activity);
 
-			audioInd=new Indicator(70,7,0x000000,0xffffff); 
-			audioInd.Current = 0.05 + mic.activityLevel/100; 
-			uc.addChild(audioInd); 
+			audioInd=new Indicator(70,7,0x000000,0xffffff);
+			audioInd.Current = 0.05 + mic.activityLevel/100;
+			uc.addChild(audioInd);
 		 	uc.x=35;
-		 	uc.y=13;	
+		 	uc.y=13;
 		 	micVolumeSlider.addChildAt(uc,0);
 		 	audioInd1=new Indicator(70,7,0x000000,0xffffff);
-		 	audioInd1.Current = 0.05 + speakerVolumeSlider.value; 
+		 	audioInd1.Current = 0.05 + speakerVolumeSlider.value;
 		 	var uc1:UIComponent=new UIComponent();
-			uc1.addChild(audioInd1); 
+			uc1.addChild(audioInd1);
 		 	uc1.x=35;
-		 	uc1.y=13;	
-		 	speakerVolumeSlider.addChildAt(uc1,0);	
+		 	uc1.y=13;
+		 	speakerVolumeSlider.addChildAt(uc1,0);
+		 	// 下面这句居然没用
+		 	mic.addEventListener(ActivityEvent.ACTIVITY, activity);
 		}
 		private function init():void {
 			if (userName.text == "") {
@@ -104,10 +107,10 @@
 		private function netConnectionHandler(e:NetStatusEvent):void {
 			switch (e.info.code) {
 				case "NetConnection.Connect.Success":
-					info.text = "你好 "+userName.text+", 你已链接上Stratus服务器\n\n"
-					info.text += "你的PeerId是:\n"+netConnection.nearID+"\n对方可以用这个ID呼叫你\n\n" 
-					//ExternalInterface.call("returnNearID",netConnection.nearID); 
-					//ExternalInterface.call("initCall");
+					//info.text = "你好 "+userName.text+", 你已链接上Stratus服务器\n\n"
+					//info.text += "你的PeerId是:\n"+netConnection.nearID+"\n对方可以用这个ID呼叫你\n\n" 
+					ExternalInterface.call("returnNearID",netConnection.nearID); 
+					ExternalInterface.call("initCall");
 					initSendStream();
 					info.addEventListener(FlexEvent.UPDATE_COMPLETE,handleMessage);
 					message.textArea.addEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
@@ -154,7 +157,7 @@
 					var time:String = new Date().toLocaleTimeString();
 					var date:String = dateFormatter.format(new Date());
 					info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>"; 
-					//ExternalInterface.call("focusOn");
+					ExternalInterface.call("focusOn");
 				}
 				//监听onIncomingCall事件，用于确定链接成功
 				i.onIncomingCall = function(name:String):void {
@@ -193,13 +196,16 @@
 				return true;
 			}
 			myStream.client = o; 
-			/*if (peerId.text != '') {
+			if (peerId.text != '') {
 				call();
-			}*/
+			}
 		}
+		/**
+		 * 用户充值.
+		 */
 		private function charge(event:CloseEvent):void {
 			if (event.detail==Alert.YES) {
-				//ExternalInterface.call("charge");
+				ExternalInterface.call("charge");
 			}
 		}	
 		private function netStreamHandler(e:NetStatusEvent):void {
@@ -234,7 +240,7 @@
 				var time:String = new Date().toLocaleTimeString();
 				var date:String = dateFormatter.format(new Date());
 				info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>";
-				//ExternalInterface.call("focusOn");
+				ExternalInterface.call("focusOn");
 			}
 			//监听onConnectSuccess事件，确定链接成功
 			i.onConnectSuccess = function(name:String,userid:String):void {
@@ -284,7 +290,7 @@
 		//用outgoingStream对外发布信息流
 		private function send():Boolean {
 			if (message.text=="") {
-				//ExternalInterface.call("showMsg");
+				ExternalInterface.call("showMsg");
 				return false;
 			} else {
 				var dateFormatter:DateFormatter = new DateFormatter();
@@ -305,9 +311,9 @@
 				camera.setKeyFrameInterval(15);
 				// 设置拍摄模式
 				camera.setMode(120, 100, 12);
-				videoWidth.text = "120";
+				/**videoWidth.text = "120";
 				videoHeight.text = "100";
-				videoFPS.text = "12";
+				videoFPS.text = "12";*/
 			}
 			localVideo = new Video();
 			localVideo.width = 125;
@@ -356,6 +362,7 @@
 				options.nonLinearProcessing = true;
 				micPhone.enhancedOptions=options*/
 
+				micPhone.addEventListener(ActivityEvent.ACTIVITY, activity);
 				outgoingStream.attachAudio(micPhone)
 			}
 		}
@@ -423,7 +430,7 @@
 			var earning:Number=(_minutes+_hours*60)*(roomFee-forChinesegreatFee);
 			student[0].totalEarn =earning.toString()+'(credits)';
 			if (_seconds==0) {
-				//getuser.send();
+				getuser.send();
 			}
 			return ((_hours<10)?"0"+_hours:_hours)+":"+((_minutes<10)?"0"+_minutes:_minutes)+":"+((_seconds<10)?"0"+_seconds:_seconds);
 		}
@@ -454,14 +461,14 @@
 			audioInd.Current = 0.05 + mic.activityLevel/100;
 		}
 	 	private function closeMessage():void {
-			//ExternalInterface.call("closeMessage");
+			ExternalInterface.call("closeMessage");
 		}
 		// 说话音量调节
 		private function speakerVolumeChanged(e:SliderEvent):void {
 			if (incomingStream) {
 				var st:SoundTransform = new SoundTransform(e.value);
 				incomingStream.soundTransform = st;
-				audioInd1.Current = 0.05 + e.value;
+				//audioInd1.Current = 0.05 + e.value;
 			}
 		}
 		// 耳麦音量调节
@@ -515,16 +522,16 @@
 			}
 		}
 		private function showResult():void {	 
-			//var returnValue:String=getuser.lastResult.user;
-			//var temp:Array=returnValue.split(";"); 		 
-			//feeArea.text=temp[0];
-			//credits=Number(temp[0]); 
+			var returnValue:String=getuser.lastResult.user;
+			var temp:Array=returnValue.split(";"); 		 
+			feeArea.text=temp[0];
+			credits=Number(temp[0]); 
 			changeCredits(); 
-			//outgoingStream.send("updateCredits",temp[1]);	 
+			outgoingStream.send("updateCredits",temp[1]);	 
  		} 
 	 	private function showFault():void { 
 			Alert.show("调用错误！");
-			//getuser.send();	 	 
+			getuser.send();	 	 
 	 	} 
  		[Bindable] public var cards:Array = new Array(
 			{label:"USD",data:1000},
@@ -561,21 +568,21 @@
 				outgoingStream.attachCamera(camera);
 			}	
 		}
-		private function changeCameraOption():void {
+		/**private function changeCameraOption():void {
 			outgoingStream.attachCamera(null);
 			camera.setMode(videoWidth.text as int, videoHeight.text as int, videoFPS.text as int);
 			outgoingStream.attachCamera(camera);
 			videoStatus.text = "当前模式为：" + videoWidth.text + "*" + videoHeight.text + " " + videoFPS.text;
-		}
+		}*/
 	]]>
 </mx:Script>
-<!--<mx:HTTPService showBusyCursor="false" useProxy="false" method="POST" id="getuser" result="showResult();" fault="showFault();" url="http://192.168.1.105/CG/chat.do?p=updateUserCredits">
+<mx:HTTPService showBusyCursor="false" useProxy="false" method="POST" id="getuser" result="showResult();" fault="showFault();" url="/CG/chat.do?p=updateUserCredits">
 	<mx:request>
 		<userid>{userId}</userid>
 		<myid>{myId}</myid>
 		<fee>{roomFee}</fee> 
 	</mx:request>
-</mx:HTTPService>-->
+</mx:HTTPService>
 
 <mx:Panel borderStyle="none" layout="vertical" width="430" height="700" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#f2f2f2" paddingTop="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial" themeColor="#F7FAFF">
 	<mx:HBox id="videoArea">
@@ -632,7 +639,7 @@
 		</mx:ViewStack>
 	</mx:VBox>
 
-	<mx:VBox>
+	<!--<mx:VBox>
 		<mx:HBox width="400">
 			<mx:Label text="Name"/><mx:TextInput id="userName" width="100"/>
 			<mx:Label text="PeerID"/><mx:TextInput id="peerId" width="100"/>
@@ -653,9 +660,9 @@
 			<mx:Label text="帧数"/><mx:TextInput id="videoFPS" width="30"/>
 			<mx:Button label="应用" click="changeCameraOption()"/>
 		</mx:HBox>
-	</mx:VBox>
+	</mx:VBox>-->
 
-	<!--<mx:TextInput width="200" id="userName" visible="false" height="0"/>-->
-	<!--<mx:TextInput id="peerId" width="200" visible="false" height="0"/>-->
+	<mx:TextInput width="200" id="userName" visible="false" height="0"/>
+	<mx:TextInput id="peerId" width="200" visible="false" height="0"/>
 </mx:Panel>
 </mx:Application>
