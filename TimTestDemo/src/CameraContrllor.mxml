@@ -323,17 +323,20 @@
 			var mics:Array = Microphone.names;
 			if (mics && mics.length>0) {
 				var micPhone:Microphone= Microphone.getMicrophone();
-				
+				//使用Speex编码，无需指定取样速率
+				micPhone.codec = SoundCodec.SPEEX;
+				// 设置不回放
 				micPhone.setLoopBack(false);
 				// 麦克风捕获声音的频率
 				micPhone.rate = 44;
 				// 麦克风增益
-				micPhone.gain=60;
+				micPhone.gain = 100;
 				// 设置噪音衰减分贝数，可选值：-30~0(不衰减)
-				micPhone.noiseSuppressionLevel = -10;
+				micPhone.noiseSuppressionLevel = -20;
 				// 设置可认定为有声的最低音量输入水平，可选值0~100
             	// 以及实际静音前需经历的无声时间长度(毫秒)
-				micPhone.setSilenceLevel(1, 1000);
+				micPhone.setSilenceLevel(40, 1000);
+				// 使用回声抑制功能
 				micPhone.setUseEchoSuppression(true);
 
 				/**micPhone.setUseEchoSuppression(true);
@@ -354,7 +357,6 @@
 				micPhone.enhancedOptions=options*/
 
 				outgoingStream.attachAudio(micPhone)
-
 			}
 		}
 		//显示文本控制按钮
