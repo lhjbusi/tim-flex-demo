@@ -2,6 +2,7 @@
 <mx:Application backgroundColor="#ffffff" borderStyle="none" width="430" height="700" layout="absolute" creationComplete="returnUserName()" xmlns:mx="http://www.adobe.com/2006/mxml">
 <mx:Script>
 	<![CDATA[
+		import com.util.fullscreen.FullScreenUtil;
 		import mx.controls.Alert;
 		import mx.rpc.*;
 		import mx.controls.*;
@@ -568,6 +569,16 @@
 				outgoingStream.attachCamera(camera);
 			}	
 		}
+		private function fullVideo():void {
+			if (FullScreenUtil.isFullScreen) {
+				// 退出全屏
+				FullScreenUtil.exitFullScreen();
+			} else {
+				FullScreenUtil.goFullScreen();
+				// 加入要全屏的对像．videoDisplay
+				FullScreenUtil.addChild(remoteVideoDisplay, true, true, true);
+			}
+		}
 		/**private function changeCameraOption():void {
 			outgoingStream.attachCamera(null);
 			camera.setMode(videoWidth.text as int, videoHeight.text as int, videoFPS.text as int);
@@ -586,7 +597,7 @@
 
 <mx:Panel borderStyle="none" layout="vertical" width="430" height="700" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#f2f2f2" paddingTop="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial" themeColor="#F7FAFF">
 	<mx:HBox id="videoArea">
-		<mx:VideoDisplay id="remoteVideoDisplay" backgroundSize="100%" backgroundImage="assert/1.jpg" borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" width="267" height="200"/>
+		<mx:VideoDisplay click="fullVideo();" id="remoteVideoDisplay" backgroundSize="100%" backgroundImage="assert/1.jpg" borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" width="267" height="200"/>
 		<mx:VBox>
 			<mx:VideoDisplay id="localVideoDisplay" backgroundSize="100%" backgroundImage="assert/1.jpg" borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" width="133" height="100"/>
 			<mx:Image source="@Embed('/assert/video.jpg')" useHandCursor="true" buttonMode="true" id="stopVideoButton" click="stopVideo(flag)" height="22"/> 

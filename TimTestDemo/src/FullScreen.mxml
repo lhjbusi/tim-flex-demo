@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+	<mx:Script>
+		<![CDATA[
+		import com.util.fullscreen.FullScreenUtil;
+		private function fullScreen():void{
+			if(FullScreenUtil.isFullScreen){
+				btnFullScreen.label = '全屏!';
+				FullScreenUtil.exitFullScreen();
+			} else {
+				btnFullScreen.label = '退出全屏!';
+				FullScreenUtil.goFullScreen();
+				
+				// 加入要全屏的对像．videoDisplay
+				FullScreenUtil.addChild(videoDisplay, true, true, true);
+				
+				// 将　btnFullScreen　放在全屏对像上．
+				FullScreenUtil.addChild(btnFullScreen, true, true, false, -1, -1, -1, 100);
+			}
+		}
+		]]>
+	</mx:Script>
+	<mx:TitleWindow x="113" y="62" width="337" height="263" layout="absolute" id="titleTest" title="单个控件全屏测试">
+		<mx:VideoDisplay x="0" y="53" height="160" width="317" id="videoDisplay"/>
+		<mx:Button x="134.5" y="98" label="全屏" id="btnFullScreen" click="fullScreen();" color="#F41131"/>
+	</mx:TitleWindow>
+</mx:Application>

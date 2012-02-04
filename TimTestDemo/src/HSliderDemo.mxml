@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application creationComplete="init();" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="400" height="300">
+	<mx:Script>
+		<![CDATA[
+			import mx.core.UIComponent;
+			import flash.text.engine.SpaceJustifier;
+			private var speakerInd:Indicator;
+			private var mic:Microphone;
+			private function init():void {
+				// 初始化麦克风
+				mic = Microphone.getMicrophone();
+				// 监听麦克风说话事件
+				mic.addEventListener(ActivityEvent.ACTIVITY, speakerHandler);
+				speakerInd = new Indicator(speakerSlider.width,7,0x000000,0xffAACC);
+				speakerInd.Current = 0.05 + mic.activityLevel/100;
+				
+				var ui:UIComponent = new UIComponent();
+				ui.x = speakerSlider.x;
+				ui.y = speakerSlider.y;
+				ui.addChild(speakerInd);
+				speakerSlider.addChild(ui);
+			}
+			private function speakerHandler(event:ActivityEvent):void {
+				speakerInd.Current = 0.05 + mic.activityLevel/100;
+			}
+		]]>
+	</mx:Script>
+	<mx:HSlider id="speakerSlider" x="107" y="90" minimum="0" maximum="100" width="150" height="20"/>
+</mx:Application>
