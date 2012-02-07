@@ -45,25 +45,17 @@
 	 	[Bindable]private var credits:Number=0;
 
 		public function returnUserName():void {
-			//var ss:String=ExternalInterface.call("returnTheName");
 			var ss:String="12;154;123;12123;234";
 			var ss1:Array=ss.split(";");
 			userName.text=ss1[0]; 
 			if (ss1[3] != null) {
-				// 教师权限
-				// 设置被呼叫者ID
-				//peerId.text=ss1[1];
-				// 设置教师扣费基数
 				roomFee=ss1[2];
-				// 设置自身ID
-				//myId=ss1[3];
 				// 点数余额
 				credits=ss1[4];
 				loginState=0;
 			} else {// 学生权限
 				loginState=1;
 				fee.visible=false;
-				//myId=ss1[1];
 				credits=ss1[2];
 			}
 			init();
@@ -94,21 +86,18 @@
 		}
 		private function init():void {
 			if (userName.text == "") {
-				Alert.show("请输入任意用户名","错误")
+				Alert.show("请输入任意用户名", "错误");
 				return
 			}
 			netConnection = new NetConnection();
 			netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
 			netConnection.connect(StratusAddress + "/" + DeveloperKey); //服务器地址里需要开发者Key
 		}
-	 
 		private function netConnectionHandler(e:NetStatusEvent):void {
 			switch (e.info.code) {
 				case "NetConnection.Connect.Success":
 					info.text = "你好 "+userName.text+", 你已链接上Stratus服务器\n\n"
 					info.text += "你的PeerId是:\n"+netConnection.nearID+"\n对方可以用这个ID呼叫你\n\n" 
-					//ExternalInterface.call("returnNearID",netConnection.nearID); 
-					//ExternalInterface.call("initCall");
 					initSendStream();
 					info.addEventListener(FlexEvent.UPDATE_COMPLETE,handleMessage);
 					message.textArea.addEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
@@ -155,7 +144,6 @@
 					var time:String = new Date().toLocaleTimeString();
 					var date:String = dateFormatter.format(new Date());
 					info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>"; 
-					//ExternalInterface.call("focusOn");
 				}
 				//监听onIncomingCall事件，用于确定链接成功
 				i.onIncomingCall = function(name:String):void {
@@ -194,14 +182,8 @@
 				return true;
 			}
 			myStream.client = o; 
-			/*if (peerId.text != '') {
-				call();
-			}*/
 		}
 		private function charge(event:CloseEvent):void {
-			if (event.detail==Alert.YES) {
-				//ExternalInterface.call("charge");
-			}
 		}	
 		private function netStreamHandler(e:NetStatusEvent):void {
 		}
@@ -235,7 +217,6 @@
 				var time:String = new Date().toLocaleTimeString();
 				var date:String = dateFormatter.format(new Date());
 				info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>";
-				//ExternalInterface.call("focusOn");
 			}
 			//监听onConnectSuccess事件，确定链接成功
 			i.onConnectSuccess = function(name:String,userid:String):void {
@@ -285,7 +266,6 @@
 		//用outgoingStream对外发布信息流
 		private function send():Boolean {
 			if (message.text=="") {
-				//ExternalInterface.call("showMsg");
 				return false;
 			} else {
 				var dateFormatter:DateFormatter = new DateFormatter();
@@ -381,7 +361,6 @@
 			message.underlineButton.width=24;
 			message.underlineButton.height=24;
 			message.addChildAt(message.toolbar,0);
-			// popup_font.addChild(message.toolbar);
 		}
 		private var startDate:Number = 0;//开始时间
 		private var _timer:Timer = new Timer(1000);
@@ -455,7 +434,6 @@
 			audioInd.Current = 0.05 + mic.activityLevel/100;
 		}
 	 	private function closeMessage():void {
-			//ExternalInterface.call("closeMessage");
 		}
 		// 说话音量调节
 		private function speakerVolumeChanged(e:SliderEvent):void {
@@ -507,7 +485,7 @@
 				evt.preventDefault();
 				callLater(function():void {
 					//sendMessage()即为发送消息的方法，它应该返回一个Boolean值，以此来决定是否清空消息框 
-					if( send()){
+					if(send()) {
 						message.text = "";
 						message.htmlText = "";
 						message.textArea.setSelection(0,0);		 
@@ -516,16 +494,10 @@
 			}
 		}
 		private function showResult():void {	 
-			//var returnValue:String=getuser.lastResult.user;
-			//var temp:Array=returnValue.split(";"); 		 
-			//feeArea.text=temp[0];
-			//credits=Number(temp[0]); 
 			changeCredits(); 
-			//outgoingStream.send("updateCredits",temp[1]);	 
  		} 
 	 	private function showFault():void { 
 			Alert.show("调用错误！");
-			//getuser.send();	 	 
 	 	} 
  		[Bindable] public var cards:Array = new Array(
 			{label:"USD",data:1000},
@@ -566,33 +538,30 @@
 			if (FullScreenUtil.isFullScreen) {
 				// 退出全屏
 				FullScreenUtil.exitFullScreen();
-				//remoteVideo.width = remoteVideoDisplay.width;
-				//remoteVideo.height = remoteVideoDisplay.height;
 			} else {
 				FullScreenUtil.goFullScreen();
 				// 加入要全屏的对像．videoDisplay
 				FullScreenUtil.addChild(remoteVideoDisplay, true, true, true);
-				//remoteVideo.width = remoteVideoDisplay.width;
-				//remoteVideo.height = remoteVideoDisplay.height;
+			}
+		}
+		/**
+		 * 重设远程Video尺寸.
+		 */
+		private function resizeRemoteVideo():void {
+			if (remoteVideo != null) {
+				remoteVideo.width = remoteVideoDisplay.width;
+				remoteVideo.height = remoteVideoDisplay.height;
 			}
 		}
 	]]>
 </mx:Script>
-<!--<mx:HTTPService showBusyCursor="false" useProxy="false" method="POST" id="getuser" result="showResult();" fault="showFault();" url="http://192.168.1.105/CG/chat.do?p=updateUserCredits">
-	<mx:request>
-		<userid>{userId}</userid>
-		<myid>{myId}</myid>
-		<fee>{roomFee}</fee> 
-	</mx:request>
-</mx:HTTPService>-->
 
 <mx:Panel borderStyle="none" layout="vertical" width="430" height="700" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#f2f2f2" paddingTop="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial" themeColor="#F7FAFF">
 	<mx:HBox id="videoArea">
-		<mx:VideoDisplay click="fullVideo();" id="remoteVideoDisplay" backgroundSize="100%" backgroundImage="assert/1.jpg" borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" width="267" height="200"/>
+		<mx:VideoDisplay click="fullVideo();" resize="resizeRemoteVideo();" id="remoteVideoDisplay" backgroundSize="100%" backgroundImage="assert/1.jpg" borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" width="267" height="200"/>
 		<mx:VBox>
 			<mx:VideoDisplay click="fullVideo();" id="localVideoDisplay" backgroundSize="100%" backgroundImage="assert/1.jpg" borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" width="133" height="100"/>
 			<mx:Image source="@Embed('/assert/video.jpg')" useHandCursor="true" buttonMode="true" id="stopVideoButton" click="stopVideo(flag)" height="22"/> 
-			<!--<mx:Image source="@Embed('/assert/video2.jpg')" useHandCursor="true" buttonMode="true" visible="false" id="sendVideoButton" width="0" height="22"/>-->
 			<mx:HBox><mx:Image source="@Embed('/assert/micVol.jpg')" height="22"/> 
 			<mx:HSlider id="micVolumeSlider" trackSkin="STSliderTrackSkin" value="90" width="72" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/></mx:HBox>
 			<mx:HBox><mx:Image source="@Embed('/assert/speakVol.jpg')" height="22"/> 
