@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="initLoad();">
+<mx:Script>
+	<![CDATA[
+		import mx.controls.VideoDisplay;
+		import mx.controls.Alert;
+		import com.realeyes.net.util.NetStreamClient;
+		private var netConnection:NetConnection;
+		private var netGroup:NetGroup;
+		private var groupSpecifier:GroupSpecifier;
+		private var streamClient:NetStreamClient;
+		private var reciveStream:NetStream;
+		private var sendStream:NetStream;
+		private var camera:Camera;
+		
+		private var nearId:String;
+		private var groupSpec:String;
+
+		private const SERVER:String = "rtmfp://p2p.rtmfp.net";
+		private const KEY:String = "6a91aba7ed517ffaa2f08c78-a9d109ffdd82";
+
+		private function initLoad():void {
+			netConnection = new NetConnection();
+			netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+			netConnection.connect(SERVER, KEY);
+		}
+
+		private function netConnectionHandler(event:NetStatusEvent):void {
+			switch(event.info.code) {
+				case "NetConnection.Connect.Success":
+					nearId = event.target.nearId;
+					createGroupSpec();
+					// 尝试加入用户组
+					joinToGroup();
+				break;
+				case "NetGroup.Connect.Success":
+					attachLocalVideoAndAudio();
+				break;
+			}
+		}
+		
+		private function joinToGroup():void {
+			var message:Object = new Object;
+			message.str = "Tim";
+			netGroup = new NetGroup(netConnection, groupSpec);
+			// 通知所有人已加入
+			netGroup.sendToAllNeighbors(message);
+			netGroup.addEventListener(NetStatusEvent.NET_STATUS, netGroupHandler);
+		}
+
+		private function attachLocalVideoAndAudio():void {
+			sendStream = new NetStream(netConnection, groupSpec);
+			sendStream.addEventListener(NetStatusEvent.NET_STATUS, null);
+			sendStream.client = streamClient;
+			camera=Camera.getCamera();
+			if (camera) {
+				camera.setQuality(0,0);
+				camera.setMode(160, 120, 60);
+			} else
+				Alert.show("没找到视频设备！","提示");
+			var localVideo:Video = new Video();
+			localVideo.width = 142;
+			localVideo.height = 143;
+			localVideo.x=4;
+			localVideo.y=4;
+			localVideo.name=netGroup.convertPeerIDToGroupAddress(nearId)+"local";
+			localVideo.attachCamera(camera);
+			var myVideo:VideoDisplay=new VideoDisplay();
+			myVideo.width=150;
+			myVideo.name=netGroup.convertPeerIDToGroupAddress(nearId);
+			myVideo.height=151;
+			myVideo.addChildAt(localVideo,0);
+			myVideo.x=144;
+			myVideo.y=33;
+			test.height=220;
+			test.addChild(myVideo);
+			sendStream.attachCamera(camera);
+			// 发布房间个人信息流
+			sendStream.publish(netGroup.convertPeerIDToGroupAddress(nearId));
+		}
+		
+		private function createGroupSpec():void {
+			groupSpecifier = new GroupSpecifier(KEY + "Tim's Room");
+			netGroup.addEventListener(NetStatusEvent.NET_STATUS, netGroupHandler);
+			// 为NetGroup启用流
+			groupSpecifier.multicastEnabled = true;
+			// 启用对象复制
+			groupSpecifier.objectReplicationEnabled = true;
+			// 启用发布
+			groupSpecifier.postingEnabled = true;
+			// 启用定向路由方法
+			groupSpecifier.routingEnabled = true;
+			// 成员是否能打开到服务器的通道
+			groupSpecifier.serverChannelEnabled = true;
+
+			// 可理解为网络唯一房间标识，可认为是peerId（非常重要的东西，其它用户通过它链接进来）
+			groupSpec = groupSpecifier.groupspecWithoutAuthorizations();
+		}
+		
+		private function netGroupHandler(event:NetStatusEvent):void {
+			switch(event.info.code) {
+				case "NetGroup.Neighbor.Connect":
+					netGroup = new NetGroup(netConnection, groupSpec);
+				break;
+				case "NetGroup.Neighbor.Disconnect":
+				break;
+				case "NetGroup.SendTo.Notify":
+				break;
+				case "NetGroup.Neighbor.Disconnect":
+				break;
+			}
+		}
+	]]>
+</mx:Script>
+	<mx:Canvas borderStyle="solid" cornerRadius="2" id="test" height="230" borderColor="#B7BABC" borderThickness="1" width="438"/>
+</mx:Application>

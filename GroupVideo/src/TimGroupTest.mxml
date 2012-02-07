@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" backgroundColor="#ffffff" borderStyle="none" creationComplete="initLoader();">
+	<mx:Script>
+	<![CDATA[
+		import mx.controls.Alert;
+		import mx.controls.VideoDisplay;
+		import com.realeyes.net.util.NetStreamClient;
+
+		private var netConnection:NetConnection;
+		private var sendStream:NetStream;
+		private var reciveStream:NetStream;
+		private var groupSpecifier:GroupSpecifier;
+		private var netStreamClient:NetStreamClient;
+		private var netGroup:NetGroup;
+		private var camera:Camera;
+
+		private const SERVER:String = "rtmfp://p2p.rtmfp.net";
+		private const KEY:String = "6a91aba7ed517ffaa2f08c78-a9d109ffdd82";
+		private const WIDTH:int = 160;
+		private const HEIGHT:int = 120;
+		private const SPACING:int = 5;
+
+		private var nearId:String;
+		private var groupSpec:String;
+		private var streamId:String;
+
+		private var userStreamArr:Array = new Array();
+
+		private var userCount:int = 1;
+
+		private function initLoader():void {
+			netConnection = new NetConnection();
+			netStreamClient = new NetStreamClient();
+			netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+			netConnection.connect(SERVER, KEY);
+		}
+
+		private function netConnectionHandler(event:NetStatusEvent):void {
+			switch(event.info.code) {
+				case "NetConnection.Connect.Success":
+					// 获取NearId
+					nearId = event.target.nearID;
+					createGroupSpec();
+					joinTheGroup();
+				break;
+				case "NetGroup.Connect.Success":
+					attachLocalVideo();
+				break;
+			}
+		}
+
+		private function createGroupSpec():void {
+			groupSpecifier = new GroupSpecifier(KEY + "Tim's Room");
+			// 为NetGroup启用流
+			groupSpecifier.multicastEnabled = true;
+			// 启用对象复制
+			groupSpecifier.objectReplicationEnabled = true;
+			// 启用发布
+			groupSpecifier.postingEnabled = true;
+			// 启用定向路由方法
+			groupSpecifier.routingEnabled = true;
+			// 成员是否能打开到服务器的通道
+			groupSpecifier.serverChannelEnabled = true;
+
+			// 可理解为网络唯一房间标识（非常重要的东西，其它用户通过它链接进来）
+			groupSpec = groupSpecifier.groupspecWithoutAuthorizations();
+		}
+
+		private function joinTheGroup():void {
+			// 初始化NetGroup成功-激活NetConnection的NetGroup.Connect.Success
+			netGroup = new NetGroup(netConnection, groupSpec);
+			netGroup.addEventListener(NetStatusEvent.NET_STATUS, netGroupHandler);
+			// 重设共享区域视频布局
+			
+			// 通知所有用户
+			netGroup.sendToAllNeighbors({userName:"TimZhao",peerId:netGroup.convertPeerIDToGroupAddress(nearId)});
+		}
+
+		private function netGroupHandler(event:NetStatusEvent):void {
+			switch (event.info.code) {									
+				case "NetGroup.Posting.Notify":
+				break;
+				// 邻居链接
+				case "NetGroup.Neighbor.Connect":
+					if (event.info.neighbor != netGroup.convertPeerIDToGroupAddress(nearId)) {
+						userCount += 1;
+						streamId=event.info.neighbor;
+						if (userStreamArr.indexOf(streamId) == -1) {
+							userStreamArr.push(streamId);
+							// 初始化接收流
+							reciveStream = new NetStream(netConnection, groupSpec);
+							
+							var video:Video = new Video();
+							video.attachNetStream(reciveStream);
+							var display:VideoDisplay = new VideoDisplay();
+							reciveStream.play(streamId);
+							cameraArea.addChild(getVideo(display, video));
+						}
+					}
+				break;
+				case "NetGroup.Neighbor.Disconnect":
+				break;
+				case "NetGroup.SendTo.Notify":
+				break;
+			}
+		}
+
+		private function attachLocalVideo():void {
+			sendStream = new NetStream(netConnection, groupSpec);
+			sendStream.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+			
+			camera=Camera.getCamera();
+			camera.setMode(WIDTH, HEIGHT, 60);
+			camera.setQuality(0, 0);
+			var video:Video = new Video();
+			video.name = netGroup.convertPeerIDToGroupAddress(nearId);
+			video.attachCamera(camera);
+			cameraArea.addChild(getVideo(null, video));
+			sendStream.attachCamera(camera);
+			// 发布流
+			sendStream.publish(netGroup.convertPeerIDToGroupAddress(nearId));
+		}
+
+		private function getVideo(videoDisplay:VideoDisplay, video:Video):VideoDisplay {
+			if (video == null) {
+				video = new Video();
+			}
+			video.width = WIDTH;
+			video.height = HEIGHT;
+			if (videoDisplay == null) {
+				videoDisplay = new VideoDisplay();
+			}
+			videoDisplay.width = WIDTH;
+			videoDisplay.height = HEIGHT;
+			videoDisplay.x = SPACING + (userCount-1)%4*(WIDTH + SPACING);
+			videoDisplay.y = SPACING + parseInt(""+(userCount-1)/4)*(HEIGHT + SPACING);
+			videoDisplay.addChild(video);
+			return videoDisplay;
+		}
+	]]>
+	</mx:Script>
+	<mx:Panel width="720" height="500" layout="absolute" borderColor="#FFAACC">
+		<mx:VBox id="cameraArea" x="5" y="5" width="690" height="255" backgroundColor="black"/>
+		<mx:VBox id="messagePanel" x="5" y="265" width="690" height="120" backgroundColor="black"/>
+	</mx:Panel>
+</mx:Application>

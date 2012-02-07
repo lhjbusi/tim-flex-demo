@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" backgroundColor="#ffffff" borderStyle="none" width="489" height="515" layout="absolute" creationComplete="_initNetConnection()" >
+	<mx:Style>Application {font-size:12px;font-style:normal;font-weight:normal;}</mx:Style>
+	<mx:Script>
+	<![CDATA[
+		import com.realeyes.net.util.NetStreamClient;
+		import com.realeyes.net.util.NetStreamDataEvent;
+
+		import flash.utils.Timer;
+		import flash.events.TimerEvent;
+
+		import mx.controls.*;
+		import mx.formatters.DateFormatter;
+		import mx.events.CloseEvent;
+		import mx.events.SliderEvent;
+		import mx.events.FlexEvent;
+		import mx.utils.ObjectUtil;
+		import mx.core.UIComponent;
+
+		private const SERVER:String = "rtmfp://stratus.adobe.com/";
+		private const DEVKEY:String = "6b754e9d85b872b8f9c55a69-da4e8ad8ec29";
+		private var _netConnection:NetConnection;
+		private var _groupSpecifier:GroupSpecifier;
+		private var _outgoingStream:NetStream;
+		private var _incomingStream:NetStream;
+		private var videoDisplay2:VideoDisplay;
+		private var videoDisplay3:VideoDisplay;
+		private var _streamClient:NetStreamClient;
+		private var _netGroup:NetGroup;
+		private var keyCode:int;
+		private var shiftKey:Boolean;
+		private var ctrlKey:Boolean;
+ 		private var uc:UIComponent= new UIComponent();
+		[Bindable] private var _nearID:String;
+ 		[Bindable] private var _netConnectionConnected:Boolean;
+		[Bindable] private var _groupSpec:String;
+		[Bindable] private var camera:Camera;
+		[Bindable] private var _outgoingStreamOn:Boolean;
+		[Bindable] private var _incomingStreamOn:Boolean;
+ 		[Bindable] private var _netGroupConnected:Boolean;
+		[Bindable] private var _estimatedP2PMembers:Number;
+		// 房间人数
+		[Bindable] private var roomMember:int=1;
+		[Bindable] private var streamId:String;
+		[Bindable] private var userName:String;
+		[Bindable] private var labelUserName:String;
+		[Bindable] private var allNeighborId:Array=new Array();
+		[Bindable] private var allUserInfo:Array=new Array();
+
+		protected function onNetStatus(event:NetStatusEvent):void {
+			switch (event.info.code) {
+				case "NetConnection.Connect.Success": {
+					_netConnectionConnected = true;
+					_nearID = event.target.nearID;
+					_createGroupSpec();
+					onJoinNetGroup();
+				break;
+				}
+				case "NetGroup.Connect.Success": {
+					_attachLocalVideoAndAudio();
+				break;
+				}
+			}
+		}	
+		protected function onNetGroupStatus(event:NetStatusEvent):void {
+			switch (event.info.code) {
+				case "NetGroup.Posting.Notify": {
+				break;
+				}
+				case "NetGroup.Neighbor.Connect": {
+					if (event.info.neighbor != _netGroup.convertPeerIDToGroupAddress(_nearID)) {
+						roomMember = roomMember+1;
+						streamId = event.info.neighbor;
+						allNeighborId.push(streamId);
+						_attachPeerVideoAndAudio(streamId);
+						doPost();
+					}
+				break;
+				}
+				case "NetGroup.Neighbor.Disconnect": {
+					roomMember = roomMember-1;	
+					var index:int=allNeighborId.indexOf(event.info.neighbor);
+					allNeighborId.splice(index,1);
+					cancelPeerVideoAndAudio(event.info.neighbor);
+					var temp2:int=0;
+					for (var p:int=0;p<allUserInfo.length;p++) {
+						if (allUserInfo[p].peerId == event.info.neighbor)
+							temp2=p;
+				 	}
+				 	allUserInfo.splice(temp2,1);
+				break;
+				}
+				case "NetGroup.SendTo.Notify": {
+					var username:int=ObjectUtil.toString(event.info.message).indexOf("cgusername");
+					var netGroupNearID:String='"'+_netGroup.convertPeerIDToGroupAddress(_nearID)+'"';
+					if (ObjectUtil.toString(event.info.message) == netGroupNearID) {
+					} else if (username != -1) {
+						var temp:Array = ObjectUtil.toString(event.info.message).split(":");
+						videoDisplay3 = VideoDisplay(this.test.getChildByName(temp[2]));
+						Label(videoDisplay3.getChildByName(temp[2]+"label")).text=temp[1];
+						var temp1:Boolean=false;
+						for (var p:int=0;p<allUserInfo.length;p++) {
+							if (allUserInfo[p].peerId == temp[2])
+								temp1=true;
+						}
+						if (!temp1) {
+							var userInfo:Object=new Object();
+							userInfo.userName=temp[1];
+							userInfo.peerId=temp[2];
+							allUserInfo.push(userInfo);
+						}
+					}
+				break;
+				}
+			}
+		}
+		private function doPost():void {
+			var message_username:Object = new Object;
+			message_username.user = "cgusername:"+userName+":"+_netGroup.convertPeerIDToGroupAddress(_nearID)+":";
+			_netGroup.sendToAllNeighbors(message_username);
+		}
+		private function _initNetConnection():void {
+			_netConnection = new NetConnection();
+			_streamClient = new NetStreamClient();
+			_netConnection.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus);
+			_netConnection.connect(SERVER + DEVKEY);
+		}
+		protected function onJoinNetGroup():void {
+			var param:Object={str:"1|Kitty|12|8|8868|true"};
+			if (param["str"] != null) {
+				var myar:Array = String(param["str"]).split("|");
+				userName = myar[1];
+				_netGroup = new NetGroup(_netConnection, _groupSpec);
+				_netGroup.addEventListener(NetStatusEvent.NET_STATUS, onNetGroupStatus);
+			}
+		}
+		private function _createGroupSpec():void {
+			_groupSpecifier = new GroupSpecifier(DEVKEY + "TimZhao1985");
+			_groupSpecifier.multicastEnabled = true;
+			_groupSpecifier.objectReplicationEnabled = true;
+			_groupSpecifier.postingEnabled = true;
+			_groupSpecifier.routingEnabled = true;
+			_groupSpecifier.serverChannelEnabled = true;
+
+			_groupSpec = _groupSpecifier.groupspecWithoutAuthorizations();
+		}
+		private function _attachLocalVideoAndAudio():void {
+			_outgoingStream = new NetStream(_netConnection, _groupSpec);
+			_outgoingStream.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus);
+			_outgoingStream.client = _streamClient;
+			camera= Camera.getCamera();
+			uc.x=35;
+			uc.y=13;
+			if (camera) {
+				camera.setQuality(0,0);
+				camera.setMode(160, 120, 60);
+			} else
+				Alert.show("没找到视频设备！","提示");
+			var localVideo:Video = new Video();
+			localVideo.width = 142;
+			localVideo.height = 143;
+			localVideo.x=4;
+			localVideo.y=4;
+			localVideo.name=_netGroup.convertPeerIDToGroupAddress(_nearID)+"local";
+			localVideo.attachCamera(camera);
+			var label:Label=new Label();
+			label.text=userName;
+			label.name=_netGroup.convertPeerIDToGroupAddress(_nearID)+"label";
+			label.width=150;
+			label.height=20;
+			label.setStyle("textAlign","center");
+			label.setStyle("color","#ffff00");
+			var myvideo:VideoDisplay=new VideoDisplay();
+			myvideo.width=150;
+			myvideo.name=_netGroup.convertPeerIDToGroupAddress(_nearID);
+			myvideo.height=151;
+			myvideo.setStyle("borderStyle","solid");
+			myvideo.setStyle("borderThickness","4");
+			myvideo.setStyle("cornerRadius","5");
+			myvideo.setStyle("borderColor","#A3A4A9");
+			myvideo.setStyle("backgroundImage","http://www.chinesegreat.com/CG/video/assert/bg.jpg");
+			myvideo.addChildAt(localVideo,0);
+			myvideo.addChildAt(label,1);
+			myvideo.x=144;
+			myvideo.y=33;
+			test.height=220;
+			test.addChild(myvideo);
+			_outgoingStream.attachCamera(camera);
+			_outgoingStream.publish(_netGroup.convertPeerIDToGroupAddress(_nearID));
+		}
+		private function _attachPeerVideoAndAudio(streamId:String):void {
+			_incomingStream = new NetStream(_netConnection, _groupSpec);
+			_incomingStream.client = _streamClient;
+			var remoteVideo1:Video = new Video();
+			remoteVideo1.width=142;
+			remoteVideo1.height=143;
+			remoteVideo1.x=4;
+			remoteVideo1.y=4;
+			remoteVideo1.name=streamId+"remote";
+			remoteVideo1.attachNetStream(_incomingStream);
+			var label:Label=new Label();
+			label.name=streamId+"label";
+			label.width=150;
+			label.height=20;
+			label.setStyle("textAlign","center");
+			label.setStyle("color","#ffff00");
+			// 实例化流媒体展示组件
+			var videoDisplay1:VideoDisplay=new VideoDisplay();
+			videoDisplay1.name=streamId;
+			videoDisplay1.width=150;
+			videoDisplay1.height=151;
+			videoDisplay1.setStyle("borderStyle","solid");
+			videoDisplay1.setStyle("borderThickness","4");
+			videoDisplay1.setStyle("cornerRadius","5");
+			videoDisplay1.setStyle("borderColor","#A3A4A9");
+			videoDisplay1.setStyle("backgroundImage","http://www.chinesegreat.com/CG/video/assert/bg.jpg");
+			videoDisplay1.addChildAt(remoteVideo1,0);
+			videoDisplay1.addChildAt(label,1);
+			// 播放接收流
+			_incomingStream.play(streamId);
+			test.addChild(videoDisplay1);
+
+			// 重置共享视频区域布局
+			resetVideo();
+		}
+		private function resetVideo():void {
+			var groupAddress:String = _netGroup.convertPeerIDToGroupAddress(_nearID);
+			// 用户组长度
+			switch (allNeighborId.length) {
+				case 0: {
+					videoDisplay2=test.getChildByName(groupAddress) as VideoDisplay;
+					videoDisplay2.getChildByName(groupAddress+"local").width=142;
+					videoDisplay2.getChildByName(groupAddress+"local").height=143;
+					videoDisplay2.getChildByName(groupAddress+"label").width=150;
+					videoDisplay2.width=150;
+					videoDisplay2.height=151;
+					videoDisplay2.x=144;
+					videoDisplay2.y=33;
+				break;
+				}
+				case 1: {
+					videoDisplay2=test.getChildByName(groupAddress) as VideoDisplay;
+					videoDisplay2.getChildByName(groupAddress+"local").width=142;
+					videoDisplay2.getChildByName(groupAddress+"local").height=143;
+					videoDisplay2.getChildByName(groupAddress+"label").width=150;
+					videoDisplay2.width=150;
+					videoDisplay2.height=151;
+					videoDisplay2.x=46;
+					videoDisplay2.y=33;
+
+					videoDisplay3=test.getChildByName(allNeighborId[0]) as VideoDisplay;
+					videoDisplay3.getChildByName(allNeighborId[0]+"remote").width=142;
+					videoDisplay3.getChildByName(allNeighborId[0]+"remote").height=143;
+					videoDisplay3.getChildByName(allNeighborId[0]+"label").width=150;
+					videoDisplay3.width=150;
+					videoDisplay3.height=151;
+					videoDisplay3.x=242;
+					videoDisplay3.y=33;
+				break;
+				}
+				case 2: {
+					videoDisplay2=test.getChildByName(groupAddress) as VideoDisplay;
+					videoDisplay2.getChildByName(groupAddress+"local").width=112;
+					videoDisplay2.getChildByName(groupAddress+"local").height=113;
+					videoDisplay2.getChildByName(groupAddress+"label").width=120;
+					videoDisplay2.width=120;
+					videoDisplay2.height=121;
+					videoDisplay2.x=20;
+					videoDisplay2.y=50;
+					for (var k:int=0;k<allNeighborId.length;k++) {
+						videoDisplay3=test.getChildByName(allNeighborId[k]) as VideoDisplay;
+						videoDisplay3.getChildByName(allNeighborId[k]+"remote").width=112;
+						videoDisplay3.getChildByName(allNeighborId[k]+"remote").height=113;
+						videoDisplay3.getChildByName(allNeighborId[k]+"label").width=120;
+						videoDisplay3.width=120;
+						videoDisplay3.height=121;
+						videoDisplay3.x=20+139*(k+1);
+						videoDisplay3.y=50;
+					}
+					break;
+				}	
+				case 3: {	
+					videoDisplay2=test.getChildByName(groupAddress) as VideoDisplay;
+					videoDisplay2.getChildByName(groupAddress+"local").width=92;
+					videoDisplay2.getChildByName(groupAddress+"local").height=93;
+					videoDisplay2.getChildByName(groupAddress+"label").width=100;
+					videoDisplay2.width=100;
+					videoDisplay2.height=101;
+					videoDisplay2.x=7;
+					videoDisplay2.y=55;
+					for(var k:int=0;k<allNeighborId.length;k++) {
+						videoDisplay3=test.getChildByName(allNeighborId[k]) as VideoDisplay;
+						videoDisplay3.getChildByName(allNeighborId[k]+"remote").width=92;
+						videoDisplay3.getChildByName(allNeighborId[k]+"remote").height=93;
+						videoDisplay3.getChildByName(allNeighborId[k]+"label").width=100;
+						videoDisplay3.width=100;
+						videoDisplay3.height=101;
+						videoDisplay3.x=7+107*(k+1);
+						videoDisplay3.y=55;
+					}
+				break;
+				}
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+					upFourVideo(groupAddress);
+				break;
+			}
+		}
+		private function upFourVideo(groupAddress:String):void {
+			var k:int = 0;
+			for (;k<allNeighborId.length;k++) {
+				videoDisplay3=test.getChildByName(allNeighborId[k]) as VideoDisplay;
+				videoDisplay3.getChildByName(allNeighborId[k]+"remote").width=92;
+				videoDisplay3.getChildByName(allNeighborId[k]+"remote").height=93;
+				videoDisplay3.getChildByName(allNeighborId[k]+"label").width=100;
+				videoDisplay3.width=100;
+				videoDisplay3.height=101;
+				videoDisplay3.x=7 + 107*(k%4);
+				videoDisplay3.y=6 + 106*parseInt(k/4 + "");
+			}
+			videoDisplay2=test.getChildByName(groupAddress) as VideoDisplay;
+			videoDisplay2.getChildByName(groupAddress+"local").width=92;
+			videoDisplay2.getChildByName(groupAddress+"local").height=93;
+			videoDisplay2.getChildByName(groupAddress+"label").width=100;
+			videoDisplay2.width=100;
+			videoDisplay2.height=101;
+			videoDisplay2.x=7 + 107*parseInt(k%4 + "");
+			videoDisplay2.y=6 + 106*parseInt(k/4 + "");
+		}
+		private function cancelPeerVideoAndAudio(streamId:String):void {
+			test.getChildByName(streamId).width=0;
+			test.getChildByName(streamId).height=0;
+			test.getChildByName(streamId).visible=false;
+			resetVideo();
+		}
+	]]>
+	</mx:Script>
+	<mx:Panel borderStyle="none" layout="vertical" width="489" height="515" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#F7FAFF" paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="0" title="*欢迎咨询，轻松注册后享受更多的优质服务*" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial" themeColor="#F7FAFF">
+		<mx:VBox paddingLeft="10"><mx:Canvas borderStyle="solid" cornerRadius="2" id="test" height="230" borderColor="#B7BABC" borderThickness="1" width="438"/></mx:VBox>
+		<mx:TextArea id="info" width="447" height="175"/>
+	</mx:Panel>
+</mx:Application>
