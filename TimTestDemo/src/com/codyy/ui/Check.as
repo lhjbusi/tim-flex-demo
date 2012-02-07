@@ -1,24 +1,21 @@
-package com.codyy.ui
-{
-    import com.codyy.ppmeet.*;
-    import com.codyy.ppmeet.util.*;
-    import fl.controls.*;
-    import flash.display.*;
-    import flash.events.*;
-    import flash.media.*;
-    import flash.net.*;
-    import flash.system.*;
-    import flash.utils.*;
+package com.codyy.ui {
+	import com.codyy.ppmeet.*;
+	import com.codyy.ppmeet.util.*;
+	import fl.controls.*;
+	import flash.display.*;
+	import flash.events.*;
+	import flash.media.*;
+	import flash.net.*;
+	import flash.system.*;
+	import flash.utils.*;
 
-    public class Check extends Object
-    {
-        private var tout:uint = 0;
-        private var mic:Microphone = null;
-        private var AV:Number = 0;
-        public static var btn:Button = new Button();
+	public class Check extends Object {
+		private var tout:uint = 0;
+		private var mic:Microphone = null;
+		private var AV:Number = 0;
+		public static var btn:Button = new Button();
 
-        public function Check()
-        {
+		public function Check() {
             return;
         }// end function
 
@@ -33,7 +30,7 @@ package com.codyy.ui
             }
             catch (e)
             {
-                WebUtil.info("btn : " + e);
+                WebUtil.info("btn:" + e);
             }
             btn.label = "";
             btn.width = 215;
@@ -52,7 +49,7 @@ package com.codyy.ui
             return;
         }// end function
 
-        public function privacyCheck() : void
+        public function privacyCheck():void
         {
             if (Capabilities.avHardwareDisable)
             {
@@ -77,7 +74,7 @@ package com.codyy.ui
             return;
         }// end function
 
-        public function checkPrivary() : void
+        public function checkPrivary():void
         {
             if (Microphone.names.length < 1)
             {
@@ -86,14 +83,14 @@ package com.codyy.ui
             this.mic = Microphone.getMicrophone();
             this.mic.setUseEchoSuppression(true);
             this.mic.setLoopBack(false);
-            WebUtil.info("mic status : " + this.mic.muted);
+            WebUtil.info("mic status:" + this.mic.muted);
             if (this.mic.muted)
             {
                 this.privacyCheck();
             }
-            this.mic.addEventListener(StatusEvent.STATUS, function (event:StatusEvent) : void
+            this.mic.addEventListener(StatusEvent.STATUS, function (event:StatusEvent):void
             {
-                WebUtil.info("×´Ì¬ÇÐ»»£º" + mic.muted);
+                WebUtil.info("×´Ì¬ï¿½Ð»ï¿½ï¿½ï¿½" + mic.muted);
                 if (mic.muted)
                 {
                     privacyCheck();
