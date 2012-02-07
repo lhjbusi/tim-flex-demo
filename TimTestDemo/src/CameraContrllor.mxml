@@ -288,6 +288,11 @@
 				var fps:Number = new Number(videoFPS.text);
 				// 设置拍摄模式
 				camera.setMode(width, height, fps);
+				var h264Setting:H264VideoStreamSettings = new H264VideoStreamSettings();
+				h264Setting.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_5_1);
+				h264Setting.setMode(width, height, fps);
+				// 设置视频编码方式
+				outgoingStream.videoStreamSettings = h264Setting;
 				outgoingStream.attachCamera(camera);
 			}
 			localVideo = new Video();

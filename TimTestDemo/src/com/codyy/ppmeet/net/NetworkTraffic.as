@@ -10,13 +10,13 @@ package com.codyy.ppmeet.net {
 		public static var nt:Array = new Array();
 		public static var upload:Object = {};
 		public static var download:Object = {};
-		
+
 		public function NetworkTraffic(param1:String, param2:NetStream) {
 			this.s = param1;
 			this.ns = param2;
 			return;
 		}// end function
-		
+
 		public function processUpload() : void {
 			WebHelp.info("processUpload");
 			if (!Constans.NETWORD_TRAFFIC) {

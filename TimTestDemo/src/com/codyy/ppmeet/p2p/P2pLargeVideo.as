@@ -1,5 +1,4 @@
-package com.codyy.ppmeet.p2p
-{
+package com.codyy.ppmeet.p2p {
     import com.codyy.ppmeet.*;
     import com.codyy.ppmeet.net.*;
     import com.codyy.ppmeet.util.*;
@@ -10,8 +9,7 @@ package com.codyy.ppmeet.p2p
     import flash.net.*;
     import flash.utils.*;
 
-    public class P2pLargeVideo extends Sprite
-    {
+    public class P2pLargeVideo extends Sprite {
         private var sv:SpeakerVideo = null;
         private var VideoDis:Video = null;
         private var Num:Number;
@@ -32,15 +30,13 @@ package com.codyy.ppmeet.p2p
         private var intervalId:Object;
         private var _groupSpecifier:GroupSpecifier;
 
-        public function P2pLargeVideo(param1:SpeakerVideo)
-        {
+        public function P2pLargeVideo(param1:SpeakerVideo) {
             this.sv = param1;
             this.VideoDis = param1.videoShow;
             return;
         }// end function
 
-        public function init(param1:Number = 1)
-        {
+        public function init(param1:Number = 1) {
             this.sv.pauseMC.visible = false;
             this.VideoDis.smoothing = true;
             this.initRTMFP();
@@ -48,36 +44,29 @@ package com.codyy.ppmeet.p2p
             return;
         }// end function
 
-        private function initRTMFP()
-        {
-            if (this._netConnection)
-            {
+        private function initRTMFP() {
+            if (this._netConnection) {
                 this._netConnection.close();
                 this._netConnection = null;
             }
             this._netConnection = new NetConnection();
-            if (this.sv.getParam("maxPeer"))
-            {
+            if (this.sv.getParam("maxPeer")) {
                 this._netConnection.maxPeerConnections = parseInt(this.sv.getParam("maxPeer"));
-                ;
             }
             this._netConnection.objectEncoding = ObjectEncoding.AMF0;
             this._netConnection.addEventListener(NetStatusEvent.NET_STATUS, this.onNetStatus);
-            WebHelp.nd("³õÊ¼»¯Ö÷½²ÈËÊÓÆµ£º" + (this.sv.getParam("rtmfp") || this.SERVER + this.DEVKEY));
+            WebHelp.nd("ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½" + (this.sv.getParam("rtmfp") || this.SERVER + this.DEVKEY));
             this._netConnection.connect(this.sv.getParam("rtmfp") || this.SERVER + this.DEVKEY);
             Constans.pushConnection(this._netConnection);
             return;
         }// end function
 
-        private function onNetStatus(event:NetStatusEvent) : void
-        {
-            switch(event.info.code)
-            {
-                case "NetConnection.Connect.Success":
-                {
-                    WebHelp.nd("³õÊ¼»¯Ö÷½²ÈËÊÓÆµ³É¹¦£¡");
+        private function onNetStatus(event:NetStatusEvent) : void {
+            switch(event.info.code) {
+                case "NetConnection.Connect.Success": {
+                    WebHelp.nd("ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½É¹ï¿½ï¿½ï¿½");
                     this._netConnectionConnected = true;
-                    WebUtil.sendMsg({act:"sys", say:"»ñÈ¡Éí·İ±êÊ¶ºÅ³É¹¦£¡"});
+                    WebUtil.sendMsg({act:"sys", say:"ï¿½ï¿½È¡ï¿½ï¿½İ±ï¿½Ê¶ï¿½Å³É¹ï¿½ï¿½ï¿½"});
                     this._createGroupSpec();
                     break;
                 }
@@ -85,16 +74,13 @@ package com.codyy.ppmeet.p2p
                 case "NetConnection.Connect.Failed":
                 case "NetConnection.Connect.Rejected":
                 case "NetConnection.Connect.AppShutdown":
-                case "NetConnection.Connect.InvalidApp":
-                {
-                    if (Constans.IS_CLOSE)
-                    {
+                case "NetConnection.Connect.InvalidApp": {
+                    if (Constans.IS_CLOSE) {
                         return;
                     }
-                    WebHelp.nd("Ö÷½²ÈËÊÓÆµÁ¬½ÓÊ§°Ü£¡Ê¹ÓÃNetGroupÁ¬½Ó£¡");
-                    WebUtil.sendMsg({act:"sys", say:"Á¬½Ó·şÎñÆ÷Ê§°Ü£º" + event.info.code});
-                    if (this._netGroup)
-                    {
+                    WebHelp.nd("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµlï¿½ï¿½Ê§ï¿½Ü£ï¿½Ê¹ï¿½ï¿½NetGrouplï¿½Ó£ï¿½");
+                    WebUtil.sendMsg({act:"sys", say:"lï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½" + event.info.code});
+                    if (this._netGroup) {
                         this.clearNetGroup();
                     }
                     this._outgoingStream = null;
@@ -102,64 +88,40 @@ package com.codyy.ppmeet.p2p
                     this._netConnectionConnected = false;
                     break;
                 }
-                case "NetStream.Connect.Success":
-                {
-                    WebHelp.nd("Ö÷½²ÈËÊÓÆµNetStream³É¹¦");
+                case "NetStream.Connect.Success": {
+                    WebHelp.nd("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÆµNetStreamï¿½É¹ï¿½");
                     if (this.Num == 1)
-                    {
                         this._attachLocalVideo();
-                    }
                     else
-                    {
                         this._attachPeerVideo();
-                    }
                     break;
                 }
                 case "NetStream.Connect.Rejected":
                 case "NetStream.Connect.Failed":
-                {
-                    WebHelp.nd("Ö÷½²ÈËÊÓÆµNetStreamÊ§°Ü");
+                    WebHelp.nd("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÆµNetStreamÊ§ï¿½ï¿½");
                     break;
-                }
                 case "NetStream.Publish.Start":
-                {
                     break;
-                }
                 case "NetStream.MulticastStream.Reset":
                 case "NetStream.Buffer.Full":
-                {
-                }
                 default:
-                {
                     break;
-                }
                 case "NetGroup.Connect.Rejected":
-                {
-                    WebHelp.nd("Ö÷½²ÈËÊÓÆµNetGroup³É¹¦");
+                    WebHelp.nd("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÆµNetGroupï¿½É¹ï¿½");
                     this._netGroupConnected = true;
-                    WebUtil.sendMsg({act:"sys", say:"ÄãÒÑ¼ÓÈë»áÒé×é" + this.getKey()});
+                    WebUtil.sendMsg({act:"sys", say:"ï¿½ï¿½ï¿½Ñ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" + this.getKey()});
                     this._estimatedP2PMembers = this._netGroup.estimatedMemberCount;
                     if (this.Num == 1)
-                    {
                         this.onStartOutgoingStream();
-                    }
                     else
-                    {
                         this.onStartIncomingStream();
-                    }
                     break;
-                }
                 case "NetGroup.Connect.Failed":
-                case :
-                {
-                    WebHelp.nd("Ö÷½²ÈËÊÓÆµNetGroupÊ§°Ü");
-                    try
-                    {
+                case : {
+                    WebHelp.nd("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÆµNetGroupÊ§ï¿½ï¿½");
+                    try {
                         WebUtil.sendMsg({type:"group", act:"speakerNetGroupDown", from:"sys", to:"sys", say:"", data:new Date().getTime()});
-                    }
-                    catch (e)
-                    {
-                    }
+                    } catch (e) {}
                     this.clearNetGroup();
                     break;
                     break;
@@ -172,37 +134,28 @@ package com.codyy.ppmeet.p2p
         {
             var loader:Loader;
             this.camera = this.getCam();
-            if (this.camera == null)
-            {
+            if (this.camera == null) {
                 loader = new Loader();
                 loader.load(new URLRequest("public/img/meet/nobody.jpg"));
                 this.sv.stage.addChild(loader);
                 this.sv.stage.setChildIndex(loader, 0);
             }
-            if (this.camera.muted)
-            {
-                this.camera.addEventListener(StatusEvent.STATUS, function (event:StatusEvent) : void
-            {
-                switch(event.code)
-                {
-                    case "Camera.Unmuted":
-                    {
-                        _startp2ppublish();
-                        ;
-                    }
-                    case "Camera.Muted":
-                    {
-                        ExternalInterface.call("onSure", "");
-                        ;
-                    }
-                    default:
-                    {
-                        ;
-                    }
-                }
-                return;
-            }// end function
-            );
+            // ç”¨æˆ·æ˜¯å¦å…è®¸è®¿é—®æ‘„åƒå¤´
+            if (this.camera.muted) {
+                this.camera.addEventListener(StatusEvent.STATUS, function (event:StatusEvent) : void {
+	                switch(event.code) {
+	                    case "Camera.Unmuted": {
+	                        _startp2ppublish();
+	                    }
+	                    case "Camera.Muted": {
+	                        ExternalInterface.call("onSure", "");
+	                    }
+	                    default:
+	                    	break;
+	                }
+	                return;
+	            }// end function
+	            );
             }
             else
             {
@@ -219,7 +172,7 @@ package com.codyy.ppmeet.p2p
             this._outgoingStream = WebUtil.setCamH264Setting(this._outgoingStream);
             this._outgoingStream.attachCamera(this.camera);
             WebUtil.info("publish video : " + this.getKey());
-            WebHelp.nd("Ö÷½²ÈË·¢²¼ÊÓÆµÍê³É£º" + this.getKey() + "_video");
+            WebHelp.nd("ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½É£ï¿½" + this.getKey() + "_video");
             this._outgoingStream.publish(this.getKey() + "_video");
             this._outgoingStream.addEventListener(NetStatusEvent.NET_STATUS, function (event:NetStatusEvent)
             {
@@ -227,7 +180,7 @@ package com.codyy.ppmeet.p2p
                 return;
             }// end function
             );
-            WebHelp.nd("Ö÷½²ÈË·¢²¼ÊÓÆµÍê³É£¡");
+            WebHelp.nd("ï¿½ï¿½ï¿½Ë·ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½É£ï¿½");
             var nt:* = new NetworkTraffic(this.getKey() + "_video", this._outgoingStream);
             nt.processUpload();
             return;
@@ -237,10 +190,10 @@ package com.codyy.ppmeet.p2p
         {
             this.VideoDis.attachNetStream(null);
             this.VideoDis.attachNetStream(this._incomingStream);
-            WebHelp.nd("½ÓÊÕÖ÷½²ÈËÊÓÆµ£º" + this.getKey() + "_video");
+            WebHelp.nd("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½" + this.getKey() + "_video");
             this._incomingStream.play(this.getKey() + "_video");
             this.sv.removeHead();
-            WebHelp.nd("½ÓÊÕÖ÷½²ÈËÊÓÆµÍê³É£¡");
+            WebHelp.nd("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½É£ï¿½");
             var _loc_1:* = new NetworkTraffic(this.getKey() + "_video", this._incomingStream);
             _loc_1.processDownload();
             return;

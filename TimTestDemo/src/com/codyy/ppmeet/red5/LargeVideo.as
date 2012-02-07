@@ -72,8 +72,10 @@ package com.codyy.ppmeet.red5 {
 					WebHelp.nd("������ƵRed5l�ӳɹ���" + this.sv.getParam("server") + "��");
 					this.NetConBoo = true;
 					if (this.Num == 1) {
+						// 发送视频流
 						this.sendRtmpVideoStream();
 					} else {
+						// 接受视频流
 						this.receiveRtmpVideoStream();
 					}
 					break;
@@ -108,13 +110,12 @@ package com.codyy.ppmeet.red5 {
 			if (this.camera.muted) {
 				this.camera.addEventListener(StatusEvent.STATUS, function (event:StatusEvent):void {
 					switch(event.code) {
-						case "Camera.Unmuted": {
+						case "Camera.Unmuted": {//允许
 							_startPublish();
 						}
-						case "Camera.Muted": {
+						case "Camera.Muted": {//拒绝
 							ExternalInterface.call("onSure", "");
 						}
-						default: {}
 					}
 					return;
 				}// end function
@@ -125,6 +126,9 @@ package com.codyy.ppmeet.red5 {
 			return;
 		}// end function
 
+		/**
+		 * 尝试共享视频流.
+		 */
 		private function _startPublish() {
 			try {
 				this.disconnectStream();
@@ -134,11 +138,13 @@ package com.codyy.ppmeet.red5 {
 			}
 			this.rtmpVideoStream = new NetStream(this.rtmpVideoNetConn);
 			this.rtmpVideoStream = WebUtil.setCamH264Setting(this.rtmpVideoStream);
+			// 开始从摄像头获取视频流
 			this.rtmpVideoStream.attachCamera(this.camera);
+			// 播放本地视频流
 			this.VideoDis.attachCamera(this.camera);
 			this.sv.removeHead();
 			WebUtil.info("������Ƶ1����" + this.getKey() + "_video��");
-			setTimeout(function () {
+			setTimeout(function() {
 				rtmpVideoStream.publish(getKey() + "_video", "live");
 				Constans.pushNetStream(this.rtmpVideoStream);
 				WebHelp.nd("���˷�����Ƶ��ɣ�");
@@ -153,6 +159,7 @@ package com.codyy.ppmeet.red5 {
 
 		public function receiveRtmpVideoStream() {
 			try {
+				// 重置发送接受流
 				this.disconnectStream();
 				this.VideoDis.attachNetStream(null);
 			} catch (e) {
@@ -180,7 +187,6 @@ package com.codyy.ppmeet.red5 {
 					case "NetStream.Play.UnpublishNotify": {
 						receiveRtmpVideoStream();
 					}
-					default:{}
 				}
 				return;
 			}// end function
