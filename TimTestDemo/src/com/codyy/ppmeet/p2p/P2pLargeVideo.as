@@ -317,18 +317,16 @@ package com.codyy.ppmeet.p2p {
             return;
         }// end function
 
-        private function _createGroupSpec() : void
-        {
+        private function _createGroupSpec() : void {
             this._groupSpecifier = new GroupSpecifier("%E9%98%94%E5%9C%B0" + this.sv.getParam("meetId"));
             this._groupSpecifier.postingEnabled = true;
             this._groupSpecifier.multicastEnabled = true;
-            if (this.sv.getParam("intranet"))
-            {
+            if (this.sv.getParam("intranet")) {
+            	// 允许在 IP 多播套接字中交换有关组成员资格的信息-有助于提高P2P性能
                 this._groupSpecifier.ipMulticastMemberUpdatesEnabled = true;
+                // 
                 this._groupSpecifier.addIPMulticastAddress("224.0.1.200:3000");
-            }
-            else
-            {
+            } else {
                 this._groupSpecifier.serverChannelEnabled = true;
             }
             this._groupSpec = this._groupSpecifier.groupspecWithoutAuthorizations();
