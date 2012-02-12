@@ -246,10 +246,8 @@
 				incomingStream.receiveAudio(true)
 				incomingStream.receiveAudio(true)
 				remoteVideo = new Video();
-				remoteVideo.width = 259;
-				remoteVideo.height = 193;
-				remoteVideo.x=4;
-				remoteVideo.y=4;
+				remoteVideo.width = remoteVideoDisplay.width;
+				remoteVideo.height = remoteVideoDisplay.height;
 				remoteVideo.attachNetStream(incomingStream);
 				remoteVideoDisplay.addChild(remoteVideo);
 			}
@@ -273,10 +271,8 @@
 			incomingStream.receiveAudio(true);
 			incomingStream.receiveVideo(true);
 			remoteVideo = new Video();
-			remoteVideo.width = 259;
-			remoteVideo.height = 193;
-			remoteVideo.x=4;
-			remoteVideo.y=4;
+			remoteVideo.width = remoteVideoDisplay.width;
+			remoteVideo.height = remoteVideoDisplay.height;
 			// 指定播放视频时使用平滑处理(插补数据)
 			remoteVideo.smoothing = true;
 			remoteVideo.attachNetStream(incomingStream);
@@ -306,7 +302,7 @@
 				// 设置关键帧
 				// camera.setKeyFrameInterval(new Number(videoMainFrame.text));
 				// 设置拍摄模式
-				camera.setMode(120, 100, 15);
+				camera.setMode(160, 120, 15);
 				// 设置摄像品质
 				camera.setQuality(0, videoQualitySlider.value);
 				//var h264Setting:H264VideoStreamSettings = new H264VideoStreamSettings();
@@ -319,10 +315,8 @@
 			}
 			if (localVideo == null) {
 				localVideo = new Video();
-				localVideo.width = 125;
-				localVideo.height = 93;
-				localVideo.x=4;
-				localVideo.y=4;
+				localVideo.width = localVideo.width;
+				localVideo.height = localVideo.height;
 				// 指定播放视频时使用平滑处理(插补数据)
 				localVideo.smoothing = true;
 				localVideo.attachCamera(camera);
@@ -337,7 +331,7 @@
 			var camera:Camera = Camera.getCamera(cameraIndex.toString());
 			if (camera) {
 				// 设置拍摄模式
-				camera.setMode(120, 100, 15);
+				camera.setMode(160, 120, 15);
 				// 设置摄像品质
 				camera.setQuality(0, videoQualitySlider.value);
 			}
@@ -350,20 +344,20 @@
 			if (mics && mics.length>0) {
 				var micPhone:Microphone= getMicrophone();
 				//使用Speex编码，无需指定取样速率
-				micPhone.codec = SoundCodec.SPEEX;
+				//micPhone.codec = SoundCodec.SPEEX;
 				// 设置不回放
-				micPhone.setLoopBack(false);
+				//micPhone.setLoopBack(false);
 				// 麦克风捕获声音的频率
-				micPhone.rate = 44;
+				//micPhone.rate = 44;
 				// 麦克风增益
-				micPhone.gain = 100;
+				//micPhone.gain = 100;
 				// 设置噪音衰减分贝数，可选值：-30~0(不衰减)
-				micPhone.noiseSuppressionLevel = -20;
+				//micPhone.noiseSuppressionLevel = -20;
 				// 设置可认定为有声的最低音量输入水平，可选值0~100
             	// 以及实际静音前需经历的无声时间长度(毫秒)
-				micPhone.setSilenceLevel(40, 1000);
+				//micPhone.setSilenceLevel(40, 1000);
 				// 使用回声抑制功能
-				micPhone.setUseEchoSuppression(true);
+				//micPhone.setUseEchoSuppression(true);
 
 				/**micPhone.setUseEchoSuppression(true);
 				//使用Speex编码，无需指定取样速率
@@ -617,13 +611,44 @@
    				mic.encodeQuality = quality;
    			}
    		}
+   		/**
+   		 * 获取麦克风.
+   		 */
    		private function getMicrophone():Microphone {
-			if (enhancedCheckbox.selected) {
-				return Microphone.getEnhancedMicrophone(micIndex);
-			} else {
+			//if (enhancedCheckbox.selected) {
+			//	return Microphone.getEnhancedMicrophone(micIndex);
+			//} else {
 				return Microphone.getMicrophone(micIndex);
+			//}
+		}
+		private function startAudio():void {
+			if (sendAudioCheckbox.selected) {
+				var mic:Microphone = getMicrophone();
+				if (mic && outgoingStream)
+					outgoingStream.attachAudio(mic);
+			} else {
+				if (outgoingStream)
+					outgoingStream.attachAudio(null);
 			}
 		}
+		private function handleCodecChange():void {
+			var mic:Microphone = getMicrophone();
+			if (mic) {	
+				if (micCodeGroup.selectedValue == "speex") {
+					// 使用SPEEX编解码器，其在没有检测到语音时，自动减小带宽
+					mic.codec = SoundCodec.SPEEX;
+					mic.framesPerPacket = 1;
+					mic.encodeQuality = int(speexQualitySelector.selectedItem);
+					// 设置静音级别
+					mic.setSilenceLevel(0);
+				} else {
+					mic.codec = SoundCodec.NELLYMOSER;
+					//mic.rate = int(nellymoserRateSelector.selectedItem);
+					// 设置静音级别
+					mic.setSilenceLevel(0);
+				}
+			}
+   		}
 	]]>
 </mx:Script>
 
@@ -634,7 +659,8 @@
 			<mx:VideoDisplay id="localVideoDisplay" backgroundSize="100%" backgroundImage="assert/1.jpg" borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" width="133" height="100"/>
 			<mx:HBox>
 				<mx:Image source="@Embed('/assert/video.jpg')" useHandCursor="true" buttonMode="true" id="stopVideoButton" click="stopVideo(flag)" height="22"/>
-				<mx:HSlider width="72" showDataTip="true" change="videoQualityChanged();" id="videoQualitySlider" minimum="1" maximum="100" value="80"/> 
+				<!--视频品质调节-->
+				<mx:HSlider width="72" showDataTip="true" change="videoQualityChanged();" id="videoQualitySlider" minimum="1" maximum="100" value="90"/>
 			</mx:HBox>
 			<mx:HBox>
 				<mx:Image source="@Embed('/assert/micVol.jpg')" height="22"/> 
@@ -704,16 +730,22 @@
 			<mx:Label text="关键帧"/><mx:TextInput id="videoMainFrame" width="30" text="15"/>-->
 			<mx:ComboBox id="cameraSelection" dataProvider="{cameraNames}" change="publishVideo();"/>
 			<mx:RadioButtonGroup id="micCodeGroup" change="changeMicCode()"/>
-			<mx:RadioButton label="SPEEX" groupName="micCodeGroup"/>
-			<mx:RadioButton label="NELLYMOSER" groupName="micCodeGroup"/>
-			<mx:ComboBox id="speexQualitySelector" selectedIndex="6" change="speexQuality(event)" width="50">
-				<mx:dataProvider><mx:Array>
-					<mx:int>0</mx:int><mx:int>1</mx:int><mx:int>2</mx:int>
-					<mx:int>3</mx:int><mx:int>4</mx:int><mx:int>5</mx:int>
-					<mx:int>6</mx:int><mx:int>7</mx:int><mx:int>8</mx:int>
-					<mx:int>9</mx:int><mx:int>10</mx:int>
-				</mx:Array></mx:dataProvider>
-			</mx:ComboBox>
+			<mx:VBox>
+				<mx:HBox>
+					<mx:RadioButton label="SPEEX" groupName="micCodeGroup" selected="true"/>
+					<mx:RadioButton label="NELLYMOSER" groupName="micCodeGroup"/>
+				</mx:HBox>
+				<mx:ComboBox id="speexQualitySelector" selectedIndex="6" change="speexQuality(event)" width="50">
+					<mx:dataProvider><mx:Array>
+						<mx:int>0</mx:int><mx:int>1</mx:int><mx:int>2</mx:int>
+						<mx:int>3</mx:int><mx:int>4</mx:int><mx:int>5</mx:int>
+						<mx:int>6</mx:int><mx:int>7</mx:int><mx:int>8</mx:int>
+						<mx:int>9</mx:int><mx:int>10</mx:int>
+					</mx:Array></mx:dataProvider>
+				</mx:ComboBox>
+				<mx:CheckBox id="sendAudioCheckbox" label="Send Audio" click="startAudio()" selected="true" />
+				<mx:CheckBox id="enhancedCheckbox" label="Acoustic Echo Cancellation" selected="true" click="handleCodecChange(); startAudio()"/>
+			</mx:VBox>
 		</mx:HBox>
 	</mx:VBox>
 

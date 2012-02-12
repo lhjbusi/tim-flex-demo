@@ -968,7 +968,7 @@
 	        		<mx:CheckBox id="sendVideoCheckbox" label="Send Video" click="startVideo()" selected="true" />
 	        	</mx:Panel>	
 			</mx:NavigatorContent>
-			
+
 			<mx:NavigatorContent label="STATISTICS" enabled="{currentState != LoginNotConnected}">
 				<mx:Scroller width="100%" height="100%">
 					<mx:VGroup>
