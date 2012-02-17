@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="800" height="500" xmlns:flexpaper="com.devaldi.controls.flexpaper.*">
+    <flexpaper:FlexPaperViewer width="800" height="500" Scale="1" SwfFile="SEO.swf" />  
+</mx:Application>

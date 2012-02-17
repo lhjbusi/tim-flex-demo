@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- http://blog.flexexamples.com/2007/12/07/converting-an-imagesnapshot-object-into-a-base-64-encoded-string-in-flex-3/ -->
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="vertical" verticalAlign="middle" backgroundColor="white">
+    <mx:Script>
+        <![CDATA[
+            import flash.events.FocusEvent;
+            import flash.system.System;
+            import mx.graphics.ImageSnapshot;
+
+            private function button_click(evt:MouseEvent):void {
+                var ohSnap:ImageSnapshot = ImageSnapshot.captureImage(img);
+                textArea.text = ImageSnapshot.encodeImageAsBase64(ohSnap);
+            }
+
+            private function textArea_focusIn(evt:FocusEvent):void {
+                textArea.setSelection(0, textArea.text.length);
+            }
+        ]]>
+    </mx:Script>
+
+    <mx:ApplicationControlBar dock="true"><mx:Button label="Capture and encode" click="button_click(event);" /></mx:ApplicationControlBar>
+
+    <mx:Form>
+        <mx:FormItem label="source:"><mx:Image id="img" source="@Embed('images/flex_logo.jpg')"/></mx:FormItem>
+        <mx:FormItem label="Base64:"><mx:TextArea id="textArea" editable="false" showScrollTips="true" width="320" height="160" focusIn="textArea_focusIn(event);"/></mx:FormItem>
+        <mx:FormItem><mx:Button label="Copy to clipboard" enabled="{textArea.text.length > 0}" click="System.setClipboard(textArea.text);"/></mx:FormItem>
+    </mx:Form>
+
+</mx:Application>
