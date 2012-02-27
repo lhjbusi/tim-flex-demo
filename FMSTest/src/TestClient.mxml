@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			private var netConnection:NetConnection;
+			private var myStream:NetStream;
+			
+			public function init():void {
+				netConnection = new NetConnection();
+				netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+				netConnection.connect(serverUrl.text);
+			}
+			
+			public function reciveVedioAudio():void {
+				myStream = new NetStream(netConnection);
+				myStream.receiveAudio(true);
+				myStream.receiveVideo(true);
+
+				//camera.addEventListener(ActivityEvent.ACTIVITY, activityHandler);
+
+				myStream.play("Tim'sVideoAudio");
+				var video:Video = new Video();
+				video.width = remoteVideoDisplay.width;
+				video.height = remoteVideoDisplay.height;
+				video.smoothing = true;
+				video.attachNetStream(myStream);
+				remoteVideoDisplay.addChild(video);
+			}
+			
+			private function netConnectionHandler(event:NetStatusEvent):void {
+				switch (event.info.code) {
+					case "NetConnection.Connect.Success":
+					reciveVedioAudio();
+					break;
+					case "NetConnection.Connect.Rejected":
+					trace ("Oops! the connection was rejected" + "\n");
+					break;
+					case "NetConnection.Connect.Closed":
+					trace("Thanks! the connection has been closed" + "\n");
+					break;
+				}
+			}
+		]]>
+	</mx:Script>
+	<mx:VideoDisplay id="remoteVideoDisplay" x="20" y="22" width="400" height="300"/>
+	<mx:TextInput id="serverUrl" x="20" y="330" width="317" height="32" fontSize="14"/>
+	<mx:Button x="345" y="330" label="连接" width="75" fontSize="18" click="init();"/>
+</mx:Application>

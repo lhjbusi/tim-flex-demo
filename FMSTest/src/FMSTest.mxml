@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			private var netConnection:NetConnection;
+			private var myStream:NetStream;
+			private var camera:Camera;
+			private var mic:Microphone;
+			
+			public function init():void {
+				netConnection = new NetConnection();
+				netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+				netConnection.connect(serverUrl.text);
+			}
+			
+			public function publishVedioAudio():void {
+				myStream = new NetStream(netConnection);
+				camera = Camera.getCamera();
+				// 设置关键帧
+				camera.setKeyFrameInterval(15);
+				// 设置拍摄模式
+				camera.setMode(120, 100, 12);
+				camera.setQuality(0, 90);
+				var h264Setting:H264VideoStreamSettings = new H264VideoStreamSettings();
+				h264Setting.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_5_1);
+				h264Setting.setMode(120, 100, 12);
+				// 设置视频编码方式
+				myStream.videoStreamSettings = h264Setting;
+
+				var video:Video = new Video();
+				video.attachCamera(camera);
+				video.width = localVedioDisplay.width;
+				video.height = localVedioDisplay.height;
+				video.x=0;
+				video.y=0;
+				video.smoothing = true;
+				localVedioDisplay.addChild(video);
+				myStream.attachCamera(camera);
+
+				mic = Microphone.getMicrophone(0);
+				//使用Speex编码，无需指定取样速率
+				mic.codec = SoundCodec.SPEEX;
+				// 设置不回放
+				mic.setLoopBack(false);
+				// 麦克风捕获声音的频率
+				mic.rate = 44;
+				// 麦克风增益
+				mic.gain = 100;
+				// 设置噪音衰减分贝数，可选值：-30~0(不衰减)
+				mic.noiseSuppressionLevel = -20;
+				// 设置可认定为有声的最低音量输入水平，可选值0~100
+            	// 以及实际静音前需经历的无声时间长度(毫秒)
+				mic.setSilenceLevel(40, 1000);
+				// 使用回声抑制功能
+				mic.setUseEchoSuppression(true);
+				myStream.attachAudio(mic);
+
+				//camera.addEventListener(ActivityEvent.ACTIVITY, activityHandler);
+
+				myStream.publish("Tim'sVideoAudio", "live");
+			}
+			
+			private function netConnectionHandler(event:NetStatusEvent):void {
+				switch (event.info.code) {
+					case "NetConnection.Connect.Success":
+					publishVedioAudio();
+					break;
+					case "NetConnection.Connect.Rejected":
+					trace ("Oops! the connection was rejected" + "\n");
+					break;
+					case "NetConnection.Connect.Closed":
+					trace("Thanks! the connection has been closed" + "\n");
+					break;
+				}
+			}
+		]]>
+	</mx:Script>
+	<mx:VideoDisplay id="localVedioDisplay" x="20" y="22" width="400" height="300"/>
+	<mx:TextInput id="serverUrl" x="20" y="330" width="317" height="32" fontSize="14"/>
+	<mx:Button x="345" y="330" label="连接" width="75" fontSize="18" click="init();"/>
+</mx:Application>
