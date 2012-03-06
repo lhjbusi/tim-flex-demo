@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:Application backgroundColor="#ffffff" borderStyle="none" width="430" height="700" layout="absolute" creationComplete="returnUserName()" xmlns:mx="http://www.adobe.com/2006/mxml">
+<mx:Style>
+	#VideoDisplay{background-size:"100%"; backgroundImage:"/assert/1.jpg"; border-style:"solid"; border-thickness:4; corner-radius:5; border-color:"#A3A4A9";}
+	#Button{fillAlphas:"[0.77, 0.89, 0.45, 0.45]"; fillColors:"[#D3E7F7, #FCFCFC]"; fontFamily:"Arial"; fontWeight:"bold"; alpha:0.8; cornerRadius:5; fontSize:"12";}
+</mx:Style>
 <mx:Script>
 	<![CDATA[
 		import mx.controls.Alert;
@@ -11,6 +15,7 @@
 		import mx.controls.dataGridClasses.DataGridColumn;
 		import mx.events.SliderEvent;
 		import mx.core.UIComponent;
+
 		private const StratusAddress:String = "rtmfp://stratus.adobe.com";
 		private const DeveloperKey:String = "6b754e9d85b872b8f9c55a69-da4e8ad8ec29";
 		private var netConnection:NetConnection;
@@ -30,6 +35,7 @@
 		private var mic:Microphone;
 		private var uc:UIComponent= new UIComponent();
 		private var startDate:Number = 0;//开始时间
+		// 每秒钟监控
 		private var _timer:Timer = new Timer(1000);
 
 		[Bindable] private var camera:Camera;
@@ -41,22 +47,23 @@
 		[Bindable]private var UserName:String;
 		[Bindable]private var studentName:String;
 	 	[Bindable]private var roomFee:Number=0;
+	 	[Bindable]private var insertDate:String="";
 	 	[Bindable]private var loginState:int=0;
 	 	[Bindable]private var credits:Number=0;
 		[Bindable]private var forChinesegreatFee:Number=1;
 		[Bindable]private var time:String="00:00:00";
 		[Bindable]private var totalEarning:String='0(credits)';
 		[Bindable]private var cost:String='0(credits)';
-		[Bindable]private var student:Array = [{stuName:studentName, stuTime:time,stuFee:roomFee+'(credits)',forChi:forChinesegreatFee+'(credits)',totalEarn:totalEarning}];
-		[Bindable]private var teacher:Array = [{teaName:userName, stuTime:time,stuFee:roomFee+'(credits)',totalCost:cost}];
+		[Bindable]private var student:Array=[{stuName:studentName, stuTime:time,stuFee:roomFee+'(credits)',forChi:forChinesegreatFee+'(credits)',totalEarn:totalEarning}];
+		[Bindable]private var teacher:Array=[{teaName:userName, stuTime:time,stuFee:roomFee+'(credits)',totalCost:cost}];
 	 	// 聊天请求编号
 		private var chatReqId:String;
 		// 标记是否已经连接
-		private var isConnected:Boolean = false;
+		private var isConnected:Boolean=false;
 		// 是否已更新
-		private var isUpdate:Boolean = false;
+		private var isUpdate:Boolean=false;
 		// 是否是请求者
-		private var isRequest:Boolean = false;
+		private var isRequest:Boolean=false;
 
 		public function returnUserName():void {
 			// 初始化麦克风设置
@@ -392,23 +399,28 @@
 				fee.setStyle("color","#385A62");
 			 	return;
 	 		}
-			startDate = getTimer();//开始时间
-			_timer.start();//开始记时
+			//开始时间
+			startDate = getTimer();
+			//开始记时
+			_timer.start();
 			student[0].stuFee=roomFee+'(credits)';
 			student[0].stuName=studentName;
-			this._timer.addEventListener(TimerEvent.TIMER, _timerEvent);//视频计时器
-			sendStream.send("startFee",userName.text,roomFee);
+			//视频计时器
+			this._timer.addEventListener(TimerEvent.TIMER, _timerEvent);
+			sendStream.send("startFee", userName.text, roomFee);
 			fee.label="停止计费";
-			fee.setStyle("color","#ff0000");
+			fee.setStyle("color", "#ff0000");
 		}
 		private function stopFee():void {
 			_timer.stop();
+			// 清除计费插入时间
+			insertDate = "";
 		}
 		private function _timerEvent(e:TimerEvent):void {
 			student[0].stuTime= this.toStringTimer(getTimer(), this.startDate);
 			stu.dataProvider=student;
 		}
-		private function toStringTimer(_now:Number=0,_start:Number=0):String {
+		private function toStringTimer(_now:Number=0, _start:Number=0):String {
 			var _milliseconds:Number= Math.floor((_now - _start) / 1000);//总毫秒数
 			var _hours:Number = Math.floor(_milliseconds/3600);//时
 			var _minutes:Number = Math.floor((_milliseconds%3600)/60);//分
@@ -422,10 +434,13 @@
 		}
 		//学生计费
 		private function showStudentTimer():void {
-			startDate = getTimer();//开始时间
-			_timer.start();//开始记时
+			//开始时间
+			startDate = getTimer();
+			//开始记时
+			_timer.start();
 			teacher[0].stuFee=roomFee+'(credits)';
-			this._timer.addEventListener(TimerEvent.TIMER, _studentTimerEvent);//视频计时器
+			//视频计时器
+			this._timer.addEventListener(TimerEvent.TIMER, _studentTimerEvent);
 		}
 		private function _studentTimerEvent(e:TimerEvent):void {
 			teacher[0].stuTime=this.toStudentTimer(getTimer(), this.startDate);
@@ -521,17 +536,26 @@
 				});
 			}
 		}
-		private function showResult():void {	 
-			var returnValue:String=getuser.lastResult.user;
-			var temp:Array=returnValue.split(";"); 		 
+		private function showResult():void {
+			// 获取返回数据信息
+			var result:String=getuser.lastResult.result;
+			Alert.show(result);
+			var tempArray:Array=result.split(",");
+			var temp:Array;
+			if(tempArray.length == 1) {// 非插入
+				temp = tempArray[0].toString().split(";");
+			} else if (tempArray.length == 2) {// 插入操作
+				insertDate = tempArray[0].toString();
+				temp = tempArray[1].toString().split(";");
+			}
 			feeArea.text=temp[0];
-			credits=Number(temp[0]); 
-			changeCredits(); 
-			sendStream.send("updateCredits",temp[1]);	 
- 		} 
+			credits=Number(temp[0]);
+			changeCredits();
+			sendStream.send("updateCredits",temp[1]);
+ 		}
 	 	private function showFault():void { 
 			Alert.show("调用错误！");
-			getuser.send();	 	 
+			getuser.send();
 	 	} 
  		[Bindable] public var cards:Array = new Array(
 			{label:"USD",data:1000},
@@ -574,15 +598,16 @@
 	<mx:request>
 		<userid>{userId}</userid>
 		<myid>{myId}</myid>
-		<fee>{roomFee}</fee> 
+		<fee>{roomFee}</fee>
+		<insertDate>{insertDate}</insertDate>
 	</mx:request>
 </mx:HTTPService>
 
-<mx:Panel borderStyle="none" layout="vertical" width="430" height="700" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#f2f2f2" paddingTop="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial" themeColor="#F7FAFF">
+<mx:Panel borderStyle="none" layout="vertical" width="430" height="700" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#f2f2f2" paddingTop="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial">
 	<mx:HBox id="videoArea">
-		<mx:VideoDisplay id="remoteVideoDisplay" backgroundSize="100%" backgroundImage="assert/1.jpg" borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" width="267" height="200"/>
+		<mx:VideoDisplay id="remoteVideoDisplay" styleName="VideoDisplay" width="267" height="200"/>
 		<mx:VBox>
-			<mx:VideoDisplay id="localVideoDisplay" backgroundSize="100%" backgroundImage="assert/1.jpg" borderStyle="solid" borderThickness="4" cornerRadius="5" borderColor="#A3A4A9" width="133" height="100"/>
+			<mx:VideoDisplay id="localVideoDisplay" styleName="VideoDisplay" width="133" height="100"/>
 			<mx:Image source="@Embed('/assert/video.jpg')" useHandCursor="true" buttonMode="true" id="stopVideoButton" click="stopVideo(flag)" height="22"/> 
 			<mx:HBox><mx:Image source="@Embed('/assert/micVol.jpg')" height="22"/> 
 			<mx:HSlider thumbSkin="@Embed('/assert/icon.gif')" id="micVolumeSlider" trackSkin="STSliderTrackSkin" value="90" width="72" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/></mx:HBox>
@@ -597,9 +622,9 @@
 				<mx:HBox paddingLeft="-10" paddingBottom="-22"><mx:RichTextEditor borderStyle="none" id="message" creationComplete="showControlBar();" width="350" height="120" backgroundColor="#f2f2f2" textAlign="left" fontStyle="normal" fontFamily="Verdana" horizontalScrollPolicy="off" verticalScrollPolicy="off" paddingLeft="0" paddingRight="0" headerHeight="0" fontSize="12"/></mx:HBox>
 			</mx:VBox>
 			<mx:VBox paddingTop="3">	
-				<mx:Button id="fee" enabled="false" label="开始计费" click="showTimer();" fontFamily="Arial" width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontSize="11" cornerRadius="5" fontWeight="bold" paddingLeft="0" paddingRight="0"/>
-				<mx:Button id="sendMessageBtn" label="发送" width="60" click = "send()" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontFamily="Arial" fontSize="12" cornerRadius="5" fontWeight="bold"/>
-				<mx:Button id="closeBtn" click="closeMessage();" label="关闭" fontFamily="Arial" width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+				<mx:Button id="fee" styleName="Button" enabled="false" paddingLeft="0" paddingRight="0" label="开始计费" click="showTimer();" width="60"/>
+				<mx:Button id="sendMessageBtn" styleName="Button" label="发送" width="60" click="send();"/>
+				<mx:Button id="closeBtn" styleName="Button" click="closeMessage();" label="关闭" width="60"/>
 			 </mx:VBox>
 		</mx:HBox>
 		<!--老师计费区-->
@@ -631,14 +656,6 @@
 			</mx:HBox>
 		</mx:ViewStack>
 	</mx:VBox>
-
-	<!--<mx:VBox>
-		<mx:HBox width="400">
-			<mx:Label text="Name"/><mx:TextInput id="userName" width="100"/>
-			<mx:Label text="PeerID"/><mx:TextInput id="peerId" width="100"/>
-			<mx:Button label="连接" click="call()"/>
-		</mx:HBox>
-	</mx:VBox>-->
 	
 	<mx:TextInput width="200" id="userName" visible="false" height="0"/>
 	<mx:TextInput id="peerId" width="200" visible="false" height="0"/>
