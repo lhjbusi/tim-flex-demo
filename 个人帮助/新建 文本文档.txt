@@ -1,0 +1,109 @@
+application.onAppStart = function (){
+	Client.prototype._id=-1;//为无人
+	Client.prototype._name="";	
+}
+application.onConnect = function(client,_id,_name) {
+	try{
+		if(_id==undefined||_id==""){
+			return false;
+		}
+		client._id=_id;
+		client._name=_name;
+		var _members;
+		var myso=SharedObject.get("useronline",true);
+		if(myso.getProperty("Members")){
+			_members=myso.getProperty("Members");
+		}else{
+			_members=new Array();				
+		}			
+		
+		if(_members.length<Number(client._type)){
+			for(var i=0;i<_members.length;i++){
+				if(_members[i].id==client._id){
+					var objMsg=new Object();	
+					objMsg.msg="您已经登陆了";
+					objMsg.title="出错信息"
+					application.rejectConnection(client,objMsg);
+
+					try{
+						for(var k=0;k<application.clients.length;k++){
+							if(application.clients[k]._id==_id){
+								application.disconnect(application.clients[k])
+							}
+						}
+					}catch(e){
+					}
+					return;
+				}
+			}
+					
+			//myso.send("sendNews","","<font color='#FF9900'>"+client._name+" 进入教室....</font>");
+			var obj=new Object();
+			obj.id=_id
+			obj.name=_name;
+			obj.money=_money;
+			obj.type=_type;
+			obj.nation=_Nation;
+			obj.p2pId=_p2pId;
+			_members.push(obj);
+			myso.lock();
+			myso.setProperty("Members",_members);			
+			myso.unlock();
+			myso.flush();
+		}else{
+			var objMsg=new Object();	
+			objMsg.msg="err";
+			objMsg.title="出错信息"
+			application.rejectConnection(client,objMsg);
+			return;
+		}	
+		application.acceptConnection(client);	
+		client.ping=function(){
+			this.call("ping")
+		}
+	}catch(e){
+		var objMsg=new Object();				
+		objMsg.msg="对不起,服务器正在升级中,先稍等后...";
+		objMsg.title="出错信息"
+		application.rejectConnection(client,objMsg);
+	}
+}
+application.onDisconnect = function (client){
+	var myso=SharedObject.get("so"+client._roomId,true);	
+	try{
+		var	_members=myso.getProperty("Members");
+		var _bool=false;
+		if(_members.length>1){
+			for(var i=0;i<_members.length;i++){
+				trace(_members[i].id+"=="+client._id+" ="+(_members[i].id==client._id));
+				if(_members[i].id==client._id){
+					_bool=true;
+					var startInd=i;
+					break;
+				}
+			}
+			if(_bool){
+				_members.splice(startInd,1);
+				//myso.send("sendNews","","<font color='#CCCCCC'>"+client._name+" 离开了!</font>");
+				var _str="";
+				for(var i=0;i<_members.length;i++){
+					_str+=_members[i].name+"、"
+				}
+				myso.lock();
+				myso.setProperty("Members",_members);			
+				myso.unlock();
+				myso.flush();
+			
+			    }
+		}else{
+			myso.clear();
+			myso.flush();
+		}
+	}catch(e){	
+		myso.clear();
+		myso.flush();
+	}
+}
+
+application.onAppStop=function(){
+}

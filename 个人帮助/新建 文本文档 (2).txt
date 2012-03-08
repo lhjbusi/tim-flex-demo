@@ -1,0 +1,895 @@
+package {
+	import flash.display.MovieClip;
+	import flash.display.SimpleButton;
+	import flash.events.ActivityEvent;
+	import flash.events.Event;
+	import flash.events.KeyboardEvent;
+	import flash.events.MouseEvent;
+	import flash.events.NetStatusEvent;
+	import flash.events.StatusEvent;
+	import flash.events.SyncEvent;
+	import flash.events.TimerEvent;
+	import flash.geom.Point;
+	import flash.media.Camera;
+	import flash.media.Microphone;
+	import flash.media.Sound;
+	import flash.media.SoundMixer;
+	import flash.media.SoundTransform;
+	import flash.media.Video;
+	import flash.net.NetConnection;
+	import flash.net.NetStream;
+	import flash.net.SharedObject;
+	import flash.system.Capabilities;
+	import flash.system.Security;
+	import flash.text.TextField;
+	import flash.text.TextFormat;
+	import flash.utils.Timer;
+	import flash.utils.getTimer;
+	import flash.external.ExternalInterface;
+	import fl.controls.TextArea;
+	public class admin extends MovieClip {
+		internal static var _id = 1;// Math.floor(Math.random() * 100);
+		internal static var _name = "超级管理员"
+		internal static var _money = 0;
+		internal static var _type =8;//1为老师
+		internal static var _roomId:int = 1;//房间号
+		internal static var _Nation:int = 1;//国家
+		internal static var _chatBool:Boolean = false;//是否显示聊天框
+		internal static var rtmp:String = "rtmp://www.chinesegreat.com:8868/video";
+		private static var rtmfp:String = "rtmfp://stratus.adobe.com/d25ee7e49ce896b30f418784-bfa4154f5d06/";
+		private var str:String = "";//javascrtipt提示内容
+		
+		public var fileArray:Array = new Array();
+		
+		internal static var _admin:admin = null;//本身实例
+		internal static var nc:NetConnection = null;//本地连接
+		internal static var ns:NetStream = null;//本地流
+		private var netNs:NetStream = null;//服务器播放流
+		
+		private var netPingTimer:Timer = new Timer(5000);
+		private var pingTime:Number = 0;
+		
+		//
+		private var SharedObj:SharedObject = null;//服务器对象
+		
+		//*检测麦克风
+		private var micTimer:Timer = new Timer(3000);
+		
+		
+		public var videoSet_bt:SimpleButton = null;//视频设置按钮
+		public var close_bt:SimpleButton = null;//视频关闭按钮
+		public var chatOpen_bt:SimpleButton = null;//聊天框按钮
+		
+		public var micDisable_mc:MovieClip = null;//麦克风禁用
+		public var audioDisable_mc:MovieClip = null;//喇叭禁用
+		public var disable_Mic:MovieClip = null;//麦克风失效
+		public var disable_Audio:MovieClip = null;//声音失效
+		public var Mic_bt:SimpleButton = null;//麦克风按钮禁用
+		public var Audio_bt:SimpleButton = null;//喇叭禁用按钮
+		
+		public var micAL_mc:MovieClip = null;//音量检测对象
+		public var audioAL_mc:MovieClip = null;//声音检测对象
+		
+		
+		public var micScroll_mc:scrollMovie = null;//麦克风滑条
+		public var audioScroll_mc:scrollMovie = null;//音量风滑条
+		
+		public var video_vid:Video = null;//主视频
+		//---
+		public var video_vid_mc:userMovie = null;//主视频对象
+	 	
+		private var local_Camera:Camera = null;//本地视频设备
+		private var local_Mic:Microphone = null;//本地音频设备
+		
+		private var _soundTransform:SoundTransform = null;//控制音量
+		
+		
+		//-----
+		private var startDate:Number = 0;//开始时间
+		private var _timer:Timer = new Timer(1000);
+		public var StartTimer_txt:TextField = null;//开始时间
+		public var StopTimer_txt:TextField = null;//结束时间
+		
+		//---
+		
+		//-------消息
+		public var chat_mc:ChatMovie = null;//聊天框
+		//public var Show_txt:TextArea = null;//内容显示框
+		public var Input_txt:TextArea = null;//内容输入框
+		public var send_bt:SimpleButton = null;//消息发送按钮
+		private var comBoxFormat:TextFormat = new TextFormat("宋体", 12);		
+		internal static var ncP2p:NetConnection = null;
+		internal static var nsP2p:NetStream = null;
+		internal static var _p2p:admin = null;
+		internal static var p2pId:String = "";
+		private var idManager:AbstractIdManager;
+		private var loginState:int;		
+		private var users_mc:MovieClip = null;//用户列表
+		internal static var select_mc:MovieClip = null;//鼠标选中状态
+		internal static var selectId:Number = -1;
+		
+		public function admin() {
+			_admin = this;
+			this._soundTransform = new SoundTransform(.8);
+			SoundMixer.soundTransform = this._soundTransform; 
+			
+			this._timer.addEventListener(TimerEvent.TIMER, _timerEvent);//视频计时器
+			
+			
+			this.disable_Mic.visible = false;
+			this.disable_Audio.visible = false;
+			
+			//*------------
+			//*
+			this.StartTimer_txt.visible = false;
+			//this.Show_txt = this.chat_mc.Show_txt;
+			this.Input_txt = this.chat_mc.Input_txt;
+			this.send_bt = this.chat_mc.send_bt;
+			
+			//*
+			
+			//this.Show_txt.editable = false;
+			//this.Show_txt.tabChildren = false;
+			//this.Show_txt.tabEnabled = false;
+			//this.Show_txt.horizontalScrollPolicy = "off";
+			//this.Show_txt.setStyle("textFormat", this.comBoxFormat);
+			
+			this.Input_txt.maxChars = 150;
+			this.Input_txt.horizontalScrollPolicy = "off";
+			this.Input_txt.setStyle("textFormat", this.comBoxFormat);
+			
+			//-------------禁用鼠标事件
+			this.disable_Mic.mouseChildren = false;
+			this.disable_Mic.mouseEnabled = false;
+			this.disable_Audio.mouseChildren = false;
+			this.disable_Audio.mouseEnabled = false;
+			this.micDisable_mc.mouseChildren = false;
+			this.micDisable_mc.mouseEnabled = false; 
+			this.disable_video.mouseChildren = false;
+			this.disable_video.mouseEnabled = false;
+			
+			
+			//添加事件
+			this.close_bt.addEventListener(MouseEvent.CLICK, _closeBtClick);
+			this.videoSet_bt.addEventListener(MouseEvent.CLICK, _videoSet);//开启视频事件	
+			this.chatOpen_bt.addEventListener(MouseEvent.CLICK, _chatClick);
+			this.Mic_bt.addEventListener(MouseEvent.CLICK, _MicClick);
+			this.Audio_bt.addEventListener(MouseEvent.CLICK, _AudioClick);
+			
+			this.netPingTimer.addEventListener(TimerEvent.TIMER, pingNetEvent);
+			this.micTimer.addEventListener(TimerEvent.TIMER, micTimerEvent);
+			
+			this.netConnP2p();
+			//this.openDevice();//打开设备-------------------------------------------------------------------------------------------------调试
+			this.userdata();//获取参数
+		}
+		//
+		private function userdata():void {
+			try {
+				var param:Object=this.stage.loaderInfo.parameters;
+				if (param["str"]!=null) {
+					var myar:Array = String(param["str"]).split("|");
+					_id = myar[0];
+					_name = myar[1];
+					_money = myar[2];
+					_type = myar[3];
+					_roomId = myar[4];
+					//_Nation = myar[5];
+					try{
+						if(myar[5]=="true"){
+							this.chat_mc.visible = true;
+							this.chatOpen_bt.visible = false;
+						}
+					}catch (e) {
+						
+					}
+					
+					if (_id == 0) {
+						this.str = "用户ID不正确"
+						this._AlertNetClose();//弹出警告框
+						return
+					}
+					this.openDevice();//打开设备
+				} else {
+					Alert.Show(this,"没有传递页面接口参数!","提示");
+				}
+			} catch (e) {
+				Alert.Show(this,"加载用户信息时出错!,返回首页!","提示");
+			}
+		}
+		
+		private function Registration():void { 
+			if (!ns) {
+				ns = new NetStream(ncP2p, NetStream.DIRECT_CONNECTIONS);
+				var objP2p:Object = new Object();
+				objP2p.onPeerConnect = function (tmpNS:NetStream):Boolean {
+					return true;
+				}
+				ns.client = objP2p;	
+				ns.addEventListener(NetStatusEvent.NET_STATUS, _netStreamStatusP2p);
+			}
+			if(this.local_Mic){
+				ns.attachAudio(this.local_Mic);
+			}
+			if(this.local_Camera){
+				ns.attachCamera(this.local_Camera);
+			}
+			ns.publish("vid");
+		}
+		
+		private function setVideo(_ind:int = 1):void {
+			var i:int = 1;
+			switch(Number(_ind)) {
+				case 1:
+					this.video_vid_mc.reSet(_ind, 117, 38);					
+					break;
+				case 2:
+					this.video_vid_mc.reSet(_ind, 235, 60);
+					for (i; i < Number(_ind); i++ ) {
+						userMovie(this.users_mc.getChildAt(i)).reSet(_ind, 40, 60);
+					}
+					break;
+				case 3:
+					this.video_vid_mc.reSet(_ind, 170, 85);
+					for (i; i < Number(_ind); i++ ) {
+						if(i==1){
+							userMovie(this.users_mc.getChildAt(i)).reSet(_ind, 48, 85);
+						}else {
+							userMovie(this.users_mc.getChildAt(i)).reSet(_ind, 290, 85);
+						}
+					}
+					break;
+				case 4:
+					this.video_vid_mc.reSet(3, 312, 85);
+					for (i; i < Number(_ind); i++ ) {
+						userMovie(this.users_mc.getChildAt(i)).reSet(3, (i-1)*95+27, 85);
+					}
+					break;
+				case 5:
+					this.video_vid_mc.reSet(3, 312, 42);
+					for (i; i < Number(_ind)-1; i++ ) {
+						userMovie(this.users_mc.getChildAt(i)).reSet(3, (i-1)*95+27, 42);
+					}
+					userMovie(this.users_mc.getChildAt(4)).reSet(3, 170, 144);
+					break;
+				case 6:
+					this.video_vid_mc.reSet(3, 312, 42);
+					for (i; i < Number(_ind)-2; i++ ) {
+						userMovie(this.users_mc.getChildAt(i)).reSet(3, (i-1)*95+27, 42);
+					}
+					userMovie(this.users_mc.getChildAt(4)).reSet(3, 122, 144);
+					userMovie(this.users_mc.getChildAt(5)).reSet(3, 217, 144);
+					break;
+				case 7:
+					this.video_vid_mc.reSet(3, 312, 42);
+					for (i; i < Number(_ind)-3; i++ ) {
+						userMovie(this.users_mc.getChildAt(i)).reSet(3, (i-1)*95+27, 42);
+					}
+					userMovie(this.users_mc.getChildAt(4)).reSet(3, 70, 144);
+					userMovie(this.users_mc.getChildAt(5)).reSet(3, 170, 144);
+					userMovie(this.users_mc.getChildAt(6)).reSet(3, 270, 144);
+					break;
+				case 8:
+					this.video_vid_mc.reSet(3, 312, 42);
+					for (i; i < Number(_ind); i++ ) {
+						if(i<4){
+							userMovie(this.users_mc.getChildAt(i)).reSet(3, (i - 1) * 95+27, 42);
+						}else {
+							userMovie(this.users_mc.getChildAt(i)).reSet(3, (i - 4) * 95+27, 144);
+						}
+					}
+					break;
+				default:
+				
+			}
+			for (var j:int=Number(_ind); j < 8; j++ ) {
+				userMovie(this.users_mc.getChildAt(j)).clear();
+			}
+			
+		}
+		
+		//打开设备
+		private function openDevice():void {
+			this.users_mc = new MovieClip();
+			this.addChild(this.users_mc);
+			this.video_vid_mc = new userMovie();
+			this.video_vid_mc.txt.text = _name;
+			this.users_mc.addChild(this.video_vid_mc);			
+			this.video_vid = this.video_vid_mc.video_mc;
+			//初始化用户列表
+			for (var i:int = 1; i< 8; i++ ) {
+				var usermc:userMovie = new userMovie();
+				usermc.visible = false;
+				this.users_mc.addChild(usermc);
+			}
+			this.setVideo(1);
+			
+			
+			this.openCamera();//打开本地视频
+			this.openMic();//打开本地音频
+			
+			if ((this.local_Camera&&this.local_Camera.muted==false)||(this.local_Mic&&this.local_Mic.muted==false)) {
+				//trace("记住本地允许"+this.local_Camera.muted+" : "+this.local_Mic.muted)
+				this._Unmuted();//同意接受视频与声音
+			}else {
+				Security.showSettings();
+			}
+			
+			this.audioDisable_mc.visible = false;
+			this.audioScroll_mc._disable(false);//启用
+			this.audioScroll_mc.setValue(this._soundTransform.volume*100);
+			this.audioScroll_mc.addEventListener("moveChange", _audioMoveChang);
+			if (Capabilities.avHardwareDisable) {
+				Alert.Show(this,"您电脑禁用了视频,请删除'C:\\WINDOWS\\system32\\Macromed\\Flash\\mms.cfg'文件即可", "操作");
+			}
+		}
+		//打开本地视频
+		private function openCamera():void {
+			if (Camera.names.length > 0) {
+				this.local_Camera = Camera.getCamera();
+				if (this.local_Camera) {
+					this.local_Camera.addEventListener(StatusEvent.STATUS, _status);
+					this.local_Camera.setMode(320, 240, 15);
+					this.local_Camera.setQuality(0, 85);
+					this.video_vid.attachCamera(this.local_Camera);
+				}else {
+					Alert.Show(this, "没有检测到视频设备或许视频设备正在被其它程序占用!", "测检出错", true, 6);
+					trace("没有检测到视频设备或许视频设备正在被其它程序占用")
+				}
+			}else {
+				Alert.Show(this, "对不起,没能在你机子上找到视频输入设备!", "测检出错", true, 6);
+				trace("没有视频")
+			}
+		}
+		//打开本地音频
+		private function openMic():void {
+			this.addEventListener(Event.ENTER_FRAME, _thisEnterFrame);
+			if (Microphone.names.length > 0) {
+				this.local_Mic = Microphone.getMicrophone();
+				if (this.local_Mic) {
+					this.local_Mic.addEventListener(StatusEvent.STATUS, _status);
+					this.local_Mic.gain = 50;
+					this.local_Mic.setUseEchoSuppression(true);
+					this.local_Mic.setSilenceLevel(10);//设置检测量
+				}else {
+					Alert.Show(this, "没有检测到声音输入设备或许声音设备正在被其它程序占用!", "测检出错", true, 6);
+				}
+			}else {
+				Alert.Show(this, "对不起,没能在你机子上找到声音输入设备!", "测检出错", true, 6);
+			}
+		}
+		
+		//检测
+		private function micTimerEvent(e:TimerEvent):void {
+			this.local_Mic.removeEventListener(ActivityEvent.ACTIVITY, micActivity);
+			this.micTimer.stop();
+			
+			this.stage.mouseChildren = true;
+			this._soundTransform.volume = .8;	
+			SoundMixer.soundTransform= this._soundTransform;
+			this.audioScroll_mc.setValue(this._soundTransform.volume * 100);
+			this.disable_Audio.visible = false;
+			
+			if (ns) {
+				ns.attachAudio(null);
+			}
+			
+			this.micScroll_mc._disable();
+			this.micScroll_mc.setValue(0);
+			this.disable_Mic.visible = true;
+			this.local_Mic = null;
+		}
+		private function micActivity(e:ActivityEvent):void {
+			this.local_Mic.removeEventListener(ActivityEvent.ACTIVITY, micActivity);
+			
+			this.stage.mouseChildren = true;
+			this._soundTransform.volume = .8;
+			SoundMixer.soundTransform= this._soundTransform;
+			this.audioScroll_mc.setValue(this._soundTransform.volume * 100);
+			this.disable_Audio.visible = false;
+			try{
+				if (e.activating) {
+					this.micTimer.removeEventListener(TimerEvent.TIMER, micTimerEvent);
+					this.micTimer.stop();
+					
+					this.local_Mic.setSilenceLevel(10);//设置检测量
+					
+					trace("有麦克风")					
+				}else {
+					trace("没有麦克风")
+				}
+			}catch (e) {
+				trace("没有麦克风")
+			}
+		}
+		
+		
+		private function _Unmuted():void {			
+			this.disable_video.visible = false;
+			this.micDisable_mc.visible = false;
+			
+			this.micScroll_mc._disable(false);
+			if(this.local_Mic){
+				this.micScroll_mc.setValue(Math.floor(this.local_Mic.gain/.8));
+				if (this.local_Mic.gain <= 0){
+					this.disable_Mic.visible = true;
+				}else{
+					this.disable_Mic.visible = false;
+				}
+			}else {
+				this.micScroll_mc._disable();
+				this.micScroll_mc.setValue(0);
+				this.disable_Mic.visible = true;
+			}
+			this.micScroll_mc.addEventListener("moveChange", this._micMoveChang);			
+		}
+		private function _status(e:StatusEvent):void {
+			if (e.code == "Microphone.Unmuted"||e.code == "Camera.Unmuted") {
+				this._Unmuted();//同意接受视频与声音
+			}else {
+				trace("您拒绝了视频")
+				
+				this.disable_video.visible = true;
+				this.micDisable_mc.visible = true;
+				
+				this.disable_Mic.visible = false;
+				
+				this._timer.stop();
+				this.micScroll_mc._disable();
+				this.micScroll_mc.setValue(0);
+				Alert.Show(this, "您好,您禁用了视频,这可能会导致对方无法更好的与你交流,如恢复请点击摄象头图标->选择\'允许\'", "警告", true, 5);
+			}
+		}
+		//初始化
+		private function netConnP2p():void {
+			ncP2p = new NetConnection();
+			ncP2p.client = this;
+			ncP2p.connect(rtmfp);
+			ncP2p.addEventListener(NetStatusEvent.NET_STATUS, _netStatusP2p);
+		}
+		private function info():void {
+			if (!nc) {				
+				nc = new NetConnection();
+				nc.client = _admin;
+				nc.addEventListener(NetStatusEvent.NET_STATUS, _netStatus);
+				nc.connect(rtmp, _id, _name, _money, _type,_roomId,_Nation,p2pId);
+				
+				this.startDate = getTimer();//开始时间
+				this._timer.start();//开始记时
+				this.StartTimer_txt.text = this.toStringNow();
+				
+				if (ExternalInterface.available) {
+					ExternalInterface.call("onParticipantJoined");
+				}
+			}					
+		}
+		//网络连接状况
+		internal function _netStatus(e:NetStatusEvent):void {
+			if (e.info.code == "NetConnection.Connect.Success") {
+				/*if (!ns) {
+					ns = new NetStream(nc);
+					ns.client = _admin;					
+				}
+				if(this.local_Mic){
+					ns.attachAudio(this.local_Mic);
+				}
+				if(this.local_Camera){
+					ns.attachCamera(this.local_Camera);
+				}
+				if(this.local_Camera||this.local_Mic){
+					ns.publish("vid" + _id);
+				}
+				*/
+				this.Registration();
+				//SharedObj 对象
+
+				if (!this.SharedObj) {
+					this.SharedObj = SharedObject.getRemote("so" + _roomId, nc.uri, true);
+					this.SharedObj.client = this;
+					this.SharedObj.addEventListener(SyncEvent.SYNC, _netSync);
+					this.SharedObj.connect(nc);
+				}
+				
+				this.netPingTimer.start();//ping服务器
+				trace("连接成功");					
+			}else {
+				if (e.info.code == "NetConnection.Connect.Failed") {
+					Alert.Show(this, "无法连接服务器,请重新登陆!", "服务器出错", true, 6);
+					trace("无法连接服务器,请重新登陆!");
+				}else if (e.info.code == "NetConnection.Connect.Closed") {
+					Alert.Show(this, "与服务器断开连接,请重新连接!", "服务器信息");
+					trace("与服务器断开连接,请重新连接!");				
+				}else if (e.info.code == "NetConnection.Connect.Rejected") {
+					try{
+						Alert.Show(this, e.info.application.msg, e.info.application.title, true, 6);
+					}catch (e) {
+					}
+					//Alert.Show(e.info.application.msg, e.info.application.title, true, 3, true, true);					
+				}else {
+					Alert.Show(this, "无法连接服务器,请重新登陆!", "服务器出错", true, 6);
+					trace("无法连接服务器,请重新登陆!");
+				}
+				
+				this.netPingTimer.stop();
+			}
+		}
+		
+		
+		private function resetMembers():void {
+			if ((this.SharedObj.data.Members is Array) && this.users_mc != null) {	
+				var v:int = 0;
+				var _ar:Array = this.SharedObj.data.Members;
+				for (var i:int = 0; i < _ar.length; i++ ) {
+					if (i < 8) {
+						if (Number(_ar[i].id) == _id) {
+							continue;
+						}
+						v++;
+						userMovie(this.users_mc.getChildAt(v)).Rendering(Number(_ar[i].id),String(_ar[i].name),Number(_ar[i].money),Number(_ar[i].type),String(_ar[i].p2pId));
+					}
+				}
+				this.setVideo(v+1);
+				//for (v; v < 8; v++ ) {
+					//userMovie(this.users_mc.getChildAt(v)).clear();
+				//}
+			}else if(this.users_mc!=null) {
+				for (var j:int=0; j < 8; j++ ) {
+					userMovie(this.users_mc.getChildAt(j)).clear();
+				}
+			}
+		}
+		//----------------------------------------------------------------------服务器
+		private function _netSync(e:SyncEvent):void {
+			trace("更新了cookies");
+			if(!this.send_bt.hasEventListener(MouseEvent.CLICK)){
+				this.send_bt.addEventListener(MouseEvent.CLICK, _sendClick);
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, _enterDown,true,32);
+				this.stage.addEventListener(KeyboardEvent.KEY_UP, _enterUp,true,32);
+			}
+			for (var i:int = 0; i < e.changeList.length; i++) {
+					if (e.changeList[i].code == "change"||e.changeList[i].code =="success") {
+						try {
+							
+							if (e.changeList[i].name == "Members") {										
+								this.resetMembers();//重置用户列表										
+								return
+							}							
+						}catch (e) {
+							Alert.Show(this, "初始化用户列表出错...", "出错", true, 6);
+						}
+					}
+			}
+			
+		}
+		
+		private function _enterDown(e:KeyboardEvent):void {
+			if (e.keyCode == 13&&this.Input_txt.editable) {
+				e.stopPropagation();
+				e.stopImmediatePropagation();
+				this.Input_txt.editable = false;
+				this._sendClick();				
+			}
+		}
+		private function _enterUp(e:KeyboardEvent):void {
+			if (e.keyCode == 13&&!this.Input_txt.editable) {
+				this.Input_txt.editable = true;
+				this.Input_txt.text = "";
+			}
+		}
+		private function _sendClick(e:MouseEvent=null):void {
+			if (String(this.Input_txt.text).replace(/( |　)/g, "") == "") {
+				Alert.Show(this, "输入的内容不能为空", "提示");
+			}else{
+				this.SharedObj.send("sendNews", _name, this.Input_txt.text);
+			}
+			this.Input_txt.text = "";
+		}
+		
+		public function sendNews(_sendName:String = "用户", _Content:String = "", bool:Boolean = false,obj:Object=null):void {
+			//_sendName = "<font color='#0000FF' size='12'>" + _sendName + ":</font>";
+			//this.Show_txt.htmlText += _sendName  + _Content + "<br>";
+			//this.Show_txt.verticalScrollPosition = this.Show_txt.maxVerticalScrollPosition;
+			if (obj) {
+				this.fileArray.push(obj)
+			}
+			
+			this.chat_mc.customAppendText(_sendName, _Content);
+		}
+		
+		public function sendFile(obj:Object = null):void {
+			if(nc.connected){
+				this.SharedObj.send("sendNews", _name, "#file:", false, obj);
+			}
+		}
+		
+		//-----------------------------
+		
+		public  function onMetaData(info:Object):void {
+			trace("metadata: duration=" + info.duration + " width=" + info.width + " height=" + info.height + " framerate=" + info.framerate);
+		}
+		public  function onCuePoint(info:Object):void {
+			trace("cuepoint: time=" + info.time + " name=" + info.name + " type=" + info.type);
+		}
+		public  function onPlayStatus(info:Object):void {
+			trace(info);
+		}
+		public function close():void {
+			trace("与服务器断开")
+			//与服务器断开
+		}
+		//--------------------------------------事件
+		private function _thisEnterFrame(e:Event):void {
+			if (this.local_Mic) {
+				this.micAL_mc.gotoAndStop(Math.floor(this.local_Mic.activityLevel / 10));
+				if (this.disable_Audio.visible) {
+					this.audioAL_mc.gotoAndStop(0);	
+				}else{
+					this.audioAL_mc.gotoAndStop(Math.floor(this.local_Mic.activityLevel / 10));
+				}
+			}else {				
+				this.micAL_mc.gotoAndStop(0);
+				this.audioAL_mc.gotoAndStop(0);
+			}
+		}
+		
+		//视频设置
+		private function _videoSet(e:MouseEvent):void {
+			try{
+				if ((this.local_Camera&&this.local_Camera.muted==false)||(this.local_Mic&&this.local_Mic.muted==false)) {
+					if (ns && this.local_Camera) {
+						if (this.disable_video.visible) { 
+							ns.attachCamera(this.local_Camera);
+							this.disable_video.visible = false;
+							
+							this.video_vid.attachCamera(this.local_Camera);
+						} else {
+							ns.attachCamera(null);
+							this.disable_video.visible = true;
+							
+							this.video_vid.attachCamera(null);
+							this.video_vid.clear();
+						}
+						if(this.local_Camera||this.local_Mic){
+							ns.publish("vid");
+						}
+					}
+				}else {
+					Security.showSettings();
+				}
+			}catch (e) {
+				
+			}
+		}
+		
+		
+		
+		//mic 声音更改
+		private function _micMoveChang(e:scrollMovieEvent):void {
+			trace("值" + e._value)
+			if(this.local_Mic){
+				this.local_Mic.gain = Math.floor(e._value*.8);
+			}
+			if (e._value <= 0) {
+				this.disable_Mic.visible = true;
+			}else {
+				this.disable_Mic.visible = false;
+			}
+		}
+		//audio 音量更改
+		private function _audioMoveChang(e:scrollMovieEvent):void {
+			this._soundTransform.volume = e._value / 100;
+			trace("值"+this._soundTransform.volume)
+			SoundMixer.soundTransform= this._soundTransform;
+			if (e._value <= 0) {
+				this.disable_Audio.visible = true;
+			}else {
+				this.disable_Audio.visible = false;
+			}
+		}
+		
+		//-------------------记时
+		//计算时间
+		private function toStringNow():String {
+			var _date:Date = new Date();
+			var _hours:Number = _date.getHours();//时
+			var _minutes:Number = _date.getMinutes();//分
+			var _seconds:Number =_date.getSeconds();//秒
+			
+			 return ((_hours<10)?"0"+_hours:_hours)+":"+((_minutes<10)?"0"+_minutes:_minutes)+":"+((_seconds<10)?"0"+_seconds:_seconds);
+		}
+		private function toStringTimer(_now:Number=0,_start:Number=0):String {
+			var _milliseconds = Math.floor((_now - _start) / 1000);//总毫秒数
+			//trace("总秒"+_milliseconds)
+			var _hours:Number = Math.floor(_milliseconds/3600);//时
+			var _minutes:Number = Math.floor((_milliseconds%3600)/60);//分
+			var _seconds:Number = Math.floor((_milliseconds%3600)%60);//秒
+			
+			 return ((_hours<10)?"0"+_hours:_hours)+":"+((_minutes<10)?"0"+_minutes:_minutes)+":"+((_seconds<10)?"0"+_seconds:_seconds);
+		}
+		private function _timerEvent(e:TimerEvent):void {
+			this.StopTimer_txt.text = this.toStringTimer(getTimer(), this.startDate);
+		}
+		
+		//断开按钮事件
+		private function _closeBtClick(e:MouseEvent):void {
+			var _myalert:Alert = Alert.Show(this, "您好,您确定断开现有的视频连接吗?", "请求确认", false,5);
+			_myalert.addEventListener("EventYes", _netclose);
+			_myalert.addEventListener("EventNo", _netcloseNo);
+		}
+		private function _netcloseNo(e:Event):void {
+			e.target.removeEventListener("EventYes", _netclose);
+			e.target.removeEventListener("EventNo", _netcloseNo);
+		}
+		
+		private function _netclose(e:Event = null):void {
+			if (ExternalInterface.available) {
+				ExternalInterface.call("EndOfCall",getTimer()-this.startDate);
+			}
+			this._timer.stop();//结束计时
+			this.close_bt.visible = false;//关闭按钮
+			
+			if(nc){
+				nc.close();
+			}
+			
+			this.video_vid.visible = false;
+			this.video_vid.attachCamera(null);
+			this.video_vid.attachNetStream(null);
+			
+			if(this.users_mc!=null) {
+				for (var j:int=0; j < 8; j++ ) {
+					userMovie(this.users_mc.getChildAt(j)).clear();
+				}
+			}
+			
+			var _myalert:Alert = Alert.Show(this, "您好,您已经与服务器断开,感谢您的使用,本次服务你共使用了 "+this.StopTimer_txt.text, "服务终止", true, 6);
+			_myalert.addEventListener("EventAlert", _AlertNetClose);
+		}
+		private function _AlertNetClose(e:Event=null):void {
+			if (ExternalInterface.available) {
+				this.str = "您好,本此服务已经结束,感谢你的使用";
+				ExternalInterface.call("swfClose",this.str);
+			}
+		}
+		
+		
+		//------------------------------------------------------------------------------------聊天框
+		  private function _chatClick(e:MouseEvent) : void
+        {
+            if (this.chat_mc.visible)
+            {
+                this.chat_mc.visible = false;
+            }
+            else
+            {
+                this.chat_mc.visible = true;
+              
+            }
+        }
+		
+		private function _MicClick(e:MouseEvent):void {
+			try {
+				if ((this.local_Camera&&this.local_Camera.muted==false)||(this.local_Mic&&this.local_Mic.muted==false)) {
+					if (!this.micDisable_mc.visible) {
+						if (this.disable_Mic.visible) {
+							//this.micScroll_mc._disable(false);//启用
+							this.local_Mic.gain = 50;
+							this.micScroll_mc.setValue(Math.floor(this.local_Mic.gain/.8));
+							this.disable_Mic.visible = false;					
+						}else {
+							//this.micScroll_mc._disable();//禁用
+							this.local_Mic.gain = 0;
+							this.micScroll_mc.setValue(0);
+							this.disable_Mic.visible = true;
+						}
+					}
+				}else {
+					Security.showSettings();
+				}				
+			}catch (e) {
+				this.micScroll_mc._disable();
+				this.micScroll_mc.setValue(0);
+				this.disable_Mic.visible = true;
+			}
+		}
+		
+		private function _AudioClick(e:MouseEvent):void {
+			if (!this.audioDisable_mc.visible) {
+				if (this.disable_Audio.visible) { 
+					//this.audioScroll_mc._disable(false);//启用
+					this._soundTransform.volume = .8;	
+					SoundMixer.soundTransform= this._soundTransform;
+					this.audioScroll_mc.setValue(this._soundTransform.volume * 100);
+					this.disable_Audio.visible = false;
+				} else {
+					//this.audioScroll_mc._disable();//禁用
+					this._soundTransform.volume = 0;	
+					SoundMixer.soundTransform= this._soundTransform;
+					this.audioScroll_mc.setValue(0);
+					this.disable_Audio.visible = true;
+				}
+			}
+		}
+		public function connectSuccess():void
+		{
+			idManager = new HttpIdManager();
+			idManager.addEventListener("registerSuccess", idManagerEvent);
+			idManager.addEventListener("registerFailure", idManagerEvent);
+			idManager.addEventListener("lookupFailure", idManagerEvent);
+			idManager.addEventListener("lookupSuccess", idManagerEvent);
+			idManager.addEventListener("idManagerError", idManagerEvent);
+		}
+		private function idManagerEvent(e:Event):void
+			{
+				
+				if (e.type == "registerSuccess")
+				{
+					switch (loginState)
+					{
+						case 1:
+							loginState = 1;
+							break;
+						case 2:
+						case 3:
+							loginState = 2;
+							return;
+						case 4:
+							return;
+					}	
+				}
+				else
+				{
+					var error:IdManagerError = e as IdManagerError;
+				}
+			}
+		//-----------------------------------------
+		//---------------------------ping
+		private function pingNetEvent(e:TimerEvent):void {
+			this.pingTime = getTimer();
+			if (nc && nc.connected) {
+				nc.call("ping", null);				
+			}
+		}
+		public function ping():void {
+			var times:Number = Math.floor(getTimer() - this.pingTime);
+			if (times>80000) {
+				if (ns) {
+					ns.attachCamera(null);
+				}
+			} else {
+				if(ns&&this.local_Camera&&(!this.disable_video.visible)){
+					ns.attachCamera(this.local_Camera);
+				}
+			}
+			
+			trace("用时"+(getTimer()-this.pingTime))
+		}
+		
+		private function _netStatusP2p(e:NetStatusEvent):void {
+			switch (e.info.code) {
+				case "NetConnection.Connect.Success" :
+					p2pId = ncP2p.nearID;
+					trace(ncP2p.nearID);				
+					this.Registration();
+					break;
+				case "NetConnection.Connect.Failed" :
+					Alert.Show(this, "连接失败！请您关闭防火墙", "服务器信息");
+					break;
+				case "NetConnection.Connect.Rejected" :
+					Alert.Show(this, "无法连接！可能是防火墙阻止,请您关闭防火墙", "服务器信息");
+					break;
+				case "NetConnection.Connect.Closed" :
+					Alert.Show(this, "无法连接！可能是防火墙阻止,请您关闭防火墙", "服务器信息");
+					break;
+			}
+		}
+		
+		private function _netStreamStatusP2p(e:NetStatusEvent):void {
+			ns.removeEventListener(NetStatusEvent.NET_STATUS, _netStreamStatusP2p);
+			//trace(e.info.code + "*****************");
+			
+			this.info();//rtmp连接			
+		}
+		
+	}
+}
