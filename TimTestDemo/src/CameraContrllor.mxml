@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:Application backgroundColor="#ffffff" borderStyle="none" width="430" height="700" layout="absolute" creationComplete="returnUserName()" xmlns:mx="http://www.adobe.com/2006/mxml">
 <mx:Style>
-	#VideoDisplay{background-size:"100%"; backgroundImage:"/assert/1.jpg"; border-style:"solid"; border-thickness:4; corner-radius:5; border-color:"#A3A4A9";}
-	#Button{fillAlphas:"[0.77, 0.89, 0.45, 0.45]"; fillColors:"[#D3E7F7, #FCFCFC]"; fontFamily:"Arial"; fontWeight:"bold"; alpha:0.8; cornerRadius:5; fontSize:"12";}
+	VideoDisplay{background-size:"100%"; background-image:"/assert/1.jpg"; border-style:"solid"; border-thickness:4; corner-radius:5; border-color:"#A3A4A9";}
+	Button{fill-alphas:"[0.77, 0.89, 0.45, 0.45]"; fill-colors:"[#D3E7F7, #FCFCFC]"; font-family:"Arial"; font-weight:"bold"; alpha:0.8; corner-radius:5; font-size:"12";}
 </mx:Style>
 <mx:Script>
 	<![CDATA[
+		import mx.rpc.events.FaultEvent;
+		import mx.rpc.http.HTTPService;
+		import mx.rpc.events.ResultEvent;
+		import com.util.fullscreen.FullScreenUtil;
 		import mx.controls.Alert;
 		import mx.events.FlexEvent;
 		import mx.formatters.DateFormatter;
@@ -18,65 +22,110 @@
 
 		private const StratusAddress:String = "rtmfp://stratus.adobe.com";
 		private const DeveloperKey:String = "6b754e9d85b872b8f9c55a69-da4e8ad8ec29";
+		// 免费使用的时间(分钟)-超过自动开始计算平台费
+		private const freeMin:int = 1;
+
 		private var netConnection:NetConnection;
 		private var myStream:NetStream;
-		private var sendStream:NetStream;
-		private var receiveStream:NetStream;
 		private var controlStream:NetStream;
+		// 已使用的免费时间
+		private var currFreeMin:int = 0;
+		// 发送流
+		private var sendStream:NetStream;
+		// 接收流
+		private var receiveStream:NetStream;
 		private var keyCode:int;
 		private var shiftKey:Boolean;
 		private var ctrlKey:Boolean;
 		private var NetStreamClose:int;
 		private var remoteVideo:Video;
 		private var localVideo:Video;
-		private var micIndex:int = 0;
 		private var audioInd:Indicator;
 		private var audioInd1:Indicator;
-		private var mic:Microphone;
 		private var uc:UIComponent= new UIComponent();
-		private var startDate:Number = 0;//开始时间
-		// 每秒钟监控
-		private var _timer:Timer = new Timer(1000);
+		// 开始时间
+		private var startDate:Number = 0;
+		// 课时费监控
+		private var periodFeeTimer:Timer = new Timer(1000);
+	 	// 课时费计费插入时间
+	 	private var periodDate:String="";
+		// 平台费监控-分钟计算
+		private var platformFeeTimer:Timer = new Timer(60000);
+		// 平台费计费插入时间
+		private var platformDate:String="";
 
-		[Bindable] private var camera:Camera;
-		[Bindable]private var myId:String;
-		//视频关闭按钮标识 0 发送视频 ，1 停止视频
+		// 自身编号
+		private var myId:String;
+		// 另一用户编号
+		private var userId:String;
+
+		// 视频关闭按钮标识 0 发送视频 ，1 停止视频
 		[Bindable]private var flag:Number=0;
 		[Bindable]private var myName:String;
-		[Bindable]private var userId:String;
 		[Bindable]private var UserName:String;
 		[Bindable]private var studentName:String;
+		// 最终用户商议的课时费
 	 	[Bindable]private var roomFee:Number=0;
-	 	[Bindable]private var insertDate:String="";
 	 	[Bindable]private var loginState:int=0;
+	 	// 用户当前点数
 	 	[Bindable]private var credits:Number=0;
+	 	// 平台费基数
 		[Bindable]private var forChinesegreatFee:Number=1;
+		// 上课时间
 		[Bindable]private var time:String="00:00:00";
 		[Bindable]private var totalEarning:String='0(credits)';
 		[Bindable]private var cost:String='0(credits)';
-		[Bindable]private var student:Array=[{stuName:studentName, stuTime:time,stuFee:roomFee+'(credits)',forChi:forChinesegreatFee+'(credits)',totalEarn:totalEarning}];
-		[Bindable]private var teacher:Array=[{teaName:userName, stuTime:time,stuFee:roomFee+'(credits)',totalCost:cost}];
+		[Bindable]private var student:Array = [{stuName:studentName, stuTime:time,stuFee:roomFee+'(credits)',forChi:forChinesegreatFee+'(credits)',totalEarn:totalEarning}];
+		[Bindable]private var teacher:Array = [{teaName:userName, stuTime:time,stuFee:roomFee+'(credits)',totalCost:cost}];
+		[Bindable]public var cards:Array = new Array(
+			{label:"USD",data:1000},
+			{label:"EUR",data:1276},
+			{label:"CAD",data:802},
+			{label:"AUD",data:650},
+			{label:"GBP",data:1427},
+			{label:"JPY",data:544},
+			{label:"CHF",data:858},
+			{label:"NZD",data:519},
+			{label:"RMB",data:146}
+		);
 	 	// 聊天请求编号
 		private var chatReqId:String;
 		// 标记是否已经连接
-		private var isConnected:Boolean=false;
+		private var isConnected:Boolean = false;
 		// 是否已更新
-		private var isUpdate:Boolean=false;
+		private var isUpdate:Boolean = false;
 		// 是否是请求者
-		private var isRequest:Boolean=false;
+		private var isRequest:Boolean = false;
+		// 是否是老师
+		private var isTeacher:Boolean = false;
+		
+		// 课时费请求URL
+		private var periodFeeRecord:HTTPService = new HTTPService(ClassRoomConstant.SERVER_URL + "/CG/chat.do?p=periodFeeRecord");
+		// 平台费请求URL
+		private var platformFeeRecord:HTTPService = new HTTPService(ClassRoomConstant.SERVER_URL + "/CG/chat.do?p=plateformFeeRecord");
 
 		public function returnUserName():void {
+			periodFeeRecord.method = "POST";
+			// 课时费调用出错
+			periodFeeRecord.addEventListener(FaultEvent.FAULT, periodFeeFault);
+			// 课时费调用成功
+			periodFeeRecord.addEventListener(ResultEvent.RESULT, periodFeeResult);
+			platformFeeRecord.method = "POST";
+			// 平台费调用出错
+			platformFeeRecord.addEventListener(FaultEvent.FAULT, platformFeeFault);
+			// 平台费调用成功
+			platformFeeRecord.addEventListener(ResultEvent.RESULT, platformFeeResult);
 			// 初始化麦克风设置
 			initAudio();
-			getuser.url = ClassRoomConstant.SERVER_URL + "/CG/chat.do?p=updateUserCredits";
-			var ss:String=ExternalInterface.call("returnTheName");
-			//var ss:String="12;154;123;12123;234";
+			// 初始化麦克风设置
+			initAudio();
+			var ss:String="qiu;725;10;137;50000";
+			//var ss:String="test;725;50000";
 			var ss1:Array=ss.split(";");
 			userName.text=ss1[0];
 			if (ss1[3] != null) {
 				// 教师权限
-				// 设置被呼叫者ID
-				peerId.text=ss1[1];
+				isTeacher = true;
 				// 设置教师扣费基数
 				roomFee=ss1[2];
 				// 设置自身ID
@@ -86,7 +135,7 @@
 				loginState=0;
 			} else {// 学生权限
 				loginState=1;
-				fee.visible=false;
+				feeRequestBtn.visible=false;
 				myId=ss1[1];
 				credits=ss1[2];
 			}
@@ -98,7 +147,7 @@
 		 * 初始化麦克风设置.
 		 */
 		private function initAudio():void {
-			mic= Microphone.getMicrophone();
+			var mic:Microphone=getMicrophone();
 
 			audioInd=new Indicator(70,7,0x000000,0xffffff);
 			audioInd.Current = 0.05 + mic.activityLevel/100;
@@ -113,77 +162,88 @@
 		 	uc1.x=35;
 		 	uc1.y=13;
 		 	speakerVolumeSlider.addChildAt(uc1,0);
-		 	// 下面这句居然没用
+			// 下面这句居然没用
 		 	mic.addEventListener(ActivityEvent.ACTIVITY, activity);
+		}
+		/**
+		 * 获取麦克风.
+		 */
+		private function getMicrophone():Microphone {
+			return Microphone.getEnhancedMicrophone(0);
+		}
+		/**
+		 * 获取用户可用麦克风.
+		 */
+		private function getCamera():Camera {
+			return Camera.getCamera();
 		}
 		private function init():void {
 			if (userName.text == "") {
-				Alert.show("请输入任意用户名","错误")
+				Alert.show("请输入任意用户名", "错误");
 				return
 			}
 			netConnection = new NetConnection();
 			netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
 			netConnection.connect(StratusAddress + "/" + DeveloperKey); //服务器地址里需要开发者Key
 		}
-
 		private function netConnectionHandler(e:NetStatusEvent):void {
 			switch (e.info.code) {
 				case "NetConnection.Connect.Success":
-					// 调用JS传入nearID，完成请求信息插入
-					ExternalInterface.call("returnNearID",netConnection.nearID);
-					// 初始化流，并在获得peerId时执行请求
+					info.text = "你好 "+userName.text+", 你已链接上Stratus服务器\n\n"
+					info.text += "你的PeerId是:\n"+netConnection.nearID+"\n对方可以用这个ID呼叫你\n\n" 
 					initSendStream();
 					info.addEventListener(FlexEvent.UPDATE_COMPLETE,handleMessage);
 					message.textArea.addEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
 					message.textArea.addEventListener(TextEvent.TEXT_INPUT,onTextInput);
 				break;
-				case "NetConnection.Connect.Closed":
-				break;
-				case "NetStream.Connect.Success":// 连接成功，请求者执行1次，被请求者执行2次
-					// 标记为已连接
-					isConnected = true;
-					// 设置浏览器只监听关闭，不执行数据更新
-					ExternalInterface.call("setExplorerHandler", 1);
-				break;
 				case "NetConnection.Connect.Failed":
 					Alert.show("连接错误","连接错误")
 				break;
-				case "NetStream.Connect.Closed":// 在连接断开时执行
-					// 停止计费
+				case "NetConnection.Connect.Closed":
+				break;
+				case "NetStream.Connect.Success":
+				break;
+				case "NetStream.Connect.Closed":
 					stopFee();
-					fee.enabled=false;
-					isUpdate = true;
-					isConnected = false;
+					feeRequestBtn.enabled=false;
 					NetStreamClose=NetStreamClose+1;
 					if (NetStreamClose==1) {
 						Alert.yesLabel="确定";
 						Alert.noLabel="取消";
 						Alert.show("是否要关闭本窗口?", "对方已断开连接", 3, null, alertClickHandler);
+						remoteVideoDisplay.visible=false;
+						//videoArea.setStyle("paddingLeft","-90");
 					}
+				break;
+				case "NetStream.Play.Switch":
+				// 用户从一个播放流切换至另一个播放流
+				break;
+				case "NetStream.Play.Complete":
+				// 播放结束
 				break;
 			}
 		}
-		private function initSendStream():void {
+		/**
+		 * 初始化发送流.
+		 */
+		private function initSendStream():void {	
 			myStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
-			myStream.addEventListener(NetStatusEvent.NET_STATUS, netStreamHandler);
-			myStream.publish(netConnection.nearID);
+			myStream.publish(netConnection.nearID);	
 			//监听onPeerConnect事件
 			var o:Object = new Object();
-			o.onPeerConnect = function(subscriberStream:NetStream):Boolean {// 有用户尝试连接
+			o.onPeerConnect = function(subscriberStream:NetStream):Boolean {		
 				receiveStream = new NetStream(netConnection,subscriberStream.farID);
-				receiveStream.addEventListener(NetStatusEvent.NET_STATUS, receiveStreamHandler);
 				receiveStream.play("caller");
 				receiveStream.receiveAudio(true);
 				receiveStream.receiveAudio(true);
-				//监听onIm事件，用于收取文字信息
 				var i:Object = new Object;
+				//监听onIm事件，用于收取文字信息
 				i.onIm = function(name:String, value:String):void {
-					var dateFormatter:DateFormatter = new DateFormatter();
+					var dateFormatter:DateFormatter = new DateFormatter(); 
 					dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
 					var time:String = new Date().toLocaleTimeString();
 					var date:String = dateFormatter.format(new Date());
-					info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>";
-					ExternalInterface.call("focusOn");
+					info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>"; 
 				}
 				//监听onIncomingCall事件，用于确定链接成功
 				i.onIncomingCall = function(name:String):void {
@@ -193,106 +253,128 @@
 				i.onHangup = function():void {
 					//	hangup()
 				}
-				i.startFee = function(userName:String,fee:Number):void {
+				// 课时费收费确认
+				i.feeConfirm = function(userName:String,fee:Number):void {	
 					roomFee=fee;
 					if (credits<fee) {
-						Alert.show("请充值！","你的余额不足！", 1, null, charge);
+						Alert.show("请充值！", "你的余额不足！", 1, null, charge);
 						stopFee();
 						sendStream.send("notEnoughCredits");
 					} else {
 						teacher[0].teaName=userName;
-						showStudentTimer();
-						Alert.show("开始计费","提示!");
+						Alert.show("准备开始计费\n课时费: " + fee, "确认", Alert.OK | Alert.CANCEL, null, feeConfirmHandler);
 					}
 				}
 				i.stopFeeForStudent=function():void {
+					Alert.show("已停止课时费收取", "提醒");
 					stopFee();
 				}
 				i.updateCredits=function(credit:String):void {
 					feeArea.text=credit;
 					credits=Number(credit);
 					changeCredits();
-			 		if (Number(credit)<roomFee) {
-					 	Alert.show("请充值！","你的余额不足！", 1, null, charge);
-					 	stopFee();
+					if (Number(credit)<roomFee) {
+						Alert.show("请充值！","你的余额不足！", 1, null, charge);
+						stopFee();
 						sendStream.send("notEnoughCredits");
 					}
 			 	}
 				receiveStream.client = i;
 				return true;
 			}
-			myStream.client = o;
-			if (peerId.text != '') {
-				call();
+			myStream.client = o; 
+		}
+		/**
+		 * 学生课时费确认处理.
+		 */
+		private function feeConfirmHandler(event:CloseEvent):void {
+			if (event.detail == Alert.OK) {
+				// 开始计费
+				sendStream.send("startPeriodFee");
+				showStudentTimer();
+			} else if (event.detail == Alert.CANCEL) {
+				// 取消计费请求
+				sendStream.send("cancelFeeRequest");
 			}
 		}
 		/**
 		 * 用户充值.
 		 */
 		private function charge(event:CloseEvent):void {
-			if (event.detail==Alert.YES) {
-				ExternalInterface.call("charge");
-			}
-		}
-		private function netStreamHandler(e:NetStatusEvent):void {
 		}
 		private function sendStreamHandler(e:NetStatusEvent):void {
 			if (e.info.code == "NetStream.Play.Start") {
-				sendStream.send("onIncomingCall",userName.text)
+				sendStream.send("onIncomingCall", userName.text)
 			}
 		}
-		private function receiveStreamHandler(e:NetStatusEvent):void {
-		}
 		private function call():void {
-			// 修改为请求者
-			isRequest = true;
+			Alert.show("执行Call方法");
 			controlStream = new NetStream(netConnection, peerId.text);
-			controlStream.addEventListener(NetStatusEvent.NET_STATUS, netStreamHandler);
 			controlStream.play(peerId.text);
 
-			//同时对外发布呼叫者的信息流
+			// 同时对外发布呼叫者的信息流
 			sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
 			sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
 			sendStream.publish("caller");
+
 			publishVideo();
 			publishAudio();
-			//尝试播放被呼叫者的信息流
+
+			// 尝试播放被呼叫者的信息流
 			receiveStream = new NetStream(netConnection, peerId.text);
-			receiveStream.addEventListener(NetStatusEvent.NET_STATUS, receiveStreamHandler);
 			receiveStream.play("callee");
-			//监听信息发布事件
 			var i:Object = new Object;
-			i.onIm = function(name:String, value:String):void {
+			// 监听信息发布事件
+			i.onIm=function(name:String, value:String):void {
 				var dateFormatter:DateFormatter = new DateFormatter();
 				dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
-				var time:String = new Date().toLocaleTimeString();
-				var date:String = dateFormatter.format(new Date());
-				info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>";
-				ExternalInterface.call("focusOn");
+				var time:String=new Date().toLocaleTimeString();
+				var date:String=dateFormatter.format(new Date());
+				info.htmlText+="<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>";
 			}
 			//监听onConnectSuccess事件，确定链接成功
-			i.onConnectSuccess = function(name:String,userid:String):void {
+			i.onConnectSuccess=function(name:String,userid:String):void {
 				info.text += "与"+name + "链接成功\n";
 				studentName=name;
-				fee.enabled=true;
+				feeRequestBtn.enabled=true; 
 				userId=userid;
 				receiveStream.receiveAudio(true)
 				receiveStream.receiveAudio(true)
-				remoteVideo = new Video();
-				remoteVideo.width = remoteVideoDisplay.width;
-				remoteVideo.height = remoteVideoDisplay.height;
+				remoteVideo=new Video();
+				remoteVideo.width=remoteVideoDisplay.width;
+				remoteVideo.height=remoteVideoDisplay.height;
 				remoteVideo.attachNetStream(receiveStream);
 				remoteVideoDisplay.addChild(remoteVideo);
 			}
-			i.onHangup = function():void {
+			i.onHangup=function():void {
 				// hangup()
 			}
+			// 点数不够
 			i.notEnoughCredits=function():void {
 				stopFee();
-				fee.enabled=false;
+				feeRequestBtn.enabled=false;
 				Alert.show("对方钱不够，停止计时！");
 			}
-		 	receiveStream.client = i
+			// 不同意课时费请求
+			i.cancelFeeRequest=function():void {
+				feeRequestBtn.enabled = true;
+				Alert.show("对方没有同意计费请求\n课时费: " + confirmFee.text);
+			}
+			// 开始记录课时费
+			i.startPeriodFee=function():void {
+				feeRequestBtn.enabled = true;
+				roomFee = parseInt(confirmFee.text);
+				// 开始时间
+				startDate=getTimer();
+				// 开始记时
+				periodFeeTimer.start();
+				student[0].stuFee=roomFee+'(credits)';
+				student[0].stuName=studentName;
+				periodFeeTimer.addEventListener(TimerEvent.TIMER, periodFeeTimerHandler);//视频计时器
+				feeRequestBtn.label="停止计费";
+				feeRequestBtn.setStyle("color", "#ff0000");
+			}
+		 	receiveStream.client=i;
 		}
 		//用sendStream对外接受信息流
 	 	private function accpetHandle():void {
@@ -314,7 +396,6 @@
 		//用sendStream对外发布信息流
 		private function send():Boolean {
 			if (message.text=="") {
-				ExternalInterface.call("showMsg");
 				return false;
 			} else {
 				var dateFormatter:DateFormatter = new DateFormatter();
@@ -327,45 +408,84 @@
 				return true;
 			}
 		}
+		// 发布视频
 		private function publishVideo():void {
-			camera=Camera.getCamera();
-			if (camera) {
-				sendStream.attachCamera(camera);
-				// 设置关键帧
-				camera.setKeyFrameInterval(15);
-				// 设置拍摄模式
-				camera.setMode(120, 100, 12);
+			var camera:Camera=getCamera();
+			if (camera == null) {
+				Alert.show("无法获取摄像头\n请检查是否连接摄像头或是否被其它程序占用");
 			}
-			localVideo = new Video();
-			localVideo.width = localVideoDisplay.width;
-			localVideo.height = localVideoDisplay.height;
-			// 指定播放视频时使用平滑处理(插补数据)
-			localVideo.smoothing = true;
-			localVideo.attachCamera(camera);
-			localVideoDisplay.addChild(localVideo);
+			if (camera) {
+				// 设置关键帧
+				var h264Setting:H264VideoStreamSettings = new H264VideoStreamSettings();
+				h264Setting.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_5_1);
+				// 设置拍摄模式
+				h264Setting.setMode(200, 150, 12);
+				// 设置视频品质
+				h264Setting.setQuality(0, 100);
+				// 设置视频编码方式
+				sendStream.videoStreamSettings = h264Setting;
+
+				sendStream.attachCamera(camera);
+
+				localVideo = new Video();
+				localVideo.width = localVideoDisplay.width;
+				localVideo.height = localVideoDisplay.height;
+				localVideo.x=0;
+				localVideo.y=0;
+				// 指定播放视频时使用平滑处理(插补数据)
+				localVideo.smoothing = true;
+				localVideo.attachCamera(camera);
+				localVideoDisplay.addChild(localVideo);
+			}
 		}
+		// 发布音频
 		private function publishAudio():void {
 			var mics:Array = Microphone.names;
 			if (mics && mics.length>0) {
-				var micPhone:Microphone= Microphone.getMicrophone();
-				//使用Speex编码，无需指定取样速率
+				// 获取增强类型的对象
+				var micPhone:Microphone= getMicrophone();
+				// 使用Speex编码，无需指定取样速率
 				micPhone.codec = SoundCodec.SPEEX;
-				// 设置不回放
-				micPhone.setLoopBack(false);
-				// 麦克风捕获声音的频率
-				micPhone.rate = 44;
-				// 麦克风增益
-				micPhone.gain = 100;
-				// 设置噪音衰减分贝数，可选值：-30~0(不衰减)
-				micPhone.noiseSuppressionLevel = -20;
 				// 设置可认定为有声的最低音量输入水平，可选值0~100
             	// 以及实际静音前需经历的无声时间长度(毫秒)
 				micPhone.setSilenceLevel(40, 1000);
+				// 只在SPEEX下使用
+				micPhone.enableVAD = true;
+				// 设置声音比特率,只在SPEEX下使用,0~10,默认6
+				// 值越大，声音品质越高，消耗的带宽也越高
+				micPhone.encodeQuality = 10;
+				// 在SPEEX下使用,默认2,值越小延迟越少,消耗带宽越高
+				micPhone.framesPerPacket = 2;
+				// 麦克风属性设置
+				var options:MicrophoneEnhancedOptions = new MicrophoneEnhancedOptions();
+				// USB类型麦克风
+				if (micPhone.name.toLowerCase().indexOf("usb") != -1) {
+					// USB麦克风默认值
+					options.mode = MicrophoneEnhancedMode.HALF_DUPLEX;
+				} else {
+					// 非USB麦克风默认值
+					options.mode = MicrophoneEnhancedMode.FULL_DUPLEX;
+				}
+				// 是否启用自动增益控制
+				options.autoGain = true;
+				// 回声路径,值越大，回声抑制效果越好，但声音的延迟会越大
+				// 消耗的资源会越多，值取128或256
+				// options.echoPath = 256;
+				// 非线性处理，处理乐音时最好关闭
+				options.nonLinearProcessing = true;
+				micPhone.enhancedOptions=options;
+				// 设置是否本地可听到声音
+				micPhone.setLoopBack(false);
+				// 麦克风捕获声音的频率
+				// micPhone.rate = 44;
+				// 麦克风增益0~100
+				micPhone.gain = 100;
+				// 设置噪音衰减分贝数，可选值：-30~0(不衰减)
+				micPhone.noiseSuppressionLevel = -30;
 				// 使用回声抑制功能
 				micPhone.setUseEchoSuppression(true);
 
-				micPhone.addEventListener(ActivityEvent.ACTIVITY, activity);
-				sendStream.attachAudio(micPhone)
+				sendStream.attachAudio(micPhone);
 			}
 		}
 		//显示文本控制按钮
@@ -391,60 +511,99 @@
 			message.addChildAt(message.toolbar,0);
 		}
 		//老师计费并启动学生端计费
-		private function showTimer():void {
-			if (fee.label == "停止计费") {
+		private function periodFeeRequest():void {
+			if (feeRequestBtn.label == "停止计费") {
 	 			stopFee();
 				sendStream.send("stopFeeForStudent");
-			 	fee.label="开始计费";
-				fee.setStyle("color","#385A62");
+			 	feeRequestBtn.label="开始计费";
+				feeRequestBtn.setStyle("color","#385A62");
 			 	return;
 	 		}
-			//开始时间
-			startDate = getTimer();
-			//开始记时
-			_timer.start();
-			student[0].stuFee=roomFee+'(credits)';
-			student[0].stuName=studentName;
-			//视频计时器
-			this._timer.addEventListener(TimerEvent.TIMER, _timerEvent);
-			sendStream.send("startFee", userName.text, roomFee);
-			fee.label="停止计费";
-			fee.setStyle("color", "#ff0000");
+	 		if (isTrueFee(confirmFee.text)) {
+	 			Alert.show("课时费用将修正为：\n" + Number(confirmFee.text) + "/min", "提示", Alert.OK|Alert.CANCEL, null, teacherConfirmFee);
+	 		} else {
+	 			Alert.show("您的课时费用不正常\n课时费: " + confirmFee.text, "错误");
+	 		}
 		}
+		/**
+		 * 老师确认课时费.
+		 */
+		private function teacherConfirmFee(event:CloseEvent):void {
+			if (event.detail == Alert.OK) {
+				// 发送确认请求
+				sendStream.send("feeConfirm", userName.text, confirmFee.text);
+				feeRequestBtn.enabled = false;
+			}
+		}
+		/**
+		 * 是否是正常的课时费.
+		 */
+		private function isTrueFee(numStr:String):Boolean {
+			if (Number(numStr) < 1) {
+				return false;
+			}
+			return true;
+		}
+		/**
+		 * 停止课时费收取.
+		 */
 		private function stopFee():void {
-			_timer.stop();
-			// 清除计费插入时间
-			insertDate = "";
+			periodFeeTimer.stop();
+			// 清除课时费计费插入时间
+			periodDate = "";
 		}
-		private function _timerEvent(e:TimerEvent):void {
-			student[0].stuTime= this.toStringTimer(getTimer(), this.startDate);
+		/**
+		 * 课时费监控处理.
+		 */
+		private function periodFeeTimerHandler(e:TimerEvent):void {
+			student[0].stuTime= toStringTimer(getTimer(), startDate);
 			stu.dataProvider=student;
 		}
-		private function toStringTimer(_now:Number=0, _start:Number=0):String {
+		/**
+		 * 平台费监控处理.
+		 */
+		private function platformFeeTimerHandler(event:TimerEvent):void {
+			Alert.show("请求后台处理费用记录");
+			currFreeMin++;
+			if (currFreeMin >= freeMin) {
+				currFreeMin = freeMin;
+				// 计费
+				platformFeeRecord.url = platformFeeRecord.url + "&stuId="+userId+"&tchId="+myId+"&insertDate="+periodDate;
+				platformFeeRecord.send();
+			}
+		}
+		/**
+		 * 教师计费时间,且向服务器发送课时费记录请求.
+		 */
+		private function toStringTimer(_now:Number=0,_start:Number=0):String {
 			var _milliseconds:Number= Math.floor((_now - _start) / 1000);//总毫秒数
 			var _hours:Number = Math.floor(_milliseconds/3600);//时
 			var _minutes:Number = Math.floor((_milliseconds%3600)/60);//分
 			var _seconds:Number = Math.floor((_milliseconds%3600)%60);//秒
 			var earning:Number=(_minutes+_hours*60)*(roomFee-forChinesegreatFee);
 			student[0].totalEarn =earning.toString()+'(credits)';
-			if (_seconds==0) {
-				getuser.send();
+			if (_seconds==0) {// 记录课时费请求
+				Alert.show("开始课时费记录请求");
+				// 记录用户课时费
+				periodFeeRecord.url = periodFeeRecord.url + "&stuId="+userId+"&tchId="+myId+"&fee="+roomFee+"&insertDate="+periodDate;
+				periodFeeRecord.send();
 			}
 			return ((_hours<10)?"0"+_hours:_hours)+":"+((_minutes<10)?"0"+_minutes:_minutes)+":"+((_seconds<10)?"0"+_seconds:_seconds);
 		}
-		//学生计费
+		// 学生计费
 		private function showStudentTimer():void {
-			//开始时间
+			// 开始时间
 			startDate = getTimer();
-			//开始记时
-			_timer.start();
+			// 开始记时
+			periodFeeTimer.start();
+			// 课时费
 			teacher[0].stuFee=roomFee+'(credits)';
-			//视频计时器
-			this._timer.addEventListener(TimerEvent.TIMER, _studentTimerEvent);
+			// 视频计时器
+			periodFeeTimer.addEventListener(TimerEvent.TIMER, _studentTimerEvent);
 		}
 		private function _studentTimerEvent(e:TimerEvent):void {
-			teacher[0].stuTime=this.toStudentTimer(getTimer(), this.startDate);
-			tea.dataProvider=teacher;
+			teacher[0].stuTime=toStudentTimer(getTimer(), startDate);
+			tch.dataProvider=teacher;
 		}
 		private function toStudentTimer(_now:Number=0,_start:Number=0):String {
 			var _milliseconds:Number = Math.floor((_now - _start) / 1000);//总毫秒数
@@ -459,15 +618,9 @@
 			addEventListener(Event.ENTER_FRAME, init1);
 		}
 		private function init1(event:Event):void {
-			audioInd.Current = 0.05 + mic.activityLevel/100;
+			audioInd.Current = 0.05 + getMicrophone().activityLevel/100;
 		}
 	 	private function closeMessage():void {
-	 		if (isConnected) {
-	 			// 设置浏览器提醒用户，不更新数据库
-	 			ExternalInterface.call("setExplorerHandler", 1);
-	 		}
- 			// 关闭浏览器
- 			ExternalInterface.call("closeMessage");
 		}
 		// 说话音量调节
 		private function speakerVolumeChanged(e:SliderEvent):void {
@@ -479,23 +632,14 @@
 		}
 		// 耳麦音量调节
 		private function micVolumeChanged(e:SliderEvent):void {
-			var mic:Microphone = Microphone.getMicrophone(micIndex);
+			var mic:Microphone = getMicrophone();
 			if (mic) {
 				mic.gain = e.value;
 			}
 		}
-		/**
-		 * 一定在两用户连接上且有一人断开情况下执行.
-		 */
 		private function alertClickHandler(event:CloseEvent):void {
-			// 执行数据更新
-			ExternalInterface.call("onunload_handler");
-			// 设定不在监听任何浏览器事件
-			ExternalInterface.call("setExplorerHandler", 3);
-			isConnected = false;
-			if (event.detail == Alert.YES) {
-				// 只关闭浏览器,不执行其它
-				ExternalInterface.call("closeMessage");
+			if (event.detail==Alert.YES) {
+				closeMessage();
 			} 
 		}
 		private function handleMessage(event:Event):void { 
@@ -528,7 +672,7 @@
 				evt.preventDefault();
 				callLater(function():void {
 					//sendMessage()即为发送消息的方法，它应该返回一个Boolean值，以此来决定是否清空消息框 
-					if(send()){
+					if(send()) {
 						message.text = "";
 						message.htmlText = "";
 						message.textArea.setSelection(0,0);		 
@@ -536,38 +680,52 @@
 				});
 			}
 		}
-		private function showResult():void {
-			// 获取返回数据信息
-			var result:String=getuser.lastResult.result;
+		// 课时费计费成功
+		private function periodFeeResult():void {	 
+			var result:String=periodFeeRecord.lastResult.result;
 			Alert.show(result);
 			var tempArray:Array=result.split(",");
 			var temp:Array;
 			if(tempArray.length == 1) {// 非插入
 				temp = tempArray[0].toString().split(";");
 			} else if (tempArray.length == 2) {// 插入操作
-				insertDate = tempArray[0].toString();
+				periodDate = tempArray[0].toString();
 				temp = tempArray[1].toString().split(";");
 			}
-			feeArea.text=temp[0];
+			// 更新用户积分
+			updateUsersCredits(temp);	 
+ 		}
+ 		// 平台费计费成功
+ 		private function platformFeeResult():void {
+ 			var result:String=platformFeeRecord.lastResult.result;
+			Alert.show(result);
+			var tempArray:Array=result.split(",");
+			var temp:Array;
+			if(tempArray.length == 1) {// 非插入
+				temp = tempArray[0].toString().split(";");
+			} else if (tempArray.length == 2) {// 插入操作
+				platformDate = tempArray[0].toString();
+				temp = tempArray[1].toString().split(";");
+			}
+			// 更新用户积分
+			updateUsersCredits(temp);
+ 		}
+ 		// 更新用户积分
+ 		private function updateUsersCredits(temp:Array):void {
+ 			feeArea.text=temp[0];
 			credits=Number(temp[0]);
 			changeCredits();
-			sendStream.send("updateCredits",temp[1]);
+			sendStream.send("updateCredits", temp[1]);
  		}
-	 	private function showFault():void { 
-			Alert.show("调用错误！");
-			getuser.send();
-	 	} 
- 		[Bindable] public var cards:Array = new Array(
-			{label:"USD",data:1000},
-			{label:"EUR",data:1276}, 
-			{label:"CAD",data:802},
-			{label:"AUD",data:650},
-			{label:"GBP",data:1427},
-			{label:"JPY",data:544},
-			{label:"CHF",data:858},
-			{label:"NZD",data:519},
-			{label:"RMB",data:146}
-		);
+ 		// 课时费计费错误 
+	 	private function periodFeeFault():void { 
+			Alert.show("调用错误!", "错误");
+			// 做一定尝试，若无法进行操作，关闭浏览器
+	 	}
+	 	// 平台费计费错误
+	 	private function platformFeeFault():void {
+	 		Alert.show("调用出错!", "错误");
+	 	}
 		private function closeHandler(event:Event):void {
 		 	var money:Number=(credits*10)/ComboBox(event.target).selectedItem.data;
 		 	rate1.text=money.toFixed(2).toString();
@@ -583,36 +741,46 @@
 				flag=1;
 				stopVideoButton.source='assert/video2.jpg';
 				localVideoDisplay.setStyle("backgroundImage","assert/1.jpg");
-				camera=null;
-				sendStream.attachCamera(camera);
+				sendStream.attachCamera(null);
 			} else {
 				flag=0;
 				stopVideoButton.source='assert/video.jpg';	
-				camera=Camera.getCamera();
+				var camera:Camera=getCamera();
 				sendStream.attachCamera(camera);
-			}	
+			}
+		}
+		private function fullVideo():void {
+			if (FullScreenUtil.isFullScreen) {
+				// 退出全屏
+				FullScreenUtil.exitFullScreen();
+			} else {
+				FullScreenUtil.goFullScreen();
+				// 加入要全屏的对像．videoDisplay
+				FullScreenUtil.addChild(remoteVideoDisplay, true, true, true);
+			}
+		}
+		/**
+		 * 重设远程Video尺寸.
+		 */
+		private function resizeRemoteVideo():void {
+			if (remoteVideo != null) {
+				remoteVideo.width = remoteVideoDisplay.width;
+				remoteVideo.height = remoteVideoDisplay.height;
+			}
 		}
 	]]>
 </mx:Script>
-<mx:HTTPService showBusyCursor="false" useProxy="false" method="POST" id="getuser" result="showResult();" fault="showFault();" url="/CG/chat.do?p=updateUserCredits">
-	<mx:request>
-		<userid>{userId}</userid>
-		<myid>{myId}</myid>
-		<fee>{roomFee}</fee>
-		<insertDate>{insertDate}</insertDate>
-	</mx:request>
-</mx:HTTPService>
 
-<mx:Panel borderStyle="none" layout="vertical" width="430" height="700" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#f2f2f2" paddingTop="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial">
+<mx:Panel borderStyle="none" layout="vertical" width="430" height="700" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#f2f2f2" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial">
 	<mx:HBox id="videoArea">
-		<mx:VideoDisplay id="remoteVideoDisplay" styleName="VideoDisplay" width="267" height="200"/>
+		<mx:VideoDisplay click="fullVideo();" resize="resizeRemoteVideo();" id="remoteVideoDisplay" width="267" height="200"/>
 		<mx:VBox>
-			<mx:VideoDisplay id="localVideoDisplay" styleName="VideoDisplay" width="133" height="100"/>
+			<mx:VideoDisplay id="localVideoDisplay" width="133" height="100"/>
 			<mx:Image source="@Embed('/assert/video.jpg')" useHandCursor="true" buttonMode="true" id="stopVideoButton" click="stopVideo(flag)" height="22"/> 
 			<mx:HBox><mx:Image source="@Embed('/assert/micVol.jpg')" height="22"/> 
-			<mx:HSlider thumbSkin="@Embed('/assert/icon.gif')" id="micVolumeSlider" trackSkin="STSliderTrackSkin" value="90" width="72" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/></mx:HBox>
+			<mx:HSlider id="micVolumeSlider" trackSkin="STSliderTrackSkin" value="90" width="72" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/></mx:HBox>
 			<mx:HBox><mx:Image source="@Embed('/assert/speakVol.jpg')" height="22"/> 
-			<mx:HSlider thumbSkin="@Embed('/assert/icon.gif')" id="speakerVolumeSlider" trackSkin="STSliderTrackSkin" showDataTip="false" value="0.9" width="72" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/></mx:HBox>
+			<mx:HSlider id="speakerVolumeSlider" trackSkin="STSliderTrackSkin" showDataTip="false" value="0.9" width="72" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/></mx:HBox>
 		</mx:VBox>
 	</mx:HBox>
 	<mx:VBox paddingTop="10">
@@ -622,19 +790,16 @@
 				<mx:HBox paddingLeft="-10" paddingBottom="-22"><mx:RichTextEditor borderStyle="none" id="message" creationComplete="showControlBar();" width="350" height="120" backgroundColor="#f2f2f2" textAlign="left" fontStyle="normal" fontFamily="Verdana" horizontalScrollPolicy="off" verticalScrollPolicy="off" paddingLeft="0" paddingRight="0" headerHeight="0" fontSize="12"/></mx:HBox>
 			</mx:VBox>
 			<mx:VBox paddingTop="3">	
-				<mx:Button id="fee" styleName="Button" enabled="false" paddingLeft="0" paddingRight="0" label="开始计费" click="showTimer();" width="60"/>
-				<mx:Button id="sendMessageBtn" styleName="Button" label="发送" width="60" click="send();"/>
-				<mx:Button id="closeBtn" styleName="Button" click="closeMessage();" label="关闭" width="60"/>
+				<mx:Button id="feeRequestBtn" enabled="false" label="开始计费" click="periodFeeRequest();" width="60" paddingLeft="0" paddingRight="0"/>
+				<mx:Button id="sendMessageBtn" label="发送" width="60" click="send()"/>
+				<mx:Button id="closeBtn" click="closeMessage();" label="关闭" width="60"/>
 			 </mx:VBox>
 		</mx:HBox>
 		<!--老师计费区-->
 		<mx:HBox>
-			<mx:Label text="计费区您当前的余额为:"/>
-			<mx:Label id="feeArea"/>
-			<mx:Label text="(credits)"/>
-			<mx:Label text="="/>
-			<mx:TextInput id="rate1" width="60" height="21" borderColor="#B7BABC" editable="false"/>
-			<mx:ComboBox id="reta2" width="65" height="21" dataProvider="{cards}" rowCount="3" close="closeHandler(event);"/>
+			<mx:Label text="余额:"/><mx:Label id="feeArea"/><mx:Label text="="/>
+			<mx:Label id="rate1"/><mx:ComboBox id="reta2" dataProvider="{cards}" rowCount="3" close="closeHandler(event);"/>
+			<mx:Label text="课时费:"/><mx:TextInput id="confirmFee" text="{roomFee}" width="50"/>
 		</mx:HBox>
 		<mx:ViewStack selectedIndex="{loginState}">
 			<mx:HBox>
@@ -647,7 +812,7 @@
 				</mx:columns></mx:DataGrid>
 			</mx:HBox>
 			<mx:HBox>
-				<mx:DataGrid dataProvider="{teacher}" id="tea" width="410" height="52"><mx:columns>
+				<mx:DataGrid dataProvider="{teacher}" id="tch" width="410" height="52"><mx:columns>
 					<mx:DataGridColumn dataField="teaName" headerText="Teacher"/> 
 					<mx:DataGridColumn dataField="stuTime" headerText="Duration"/> 
 					<mx:DataGridColumn dataField="stuFee" headerText="forTeacher"/> 
@@ -656,8 +821,13 @@
 			</mx:HBox>
 		</mx:ViewStack>
 	</mx:VBox>
-	
-	<mx:TextInput width="200" id="userName" visible="false" height="0"/>
-	<mx:TextInput id="peerId" width="200" visible="false" height="0"/>
+
+	<mx:VBox>
+		<mx:HBox width="400">
+			<mx:Label text="Name"/><mx:TextInput id="userName" width="100"/>
+			<mx:Label text="PeerID"/><mx:TextInput id="peerId" width="100"/>
+			<mx:Button label="连接" click="call()"/>
+		</mx:HBox>
+	</mx:VBox>
 </mx:Panel>
 </mx:Application>

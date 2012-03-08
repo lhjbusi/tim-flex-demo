@@ -7,21 +7,47 @@
 	</mx:Style>
 	<mx:Script>
 		<![CDATA[
+			import mx.controls.Alert;
 			import mx.collections.ArrayCollection;
 
 			[Bindable]
 			private var userList:ArrayCollection = new ArrayCollection([
-				{userName:"Tim",userAge:26,userSex:"男"},
-				{userName:"Clivia",userAge:23,userSex:"女"},
-				{userName:"Jerry",userAge:23,userSex:"男"}
+				{userName:"Tim",userAge:26,userSex:"男",check:true,label:"党员"},
+				{userName:"Clivia",userAge:23,userSex:"女",check:true,label:"党员"},
+				{userName:"Jerry",userAge:23,userSex:"男",check:true,label:"党员"}
 			])
 			
 			private function insertRow():void {
+				var data:Object = new Object();
+				data.userName= userName.text;
+				data.userAge= userAge.text;
+				data.userSex= userSex.selectedValue;
+				userList.addItem(data);
+				removeBtn.enabled = true;
+			}
+			
+			private function removeRow():void {
+				// 获取选中索引
+				var index:int = usersDataGrid.selectedIndex;
+				if(index == -1) {
+					Alert.show("请选择要删除的行");
+					return;
+				}
+				userList.removeItemAt(index);
+				usersDataGrid.selectedIndex = userList.length;
+				removeBtn.enabled = !userList.length == 0;
 			}
 		]]>
 	</mx:Script>
-	<mx:DataGrid x="80" y="10" width="497" height="262" dataProvider="{userList}">
+	<mx:DataGrid id="usersDataGrid" x="80" y="10" width="497" height="262" dataProvider="{userList}">
 		<mx:columns>
+			<mx:DataGridColumn headerText="党员">
+				<mx:itemRenderer>
+					<mx:Component>
+						<mx:CheckBox label="{data.label}" selected="{data.check}" click="data.check = !data.check"/>
+					</mx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
 			<mx:DataGridColumn headerText="姓名" dataField="userName" sortable="false"/>
 			<mx:DataGridColumn headerText="年龄" dataField="userAge"/>
 			<mx:DataGridColumn headerText="性别" dataField="userSex" draggable="false"/>
@@ -34,5 +60,5 @@
 	<mx:Label x="366" y="290" text="性别"/>
 	<mx:RadioButtonGroup id="userSex"/>
 	<mx:RadioButton x="415" y="288" label="男" groupName="userSex"/> <mx:RadioButton x="466" y="288" label="女" groupName="userSex"/>
-	<mx:Button label="添加一行" click="insertRow()" x="197" y="345"></mx:Button><mx:Button label="删除一行" x="310.5" y="345"></mx:Button>
+	<mx:Button label="添加一行" click="insertRow()" x="197" y="345"></mx:Button><mx:Button id="removeBtn" label="删除一行" click="removeRow()" x="310.5" y="345"></mx:Button>
 </mx:Application>
