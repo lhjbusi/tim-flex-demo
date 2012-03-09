@@ -328,7 +328,8 @@
 		<mx:ComboBox dataProvider="{arr}" width="55" id="sp" change="change(0);"/>
 		<mx:Image useHandCursor="true" buttonMode="true" mouseChildren="false" source="@Embed('assert/1.gif')" click="change(1)"/>
 		<mx:ComboBox dataProvider="{amplifyArr}" change="changeBoardSize();" id="boardSize" width="60"/>
-		<mx:VBox paddingLeft="10"><mx:Button id="clearBtn" fontSize="12" label="清除画板" click="clear()"/><mx:Button label="拖动" click="moveBoardFile()"/></mx:VBox>
+		<mx:VBox paddingLeft="10"><mx:Button id="clearBtn" fontSize="12" label="清除画板" click="clear()"/></mx:VBox>
+		<mx:Button label="拖动" click="moveBoardFile()"/>
 	</mx:HBox>
 	<mx:HRule width="565" x="10" y="60"/>
 </mx:Application>
