@@ -21,14 +21,13 @@
 		import mx.events.SliderEvent;
 		import mx.core.UIComponent;
 
-		private const StratusAddress:String = "rtmfp://stratus.adobe.com";
-		private const DeveloperKey:String = "6b754e9d85b872b8f9c55a69-da4e8ad8ec29";
+		private const FMSAddredd:String = "rtmp://192.168.1.199/tim_live";
 		// 免费使用的时间(分钟)-超过自动开始计算平台费
 		private const freeMin:int = 1;
 
 		private var netConnection:NetConnection;
-		private var myStream:NetStream;
-		private var controlStream:NetStream;
+		// FMS共享对象
+		private var fmsSharedObject:SharedObject;
 		// 已使用的免费秒数
 		private var currFreeSec:int = 0;
 		// 已使用的课时费秒数
@@ -124,9 +123,9 @@
 				myId=ss1[1];
 				credits=ss1[2];
 			}
-			init();
 			feeArea.text=credits.toString();
 			changeCredits();
+			init();
 		}
 		/**
 		 * 初始化麦克风设置.
@@ -169,33 +168,27 @@
 			}
 			netConnection = new NetConnection();
 			netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
-			netConnection.connect(StratusAddress + "/" + DeveloperKey); //服务器地址里需要开发者Key
+			// 链接Fms服务器
+			netConnection.connect(FMSAddredd);
 		}
 		private function netConnectionHandler(e:NetStatusEvent):void {
 			switch (e.info.code) {
 				case "NetConnection.Connect.Success":
-					info.text = "你好 "+userName.text+", 你已链接上Stratus服务器\n\n"
-					info.text += "你的PeerId是:\n"+netConnection.nearID+"\n对方可以用这个ID呼叫你\n\n" 
+					info.text = "你好 "+userName.text+", 你已链接上Fms服务器\n"
+					info.text += "你的RoomId是:"+roomId.text+"\n对方可以用这个RoomId加入\n\n" 
 					initSendStream();
-					info.addEventListener(FlexEvent.UPDATE_COMPLETE,handleMessage);
-					message.textArea.addEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
-					message.textArea.addEventListener(TextEvent.TEXT_INPUT,onTextInput);
+					//info.addEventListener(FlexEvent.UPDATE_COMPLETE,handleMessage);
+					//message.textArea.addEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
+					//message.textArea.addEventListener(TextEvent.TEXT_INPUT,onTextInput);
 				break;
 				case "NetConnection.Connect.Failed":
 					Alert.show("连接错误","连接错误")
 				break;
-				case "NetConnection.Connect.Closed":
+				case "NetConnection.Connect.Closed"://服务器断开
+					Alert.show("FMS服务器已经关闭", "提示");
 				break;
 				case "NetStream.Connect.Success":
-					if (isTeacher) {
-						feeRequestBtn.enabled = true;
-						if (chargeTimer == null || !chargeTimer.running) {
-							Alert.show("开始运行计时器");
-							chargeTimer = new Timer(1000);
-							chargeTimer.start();
-							chargeTimer.addEventListener(TimerEvent.TIMER, chargeTimerHandler);
-						}
-					}
+					Alert.show("链接NetStreem成功");
 				break;
 				case "NetStream.Connect.Closed":
 					// 停止课时费收取
@@ -222,65 +215,11 @@
 		 * 初始化发送流.
 		 */
 		private function initSendStream():void {	
-			myStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
-			myStream.publish(netConnection.nearID);	
-			//监听onPeerConnect事件
-			var o:Object = new Object();
-			o.onPeerConnect = function(subscriberStream:NetStream):Boolean {		
-				receiveStream = new NetStream(netConnection,subscriberStream.farID);
-				receiveStream.play("caller");
-				receiveStream.receiveAudio(true);
-				receiveStream.receiveAudio(true);
-				var i:Object = new Object;
-				//监听onIm事件，用于收取文字信息
-				i.onIm = function(name:String, value:String):void {
-					var dateFormatter:DateFormatter = new DateFormatter(); 
-					dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
-					var time:String = new Date().toLocaleTimeString();
-					var date:String = dateFormatter.format(new Date());
-					info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>"; 
-				}
-				//监听onIncomingCall事件，用于确定链接成功
-				i.onIncomingCall = function(name:String):void {
-					accpetHandle();
-					sendStream.send("onConnectSuccess",userName.text,myId);
-				}
-				i.onHangup = function():void {
-					//	hangup()
-				}
-				// 课时费收费确认
-				i.feeConfirm = function(userName:String,fee:Number):void {	
-					roomFee=fee;
-					if (credits<fee) {
-						Alert.show("请充值！", "你的余额不足！", 1, null, charge);
-						// 停止课时费收取
-						stopPeriodFee();
-						sendStream.send("notEnoughCredits");
-					} else {
-						teacher[0].teaName=userName;
-						Alert.show("准备开始计费\n课时费: " + fee, "确认", Alert.OK | Alert.CANCEL, null, feeConfirmHandler);
-					}
-				}
-				i.stopFeeForStudent=function():void {
-					Alert.show("已停止课时费收取", "提醒");
-					// 停止课时费收取
-					stopPeriodFee();
-				}
-				i.updateCredits=function(credit:String):void {
-					feeArea.text=credit;
-					credits=Number(credit);
-					changeCredits();
-					if (Number(credit)<roomFee) {
-						Alert.show("请充值！","你的余额不足！", 1, null, charge);
-						// 停止课时费收取
-						stopPeriodFee();
-						sendStream.send("notEnoughCredits");
-					}
-			 	}
-				receiveStream.client = i;
-				return true;
-			}
-			myStream.client = o; 
+			sendStream = new NetStream(netConnection);
+			publishVideo();
+			publishAudio();
+
+			sendStream.publish(roomId.text + userName);
 		}
 		/**
 		 * 学生课时费确认处理.
@@ -309,19 +248,16 @@
 			}
 		}
 		private function call():void {
-			controlStream = new NetStream(netConnection, peerId.text);
-			controlStream.play(peerId.text);
-
 			// 同时对外发布呼叫者的信息流
-			sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+			sendStream = new NetStream(netConnection);
 			sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
-			sendStream.publish("caller");
+			sendStream.publish(roomId.text + userName);
 
 			publishVideo();
 			publishAudio();
 
 			// 尝试播放被呼叫者的信息流
-			receiveStream = new NetStream(netConnection, peerId.text);
+			receiveStream = new NetStream(netConnection, roomId.text);
 			receiveStream.play("callee");
 			var i:Object = new Object;
 			// 监听信息发布事件
@@ -843,7 +779,7 @@
 	<mx:VBox>
 		<mx:HBox width="400">
 			<mx:Label text="Name"/><mx:TextInput id="userName" width="100"/>
-			<mx:Label text="PeerID"/><mx:TextInput id="peerId" width="100"/>
+			<mx:Label text="RoomId"/><mx:TextInput id="roomId" text="TimRoom" width="100"/>
 			<mx:Button label="连接" click="call()"/>
 		</mx:HBox>
 	</mx:VBox>

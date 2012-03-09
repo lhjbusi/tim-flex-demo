@@ -333,7 +333,14 @@
 				Alert.noLabel="取消";
 				if (type==1) {
 					//Alert.show("Are you sure to exit?", "Notice", 3, null, alertClickHandler);
-					Alert.show("确定要退出视频！", "提示", 3, null, alertClickHandler);
+					if (isConnection) {// 已连接
+						Alert.show("确定要退出视频！", "提示", 3, null, alertClickHandler);
+					} else {// 未连接
+						// 修正IE关闭执行函数-提示,更新
+						ExternalInterface.call("setExplorerHandler", 0);
+						// 关闭当前窗口
+						ExternalInterface.call("EndOfCall");
+					}
 				}
 			}
 			private function alertClickHandler(event:CloseEvent):void {
@@ -442,10 +449,10 @@
 <mx:Image source="@Embed('/assert/video.jpg')" useHandCursor="true" buttonMode="true" id="stopVideoButton" click="stopVideo()" height="22"/> 
 <mx:Image source="@Embed('/assert/video2.jpg')" useHandCursor="true" buttonMode="true" visible="false" id="sendVideoButton" click="sendVideo()" height="22"/> 
 <mx:Image source="@Embed('/assert/micVol.jpg')" height="22" /> 
-<mx:HSlider id="micVolumeSlider" trackSkin="STSliderTrackSkin" value="90" width="75" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/>
+<mx:HSlider thumbSkin="@Embed('/assert/icon.png')" id="micVolumeSlider" trackSkin="STSliderTrackSkin" value="90" width="75" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/>
 <mx:Label width="30"/>
 <mx:Image source="@Embed('/assert/speakVol.jpg')" height="22"/> 
-<mx:HSlider id="speakerVolumeSlider" trackSkin="STSliderTrackSkin" showDataTip="false" value="0.9" width="75" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/>				
+<mx:HSlider thumbSkin="@Embed('/assert/icon.png')" id="speakerVolumeSlider" trackSkin="STSliderTrackSkin" showDataTip="false" value="0.9" width="75" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/>				
 </mx:HBox>
 	<mx:HBox paddingLeft="10">
 	<mx:TextArea width="438" height="100" id="info" editable="false"/>
