@@ -19,7 +19,7 @@
 
 			private var netConnection:NetConnection;
 			private var netStream:NetStream;
-			private var appServer:String="rtmp://192.168.1.138/whiteboard";
+			private var appServer:String="rtmp://192.168.1.189/userList";
 			//private var appServer:String="rtmp://www.chinesegreat.com:1935/whiteboard";
 			private var paint_so:SharedObject;	
 			private var responder:Responder;			
@@ -125,7 +125,10 @@
 				pageNoList.dataProvider=arr;
 				//重新加载文件页数
 				flexpaper.paper1.gotoPage(pageFlag);
-				pageNoList.selectedIndex=pageFlag-1;
+				if (pageFlag != 0)
+					pageNoList.selectedIndex=pageFlag-1;
+				else 
+					pageNoList.selectedIndex=0;
 			}
 			private function netStatusHandler(evt:NetStatusEvent):void {
 				var info:Object = evt.info;
@@ -222,21 +225,15 @@
 					pen_color.selectedColor=paint_so.data.lineColor;
 					__lineColor=paint_so.data.lineColor;
 				}
-				// 画笔轨迹同步
-				if (item.name=="dataArr" && paint_so.data.dataArr!=null) {
-					var success_tmp:ArrayCollection = new ArrayCollection();
-					convertArrayCollection(success_tmp, paint_so.data.dataArr as ArrayCollection);						
-					paint(success_tmp, __lineSize, __lineColor);
-				}
-				//清除画板内容同步
-				if (item.name=="action") {
-					myPaper.graphics.clear();
-				}
 				//换文件同步
 				if (item.name=="changeFile") {
 					myPaper.graphics.clear();
 					pageFlag=1;
 					changeFile(paint_so.data.changeFile);
+				}
+				//清除画板内容同步
+				if (item.name=="action") {
+					myPaper.graphics.clear();
 				}
 				//换页同步
 				if (item.name=="changePage") {
@@ -270,6 +267,12 @@
 				// 画板缩放
 				if (item.name=="boardSize") {
 					changeBoardSizeHandler(paint_so.data.boardSize as Number);
+				}
+				// 画笔轨迹同步
+				if (item.name=="dataArr" && paint_so.data.dataArr!=null) {
+					var contrailArr:ArrayCollection = new ArrayCollection();
+					convertArrayCollection(contrailArr, paint_so.data.dataArr as ArrayCollection);
+					paint(contrailArr, __lineSize, __lineColor);
 				}
 			}
 			private function paint(_Arr:ArrayCollection, lineSize:int, lineColor:uint):void {				
