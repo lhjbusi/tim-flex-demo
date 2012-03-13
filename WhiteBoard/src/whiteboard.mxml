@@ -19,11 +19,13 @@
 
 			private var netConnection:NetConnection;
 			private var netStream:NetStream;
-			private var appServer:String="rtmp://192.168.1.189/userList";
+			private var appServer:String="rtmp://192.168.1.199/whiteboard";
 			//private var appServer:String="rtmp://www.chinesegreat.com:1935/whiteboard";
 			private var paint_so:SharedObject;	
-			private var responder:Responder;			
+			private var responder:Responder;
+			// 画笔X坐标			
 			private var point_x:Number;
+			// 画笔Y坐标
 			private var point_y:Number;
 			private var theId:uint=0;
 			private var flexpaper:FlexPaperViewer=new FlexPaperViewer();
@@ -43,7 +45,7 @@
 			// 文件页面数
 			[Bindable]private var arr:Array=new Array({label:0,data:0});
 			// 画板缩放比例
-			[Bindable]private var amplifyArr:Array= new Array({label:"100%",data:100},{label:"125%",data:125},{label:"150%",data:150},{label:"175%",data:175},{label:"200%",data:200});
+			[Bindable]private var amplifyArr:Array= new Array({label:"100%",data:100},{label:"150%",data:150},{label:"200%",data:200},{label:"250%",data:250},{label:"300%",data:300},{label:"400%",data:400});
 			// 画笔尺寸
 			[Bindable]private var penSize:Array=new Array({label:1,data:1},{label:2,data:2},{label:3,data:3},{label:4,data:4},{label:5,data:5});
 
@@ -51,7 +53,8 @@
 				netConnection = new NetConnection();
 				netConnection.connect(appServer);
 				netConnection.addEventListener(NetStatusEvent.NET_STATUS,netStatusHandler);
-				flexpaper["width"]=600;
+
+				flexpaper.width=600;
 				flexpaper.height=1000;
 				flexpaper.Scale=1;
 
@@ -64,9 +67,10 @@
 				//swf加载完成
 				flexpaper.addEventListener(DocumentLoadedEvent.DOCUMENT_LOADED, loadSwfComplete);
 
-				// 监听Panel容器鼠标点下与弹起事件
-				mainPanel.addEventListener(MouseEvent.MOUSE_DOWN, moveBoardFileDown);
-				mainPanel.addEventListener(MouseEvent.MOUSE_UP, moveBoardFileUp);
+				// 监听Panel容器鼠标按下事件
+				//mainPanel.addEventListener(MouseEvent.MOUSE_DOWN, moveBoardFileDown);
+				// 监听Panel容器鼠标弹起事件
+				//mainPanel.addEventListener(MouseEvent.MOUSE_UP, moveBoardFileUp);
 			}
 			private function initSwf(evt:FlexEvent):void {
 				//切换文件前清空画板
@@ -140,11 +144,11 @@
 						if (param["str"]!=null) {
 							paint_so = SharedObject.getRemote(param["str"], netConnection.uri, true);
 						} else {
-							paint_so = SharedObject.getRemote("chinesegrea12t", netConnection.uri, true);
+							paint_so = SharedObject.getRemote("TimZhao03130003", netConnection.uri, true);
 						}
 						paint_so.addEventListener(SyncEvent.SYNC, paintSoSyncHandler);
 						paint_so.connect(netConnection);
-						paint_so.fps=120;
+						paint_so.fps=180;
 						// 暴露添加上传图标方法
 						ExternalInterface.addCallback("addUploadIcon", fileSyn);
 						// 暴露切换SWF文件方法于JS
@@ -176,23 +180,25 @@
 			 	myPaper.removeEventListener(MouseEvent.MOUSE_DOWN,downHandler);
 			 	theId=paint_so.data.Point_ID++;
 			}
+			var tempArr:ArrayCollection=new ArrayCollection();
 			/**
 			 * 画板鼠标移动处理.
 			 */
 			private function moveHandler(evt:MouseEvent):void{
 				if (evt.buttonDown) {// 鼠标是按下的
-					myPaper.addEventListener(MouseEvent.MOUSE_UP, upHandler);
-					var MouseArray:ArrayCollection=new ArrayCollection();
+					//myPaper.addEventListener(MouseEvent.MOUSE_UP, upHandler);
+					var pointArr:ArrayCollection=new ArrayCollection();
 					if (paint_so.data.dataArr!=null) {
-						convertArrayCollection(MouseArray,paint_so.data.dataArr as ArrayCollection);	
+						convertArrayCollection(pointArr, paint_so.data.dataArr as ArrayCollection);	
 					}
 					var thePoint:MousePoint = new MousePoint();
 					thePoint.point_x=myPaper.mouseX;
 					thePoint.point_y=myPaper.mouseY;
 					thePoint.id=theId;
-					MouseArray.addItem(thePoint);
-					paint(MouseArray,paint_so.data.lineSize,paint_so.data.lineColor);
-					paint_so.setProperty("dataArr", MouseArray);
+					pointArr.addItem(thePoint);
+					paint(pointArr, paint_so.data.lineSize, paint_so.data.lineColor);
+					tempArr = pointArr;
+					paint_so.setProperty("dataArr", pointArr);
 				}
 			}
 			/**
@@ -202,8 +208,6 @@
 				for each(var item:Object in evt.changeList){
 					switch(item.code){
 						case "change":
-							doAction(item);
-							break;
 						case "success":
 							doAction(item);
 							break;
@@ -291,10 +295,8 @@
 			private function upHandler(evt:MouseEvent):void {
 				myPaper.removeEventListener(MouseEvent.MOUSE_MOVE, moveHandler);
 				myPaper.addEventListener(MouseEvent.MOUSE_DOWN, downHandler); 	
-				//清除上次记录
-				var MouseArray:ArrayCollection=new ArrayCollection();
-				MouseArray.removeAll();
-				paint_so.setProperty("dataArr",MouseArray);
+				// 清除轨迹坐标
+				paint_so.setProperty("dataArr", new ArrayCollection());
 			}
 			private function convertArrayCollection(arrNew:ArrayCollection,arrOld:ArrayCollection):void {
 				arrNew.removeAll();
@@ -308,7 +310,7 @@
 			}
 			// 改变画笔尺寸
 			private function changeSize():void {
-				paint_so.setProperty("lineSize",pen_size.selectedItem.data);
+				paint_so.setProperty("lineSize", pen_size.selectedItem.data);
 			}
 			private function clear():void {
 				Alert.show("你确定要清除当前画板吗", "警告", Alert.YES | Alert.NO, this, closeHandler);
@@ -363,33 +365,50 @@
 				// 容器缩放
 				dr.width = (dr.width/oldZoom)*zoom;
 				dr.height = (dr.height/oldZoom)*zoom;
+				dr.x = (dr.x/oldZoom)*zoom;
+				
+				flexpaper.y = (flexpaper.y/oldZoom)*zoom;
+				flexpaper.x = (flexpaper.x/oldZoom)*zoom;
 
 				// 文档展示组件缩放
 				if (isFirstLoad) {
-					flexpaper.width = ((flexpaper.width)/oldZoom)*zoom + 30;
-					myPaper.width = (myPaper.width/oldZoom)*zoom + 10;
+					flexpaper.width = ((flexpaper.width)/oldZoom + 28)*zoom;
+					myPaper.width = (myPaper.width/oldZoom)*zoom;
 					isFirstLoad = false;
 				} else {
-					flexpaper.width = ((flexpaper.width-30)/oldZoom)*zoom + 30;
-					myPaper.width = ((myPaper.width-10)/oldZoom)*zoom + 10;
+					flexpaper.width = ((flexpaper.width)/oldZoom)*zoom;
+					myPaper.width = (myPaper.width/oldZoom)*zoom;
 				}
 				flexpaper.height = (flexpaper.height/oldZoom)*zoom;
 				// 画板缩放
 				myPaper.height = (myPaper.height/oldZoom)*zoom;
 
+				// 可能完成轨迹缩放
+				var len:int=tempArr.length;
+				if (len>0) {
+					myPaper.graphics.clear();
+					myPaper.graphics.lineStyle(__lineSize, __lineColor, 1);
+					myPaper.graphics.moveTo(tempArr.getItemAt(0).point_x/oldZoom*zoom, tempArr.getItemAt(0).point_y/oldZoom*zoom);
+					for(var i:int=0; i<len-1; i++) {
+						myPaper.graphics.lineTo(tempArr.getItemAt(i).point_x/oldZoom*zoom, tempArr.getItemAt(i).point_y/oldZoom*zoom);
+					}
+				}
+
 				// 将当前缩放比率设置为原有比率
 				oldZoom = zoom;
 				
 				// 重新定位写字板
-				postionBoard();
+				// postionBoard();
 			}
 
+// 鼠标点下X坐标
 private var startX:Number;
+// 鼠标点下Y坐标
 private var startY:Number;
 			/**
 			 * 移动缩放的文件.
 			 */
-			private function moveBoardFileDown(event:MouseEvent):void {
+			/**private function moveBoardFileDown(event:MouseEvent):void {
 				if (controlBtn.label == "拖动") {
 					startX = mainPanel.mouseX;
 					startY = mainPanel.mouseY;
@@ -398,42 +417,34 @@ private var startY:Number;
 			}
 			private function moveBoardFileUp(event:MouseEvent):void {
 				if (controlBtn.label == "拖动") {
-					mainPanel.mouseX + "*" + mainPanel.mouseY;
 					flexpaper.x += mainPanel.mouseX - startX;
 					flexpaper.y += mainPanel.mouseY - startY;
-					postionBoard();
-					myPaper.visible = true; 
+					//postionBoard();
+					myPaper.visible = true;
 				}
-			}
+			}*/
 			/**
 			 * 定位写字板位置.
 			 */
 			private function postionBoard():void {
-				if ((flexpaper.width-30) != mainPanel.width) {// FlexPaper有缩放
-					if (Math.abs(flexpaper.x) >= mainPanel.width) {
-						flexpaper.x = mainPanel.width*-1;
-					} else if (flexpaper.x >= 0) {
-						flexpaper.x = 0;
-					}
-				} else {
+				// 左移
+				if (((flexpaper.width-30)/oldZoom - flexpaper.x) > flexpaper.width) {// FlexPaper有缩放
+					flexpaper.x = (flexpaper.width-30)/oldZoom - flexpaper.width + 30;
+				} else if (flexpaper.x > 0) {// 右移
 					flexpaper.x = 0;
 				}
 
-				if (flexpaper.height > flexpaper.height/oldZoom) {// FlexPaper有缩放
-					Alert.show(flexpaper.y + "*" + flexpaper.height/oldZoom);
-					if (Math.abs(flexpaper.y) >= (flexpaper.height/oldZoom)) {
-						flexpaper.y = flexpaper.height/oldZoom*-1;
-					} else if (flexpaper.y >= 0) {
-						flexpaper.y = 0;
-					}
-				} else {
+				// 上移
+				if ((flexpaper.height/oldZoom - flexpaper.y) > flexpaper.height) {// FlexPaper有缩放
+					flexpaper.y = flexpaper.height/oldZoom - flexpaper.height;
+				} else if (flexpaper.y > 0) {
 					flexpaper.y = 0;
 				}
 			}
 			/**
 			 * 切换写字板画笔|移动.
 			 */
-			private function changePointDomain():void {
+			/**private function changePointDomain():void {
 				if (controlBtn.label == "拖动") {
 					controlBtn.label = "画笔";
 					mainPanel.useHandCursor = true;
@@ -443,15 +454,17 @@ private var startY:Number;
 					mainPanel.useHandCursor = false;
 					myPaper.visible = true;
 				}
-			}
+			}*/
 		]]>
 	</mx:Script>
 
-	<mx:Panel id="mainPanel" titleIcon="@Embed(source='assert/logo.jpg')" title="ChineseGreat Online Classroom" x="1" y="1" fontFamily="_sans" fontSize="13" fontWeight="bold" width="600" height="550" layout="absolute" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+	<mx:Panel id="mainPanel" titleIcon="@Embed(source='assert/logo.jpg')" title="ChineseGreat Online Classroom" x="1" y="1" fontFamily="_sans" fontSize="13" fontWeight="bold" width="600" height="550" layout="absolute" horizontalScrollPolicy="on" verticalScrollPolicy="on">
 		<mx:Canvas id="myPaper" width="585" height="850" top="22" backgroundAlpha="0" horizontalScrollPolicy="off" verticalScrollPolicy="off" styleName="paper" y="0" x="0"></mx:Canvas>
 		<mx:Canvas id="dr" width="600" height="850" left="-10" horizontalScrollPolicy="off" verticalScrollPolicy="off" backgroundSize="100%" backgroundAlpha="1.0"></mx:Canvas>
 	</mx:Panel>
-	<mx:HBox x="10" y="30" paddingLeft="35" width="565" height="30" backgroundColor="#F2F2F2">
+	<!-- 下面这句用在禁掉滚动条之后的情况 -->
+	<!--<mx:HBox x="10" y="30" paddingLeft="35" width="585" height="32" backgroundColor="#F2F2F2">-->
+	<mx:HBox x="10" y="30" paddingLeft="35" width="565" height="32" backgroundColor="#F2F2F2">
 		<!--<mx:Label fontSize="12" text="颜色:"/>--><mx:ColorPicker id="pen_color" width="20" height="20" change="changeColor()"/>
 		<!--<mx:Label paddingLeft="10" fontSize="12" text="粗细:"/>--><mx:ComboBox dataProvider="{penSize}" width="50" id="pen_size" change="changeSize();"/>
 		<!--<mx:Label paddingLeft="10" fontSize="12" text="页码:"/>--><mx:Image useHandCursor="true" buttonMode="true" mouseChildren="false" source="@Embed('assert/2.gif')" click="change(-1)"/>
@@ -459,7 +472,6 @@ private var startY:Number;
 		<mx:Image useHandCursor="true" buttonMode="true" mouseChildren="false" source="@Embed('assert/1.gif')" click="change(1)"/>
 		<mx:ComboBox id="boardSize" dataProvider="{amplifyArr}" change="changeBoardSize();" width="60"/>
 		<mx:VBox paddingLeft="10"><mx:Button id="clearBtn" fontSize="12" label="清除画板" click="clear()"/></mx:VBox>
-		<mx:Button id="controlBtn" label="拖动" click="changePointDomain()"/>
+		<!--<mx:Button id="controlBtn" label="拖动" click="changePointDomain()"/>-->
 	</mx:HBox>
-	<mx:HRule width="565" x="10" y="60"/>
 </mx:Application>
