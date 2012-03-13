@@ -144,7 +144,7 @@
 						if (param["str"]!=null) {
 							paint_so = SharedObject.getRemote(param["str"], netConnection.uri, true);
 						} else {
-							paint_so = SharedObject.getRemote("TimZhao03130003", netConnection.uri, true);
+							paint_so = SharedObject.getRemote("TimZhao03130002", netConnection.uri, true);
 						}
 						paint_so.addEventListener(SyncEvent.SYNC, paintSoSyncHandler);
 						paint_so.connect(netConnection);
@@ -180,25 +180,23 @@
 			 	myPaper.removeEventListener(MouseEvent.MOUSE_DOWN,downHandler);
 			 	theId=paint_so.data.Point_ID++;
 			}
-			var tempArr:ArrayCollection=new ArrayCollection();
 			/**
 			 * 画板鼠标移动处理.
 			 */
 			private function moveHandler(evt:MouseEvent):void{
 				if (evt.buttonDown) {// 鼠标是按下的
-					//myPaper.addEventListener(MouseEvent.MOUSE_UP, upHandler);
-					var pointArr:ArrayCollection=new ArrayCollection();
+					myPaper.addEventListener(MouseEvent.MOUSE_UP, upHandler);
+					var MouseArray:ArrayCollection=new ArrayCollection();
 					if (paint_so.data.dataArr!=null) {
-						convertArrayCollection(pointArr, paint_so.data.dataArr as ArrayCollection);	
+						convertArrayCollection(MouseArray,paint_so.data.dataArr as ArrayCollection);	
 					}
 					var thePoint:MousePoint = new MousePoint();
 					thePoint.point_x=myPaper.mouseX;
 					thePoint.point_y=myPaper.mouseY;
 					thePoint.id=theId;
-					pointArr.addItem(thePoint);
-					paint(pointArr, paint_so.data.lineSize, paint_so.data.lineColor);
-					tempArr = pointArr;
-					paint_so.setProperty("dataArr", pointArr);
+					MouseArray.addItem(thePoint);
+					paint(MouseArray,paint_so.data.lineSize,paint_so.data.lineColor);
+					paint_so.setProperty("dataArr", MouseArray);
 				}
 			}
 			/**
@@ -218,6 +216,7 @@
 					}					
 				}
 			}
+
 			private function doAction(item:Object):void {
 				// 画笔尺寸同步
 				if (item.name=="lineSize") {
@@ -295,8 +294,10 @@
 			private function upHandler(evt:MouseEvent):void {
 				myPaper.removeEventListener(MouseEvent.MOUSE_MOVE, moveHandler);
 				myPaper.addEventListener(MouseEvent.MOUSE_DOWN, downHandler); 	
-				// 清除轨迹坐标
-				paint_so.setProperty("dataArr", new ArrayCollection());
+				//清除上次记录
+				var MouseArray:ArrayCollection=new ArrayCollection();
+				MouseArray.removeAll();
+				paint_so.setProperty("dataArr",MouseArray);
 			}
 			private function convertArrayCollection(arrNew:ArrayCollection,arrOld:ArrayCollection):void {
 				arrNew.removeAll();
@@ -383,20 +384,9 @@
 				// 画板缩放
 				myPaper.height = (myPaper.height/oldZoom)*zoom;
 
-				// 可能完成轨迹缩放
-				var len:int=tempArr.length;
-				if (len>0) {
-					myPaper.graphics.clear();
-					myPaper.graphics.lineStyle(__lineSize, __lineColor, 1);
-					myPaper.graphics.moveTo(tempArr.getItemAt(0).point_x/oldZoom*zoom, tempArr.getItemAt(0).point_y/oldZoom*zoom);
-					for(var i:int=0; i<len-1; i++) {
-						myPaper.graphics.lineTo(tempArr.getItemAt(i).point_x/oldZoom*zoom, tempArr.getItemAt(i).point_y/oldZoom*zoom);
-					}
-				}
-
 				// 将当前缩放比率设置为原有比率
 				oldZoom = zoom;
-				
+
 				// 重新定位写字板
 				// postionBoard();
 			}
