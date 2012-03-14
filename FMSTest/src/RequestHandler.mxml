@@ -2,15 +2,15 @@
 <mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" width="676" height="508" layout="absolute">
 	<mx:Script>
 		<![CDATA[
+			import mx.events.CloseEvent;
+			import mx.rpc.events.ResultEvent;
 			import com.tim.chinesegreat.Constants;
 			import mx.controls.Alert;
 
 			private var netConn:NetConnection;
 			private var myStream:NetStream;
-			// 请求监听
-			private var requestListener:SharedObject;
-			// 教室请求监听
-			private var requestSender:SharedObject;
+			// 用户已请求过的聊天|教室信息
+			private var requestMap:Object = new Object();
 
 			/**
 			 * 页面初始化.
@@ -18,17 +18,14 @@
 			private function connectFMS():void {
 				netConn = new NetConnection();
 				netConn.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+				netConn.client = this;
 				netConn.connect(Constants.rtmpUrl, userId.text, userName.text);
 			}
 
 			private function netConnectionHandler(event:NetStatusEvent):void {
 				switch (event.info.code) {
 					case "NetConnection.Connect.Success":
-						// 远程非永久性保存
-						requestListener = SharedObject.getRemote("request/user"+userId.text, netConn.uri, true);
-						Alert.show("request/user"+userId.text);
-						requestListener.connect(netConn);
-						requestListener.addEventListener(SyncEvent.SYNC, requestSyncHandler);
+						Alert.show("连接FMS成功");
 					break;
 					case "NetConnection.Connect.Rejected":
 						Alert.show("连接FMS被拒绝");
@@ -40,74 +37,74 @@
 			}
 
 			/**
-			 * 请求数据同步.
+			 * 被请求者处理请求状态.
 			 */
-			private function requestSyncHandler(event:SyncEvent):void {
-				for each(var item:Object in event.changeList) {
-					switch(item.code) {
-						case "change":
-						case "success":
-							requestStatusHandler();
-							break;
-						case "reject":
-							break;
-						case "delete":
-							break;
+			public function requestStatusHandler(callerId:String, callerName:String, requestType:String):void {
+				Alert.show(callerName + "像你发起" + requestType + "请求", "提醒", Alert.YES|Alert.NO, null, function(event:CloseEvent):void {
+					if (event.detail == Alert.YES) {
+						netConn.call("sendRequestStatus", null, callerId, requestType, 1);
+					} else if (event.detail == Alert.NO) {
+						netConn.call("sendRequestStatus", null, callerId, requestType, 0);
 					}
+				});
+			}
+
+			/**
+			 * 发送请求处理结果.
+			 */
+			public function sendRequestResult(calleeId:String, requestType:String):void {
+				var key:String = requestType+calleeId;
+				var requestInfo:Object = requestMap[key];
+				if (requestInfo != null) {
+					requestInfo.status = Constants.CURRENT_HANDLE;
+					requestMap[key] = requestInfo;
 				}
 			}
 
 			/**
-			 * 接收数据同步.
+			 * 请求处理结果.请求者接收被请求者处理结果
 			 */
-			private function receiveSyncHandler(event:SyncEvent):void {
-				for each(var item:Object in event.changeList) {
-					switch(item.code) {
-						case "change":
-						case "success":
-							break;
-						case "reject":
-							break;
-						case "delete":
-							break;
-					}					
-				}
-			}
-
-			/**
-			 * 请求状态处理.
-			 */
-			private function requestStatusHandler():void {
-				if (requestListener.data.requestList as Object) {
-					var obj:Object = requestListener.data.requestList;
-					Alert.show("有人请求你了\n请求人：" + obj.userId);
+			public function requestStatusResult(calleeId:String, calleeName:String, requestType:String, status:int):void {
+				var key:String = requestType+calleeId;
+				var requestInfo:Object = requestMap[key];
+				if (status == 0) {// 拒绝
+					requestInfo.status = Constants.REJECT_HANDLE;
+					Alert.show(calleeName + "拒绝了您的" + requestType + "请求");
+				} else {// 接受
+					requestInfo.status = Constants.ACCEPT_HANDLE;
+					Alert.show(calleeName + "接受了您的" + requestType + "请求");
 				}
 			}
 
 			/**
 			 * 向指定用户请求.
 			 */
-			private function sendRequest():void {
-				requestSender = SharedObject.getRemote("request/user"+toUserId.text, netConn.uri, true);
-				requestSender.connect(netConn);
-				requestSender.addEventListener(SyncEvent.SYNC, requestSyncHandler);
-				Alert.show("request/user"+toUserId.text);
-				// 获取被请求用户的请求信息
-				var requestList:Object = requestSender.data.requestList;
-				if (requestList == null) {
-					requestList = new Object();
-				}
-				if (requestList[userId.text] == null) {//没有被请求过
-					var obj:Object = new Object();
-					// 设置请求人编号
-					obj[userId.text] = userId.text;
-					obj.userId = userId.text;
-					// 设置请求状态
-					obj.status = 0;
-					requestList[userId.text] = obj;
-					requestSender.setProperty("requestList", obj);
+			private function sendRequest(requestType:String):void {
+				var key:String = requestType+toUserId.text;
+				var requestInfo:Object = requestMap[key];
+				if (requestInfo == null) {// 新的请求
+					requestInfo = new Object();
+					// 未处理过的请求
+					requestInfo.status = Constants.NO_HANDLE;
+					requestMap[key] = requestInfo;
+					// 向被请求者发送请求
+					netConn.call("sendRequest", null, toUserId.text, requestType);
 				} else {
-					
+					switch(requestInfo.status) {
+						case Constants.ACCEPT_HANDLE:
+							Alert.show("正在聊天中，无需再次请求.");
+							break;
+						case Constants.CURRENT_HANDLE:
+							Alert.show("请求已发出，请等待用户确认.");
+							break;
+						case Constants.LOSE_HANDLE:
+						case Constants.REJECT_HANDLE:
+							// 重置为新的请求
+							requestInfo.status = Constants.NO_HANDLE;
+							requestMap[key] = requestInfo;
+							netConn.call("sendRequest", null, toUserId.text, requestType);
+							break;
+					}
 				}
 			}
 		]]>
@@ -115,8 +112,9 @@
 	<mx:Label x="37" y="24" text="请求人编号" fontSize="18" width="95" textAlign="right"/>
 	<mx:Label x="19" y="56" text="被请求人编号" fontSize="18"/>
 	<mx:TextInput id="userId" x="140" y="25" width="66" fontSize="15"/>
-	<mx:TextInput id="userName" x="214" y="25" width="102" fontSize="15"/>
-	<mx:TextInput id="toUserId" x="140" y="57" width="176" fontSize="15"/>
-	<mx:Button x="324" y="25" label="连接" fontSize="15" click="connectFMS();"/>
-	<mx:Button x="324" y="57" label="请求" fontSize="15" click="sendRequest();"/>
+	<mx:TextInput id="userName" x="214" y="25" width="122" fontSize="15"/>
+	<mx:TextInput id="toUserId" x="140" y="57" width="66" fontSize="15"/>
+	<mx:Button x="344" y="25" label="连接" fontSize="15" click="connectFMS();"/>
+	<mx:Button x="214" y="57" label="请求聊天" fontSize="15" click='sendRequest("chat");'/>
+	<mx:Button x="312" y="57" label="请求教室" fontSize="15" click='sendRequest("classRoom");'/>
 </mx:Application>

@@ -17,9 +17,12 @@
 				myStream.receiveAudio(true);
 				myStream.receiveVideo(true);
 
+				//myStream.play(null);
+
 				//camera.addEventListener(ActivityEvent.ACTIVITY, activityHandler);
 
 				myStream.play("Tim'sVideoAudio");
+				//myStream.appendBytesAction(NetStreamAppendBytesAction.RESET_BEGIN);
 				var video:Video = new Video();
 				video.width = remoteVideoDisplay.width;
 				video.height = remoteVideoDisplay.height;
