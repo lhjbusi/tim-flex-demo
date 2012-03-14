@@ -7,13 +7,13 @@
 			private var myStream:NetStream;
 			private var camera:Camera;
 			private var mic:Microphone;
-			
+
 			public function init():void {
 				netConnection = new NetConnection();
 				netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
 				netConnection.connect(serverUrl.text);
 			}
-			
+
 			public function publishVedioAudio():void {
 				myStream = new NetStream(netConnection);
 				camera = Camera.getCamera();
@@ -22,11 +22,11 @@
 				// 设置拍摄模式
 				camera.setMode(120, 100, 12);
 				camera.setQuality(0, 100);
-				//var h264Setting:H264VideoStreamSettings = new H264VideoStreamSettings();
-				//h264Setting.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_5_1);
-				//h264Setting.setMode(120, 100, 12);
+				var h264Setting:H264VideoStreamSettings = new H264VideoStreamSettings();
+				h264Setting.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_5_1);
+				h264Setting.setMode(120, 100, 12);
 				// 设置视频编码方式
-				//myStream.videoStreamSettings = h264Setting;
+				myStream.videoStreamSettings = h264Setting;
 
 				var video:Video = new Video();
 				video.attachCamera(camera);
@@ -58,9 +58,10 @@
 
 				//camera.addEventListener(ActivityEvent.ACTIVITY, activityHandler);
 
-				myStream.publish("Tim'sVideoAudio", "live");
+				// 第二个参数，live默认值(直播型，不会在服务器做记录)
+				myStream.publish("LiveStream", "record");
 			}
-			
+
 			private function netConnectionHandler(event:NetStatusEvent):void {
 				switch (event.info.code) {
 					case "NetConnection.Connect.Success":

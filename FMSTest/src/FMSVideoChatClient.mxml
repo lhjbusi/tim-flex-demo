@@ -5,13 +5,13 @@
 			import mx.controls.Alert;
 			private var netConnection:NetConnection;
 			private var myStream:NetStream;
-			
+
 			public function init():void {
 				netConnection = new NetConnection();
 				netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
 				netConnection.connect(serverUrl.text);
 			}
-			
+
 			public function reciveVedioAudio():void {
 				myStream = new NetStream(netConnection);
 				myStream.receiveAudio(true);
@@ -21,7 +21,7 @@
 
 				//camera.addEventListener(ActivityEvent.ACTIVITY, activityHandler);
 
-				myStream.play("Tim'sVideoAudio");
+				myStream.play("LiveStream");
 				//myStream.appendBytesAction(NetStreamAppendBytesAction.RESET_BEGIN);
 				var video:Video = new Video();
 				video.width = remoteVideoDisplay.width;
@@ -30,7 +30,7 @@
 				video.attachNetStream(myStream);
 				remoteVideoDisplay.addChild(video);
 			}
-			
+
 			private function netConnectionHandler(event:NetStatusEvent):void {
 				switch (event.info.code) {
 					case "NetConnection.Connect.Success":
