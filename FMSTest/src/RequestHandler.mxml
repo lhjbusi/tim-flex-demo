@@ -41,11 +41,20 @@
 			 */
 			public function requestStatusHandler(callerId:String, callerName:String, requestType:String):void {
 				Alert.show(callerName + "像你发起" + requestType + "请求", "提醒", Alert.YES|Alert.NO, null, function(event:CloseEvent):void {
+					// 获取请求者信息
+					var key:String = requestType+callerId;
+					var requestInfo:Object = requestMap[key];
+					if (requestInfo == null) {
+						requestInfo = new Object();
+					}
 					if (event.detail == Alert.YES) {
 						netConn.call("sendRequestStatus", null, callerId, requestType, 1);
+						requestInfo.status = Constants.ACCEPT_HANDLE;
 					} else if (event.detail == Alert.NO) {
 						netConn.call("sendRequestStatus", null, callerId, requestType, 0);
+						requestInfo.status = Constants.NO_HANDLE;
 					}
+					requestMap[key] = requestInfo;
 				});
 			}
 
@@ -53,6 +62,7 @@
 			 * 发送请求处理结果.
 			 */
 			public function sendRequestResult(calleeId:String, requestType:String):void {
+				// 获取被请求者信息
 				var key:String = requestType+calleeId;
 				var requestInfo:Object = requestMap[key];
 				if (requestInfo != null) {
@@ -65,6 +75,7 @@
 			 * 请求处理结果.请求者接收被请求者处理结果
 			 */
 			public function requestStatusResult(calleeId:String, calleeName:String, requestType:String, status:int):void {
+				// 获取被请求者信息
 				var key:String = requestType+calleeId;
 				var requestInfo:Object = requestMap[key];
 				if (status == 0) {// 拒绝
@@ -106,6 +117,13 @@
 							break;
 					}
 				}
+			}
+			
+			/**
+			 * 用户不在线.
+			 */
+			public function userIsOffline():void {
+				Alert.show("您请求的用户不在线");
 			}
 		]]>
 	</mx:Script>
