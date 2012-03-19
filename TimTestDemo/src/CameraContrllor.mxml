@@ -104,8 +104,8 @@
 		public function returnUserName():void {
 			// 初始化麦克风设置
 			initAudio();
-			var ss:String="qiu;725;10;137;50000";
-			//var ss:String="test;725;50000";
+			//var ss:String="qiu;725;10;137;50000";
+			var ss:String="test;725;50000";
 			var ss1:Array=ss.split(";");
 			userName.text=ss1[0];
 			if (ss1[3] != null) {
@@ -230,13 +230,16 @@
 			o.onPeerConnect = function(subscriberStream:NetStream):Boolean {		
 				receiveStream = new NetStream(netConnection,subscriberStream.farID);
 				receiveStream.play("caller");
+
 				receiveStream.receiveAudio(true);
 				receiveStream.receiveAudio(true);
+
 				var i:Object = getCommonReciveStreamHandler();
 				//监听onIncomingCall事件，用于确定链接成功
 				i.onIncomingCall = function(name:String):void {
+					studentName = name;
 					accpetHandle();
-					sendStream.send("onConnectSuccess",userName.text,myId);
+					sendStream.send("onConnectSuccess", userName.text, myId);
 				}
 				i.updateCredits=function(credit:String):void {
 					feeArea.text=credit;
@@ -274,11 +277,17 @@
 		 */
 		private function charge(event:CloseEvent):void {
 		}
+		/**
+		 * 呼叫者开始播放流.
+		 */
 		private function sendStreamHandler(e:NetStatusEvent):void {
 			if (e.info.code == "NetStream.Play.Start") {
 				sendStream.send("onIncomingCall", userName.text)
 			}
 		}
+		/**
+		 * 对外呼叫.
+		 */
 		private function call():void {
 			controlStream = new NetStream(netConnection, peerId.text);
 			controlStream.play(peerId.text);
@@ -296,8 +305,9 @@
 			receiveStream.play("callee");
 			var i:Object = getCommonReciveStreamHandler();
 			//监听onConnectSuccess事件，确定链接成功
-			i.onConnectSuccess=function(name:String,userid:String):void {
+			i.onConnectSuccess=function(name:String, userid:String):void {
 				info.text += "与"+name + "链接成功\n";
+				// 设置学生姓名
 				studentName=name;
 				feeRequestBtn.enabled=true; 
 				userId=userid;
@@ -344,8 +354,6 @@
 					feeRequestBtn.enabled = true;
 					feeRequestBtn.label="停止计费";
 					feeRequestBtn.setStyle("color", "#ff0000");
-					student[0].stuFee=roomFee+'(credits)';
-					student[0].stuName=studentName;
 					roomFee = parseInt(confirmFee.text);
 					student[0].stuFee=roomFee+'(credits)';
 					student[0].stuName=studentName;
@@ -579,12 +587,14 @@
 						periodFeeRecord.send();
 					}
 					student[0].stuTime=convertSecondToDate(currPeriodSec);
+					student[0].stuName=studentName;
 					stu.dataProvider=student;
 				} else {// 学生处理
 					if (currPeriodSec%60 == 0) {// 已满一分钟
 						teacher[0].totalCost=(roomFee*currPeriodSec/60)+'(credits)';
 					}
 					teacher[0].stuTime=convertSecondToDate(currPeriodSec);
+					teacher[0].stuFee=roomFee+'(credits)';
 					tch.dataProvider=teacher;
 				}
 			}
@@ -822,7 +832,7 @@
 				<mx:DataGrid dataProvider="{teacher}" id="tch" width="410" height="52"><mx:columns>
 					<mx:DataGridColumn dataField="teaName" headerText="Teacher"/> 
 					<mx:DataGridColumn dataField="stuTime" headerText="Duration"/> 
-					<mx:DataGridColumn dataField="stuFee" headerText="forTeacher"/> 
+					<mx:DataGridColumn dataField="stuFee" headerText="For Teacher"/> 
 					<mx:DataGridColumn dataField="totalCost" headerText="Cost"/> 
 				</mx:columns></mx:DataGrid>
 			</mx:HBox>
