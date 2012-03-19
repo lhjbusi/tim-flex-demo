@@ -189,12 +189,13 @@
 				case "NetStream.Connect.Success":
 					if (isTeacher) {
 						feeRequestBtn.enabled = true;
-						if (chargeTimer == null || !chargeTimer.running) {
-							Alert.show("开始运行计时器");
-							chargeTimer = new Timer(1000);
-							chargeTimer.start();
-							chargeTimer.addEventListener(TimerEvent.TIMER, chargeTimerHandler);
-						}
+					}
+					// 运行定时器
+					if (chargeTimer == null || !chargeTimer.running) {
+						Alert.show("开始运行计时器");
+						chargeTimer = new Timer(1000);
+						chargeTimer.start();
+						chargeTimer.addEventListener(TimerEvent.TIMER, chargeTimerHandler);
 					}
 				break;
 				case "NetStream.Connect.Closed":
@@ -231,40 +232,11 @@
 				receiveStream.play("caller");
 				receiveStream.receiveAudio(true);
 				receiveStream.receiveAudio(true);
-				var i:Object = new Object;
-				//监听onIm事件，用于收取文字信息
-				i.onIm = function(name:String, value:String):void {
-					var dateFormatter:DateFormatter = new DateFormatter(); 
-					dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
-					var time:String = new Date().toLocaleTimeString();
-					var date:String = dateFormatter.format(new Date());
-					info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>"; 
-				}
+				var i:Object = getCommonReciveStreamHandler();
 				//监听onIncomingCall事件，用于确定链接成功
 				i.onIncomingCall = function(name:String):void {
 					accpetHandle();
 					sendStream.send("onConnectSuccess",userName.text,myId);
-				}
-				i.onHangup = function():void {
-					//	hangup()
-				}
-				// 课时费收费确认
-				i.feeConfirm = function(userName:String,fee:Number):void {	
-					roomFee=fee;
-					if (credits<fee) {
-						Alert.show("请充值！", "你的余额不足！", 1, null, charge);
-						// 停止课时费收取
-						stopPeriodFee();
-						sendStream.send("notEnoughCredits");
-					} else {
-						teacher[0].teaName=userName;
-						Alert.show("准备开始计费\n课时费: " + fee, "确认", Alert.OK | Alert.CANCEL, null, feeConfirmHandler);
-					}
-				}
-				i.stopFeeForStudent=function():void {
-					Alert.show("已停止课时费收取", "提醒");
-					// 停止课时费收取
-					stopPeriodFee();
 				}
 				i.updateCredits=function(credit:String):void {
 					feeArea.text=credit;
@@ -287,7 +259,6 @@
 		 */
 		private function feeConfirmHandler(event:CloseEvent):void {
 			if (event.detail == Alert.OK) {
-				Alert.show("学生同意开始计费了");
 				// 开始课时费记录
 				beginPeriodFee = true;
 				// 开始计费
@@ -323,15 +294,7 @@
 			// 尝试播放被呼叫者的信息流
 			receiveStream = new NetStream(netConnection, peerId.text);
 			receiveStream.play("callee");
-			var i:Object = new Object;
-			// 监听信息发布事件
-			i.onIm=function(name:String, value:String):void {
-				var dateFormatter:DateFormatter = new DateFormatter();
-				dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
-				var time:String=new Date().toLocaleTimeString();
-				var date:String=dateFormatter.format(new Date());
-				info.htmlText+="<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>";
-			}
+			var i:Object = getCommonReciveStreamHandler();
 			//监听onConnectSuccess事件，确定链接成功
 			i.onConnectSuccess=function(name:String,userid:String):void {
 				info.text += "与"+name + "链接成功\n";
@@ -346,9 +309,6 @@
 				remoteVideo.attachNetStream(receiveStream);
 				remoteVideoDisplay.addChild(remoteVideo);
 			}
-			i.onHangup=function():void {
-				// hangup()
-			}
 			// 点数不够
 			i.notEnoughCredits=function():void {
 				// 停止课时费收取
@@ -356,23 +316,61 @@
 				feeRequestBtn.enabled=false;
 				Alert.show("对方钱不够，停止计时！");
 			}
-			// 学生不同意课时费请求
-			i.cancelFeeRequest=function():void {
-				feeRequestBtn.enabled = true;
-				Alert.show("对方没有同意计费请求\n课时费: " + confirmFee.text);
-			}
-			// 老师开始记录课时费
-			i.startPeriodFee=function():void {
-				feeRequestBtn.enabled = true;
-				// 开始课时费记录
-				beginPeriodFee = true;
-				roomFee = parseInt(confirmFee.text);
-				student[0].stuFee=roomFee+'(credits)';
-				student[0].stuName=studentName;
-				feeRequestBtn.label="停止计费";
-				feeRequestBtn.setStyle("color", "#ff0000");
-			}
 		 	receiveStream.client=i;
+		}
+		private function getCommonReciveStreamHandler():Object {
+			var i:Object = new Object;
+			// 监听信息发布事件
+			i.onIm=function(name:String, value:String):void {
+				var dateFormatter:DateFormatter = new DateFormatter();
+				dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
+				var time:String=new Date().toLocaleTimeString();
+				var date:String=dateFormatter.format(new Date());
+				info.htmlText+="<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>";
+			}
+			i.onHangup = function():void {
+				//hangup()
+			}
+			if (isTeacher) {
+				// 学生不同意课时费请求
+				i.cancelFeeRequest=function():void {
+					feeRequestBtn.enabled = true;
+					Alert.show("对方没有同意计费请求\n课时费: " + confirmFee.text);
+				}
+				// 学生同意开始计费-开始记录课时费
+				i.startPeriodFee=function():void {
+					// 开始课时费记录
+					beginPeriodFee = true;
+					feeRequestBtn.enabled = true;
+					feeRequestBtn.label="停止计费";
+					feeRequestBtn.setStyle("color", "#ff0000");
+					student[0].stuFee=roomFee+'(credits)';
+					student[0].stuName=studentName;
+					roomFee = parseInt(confirmFee.text);
+					student[0].stuFee=roomFee+'(credits)';
+					student[0].stuName=studentName;
+				}
+			} else {// 学生
+				// 课时费收费确认
+				i.feeConfirm = function(userName:String,fee:Number):void {
+					roomFee=fee;
+					if (credits<fee) {
+						Alert.show("请充值！", "你的余额不足！", 1, null, charge);
+						// 停止课时费收取
+						stopPeriodFee();
+						sendStream.send("notEnoughCredits");
+					} else {
+						teacher[0].teaName=userName;
+						Alert.show(userName+"准备开始计费\n课时费: " + fee, "确认", Alert.OK | Alert.CANCEL, null, feeConfirmHandler);
+					}
+				}
+				i.stopFeeForStudent=function():void {
+					Alert.show("已停止课时费收取", "提醒");
+					// 停止课时费收取
+					stopPeriodFee();
+				}
+			}
+			return i;
 		}
 		//用sendStream对外接受信息流
 	 	private function accpetHandle():void {
@@ -529,7 +527,7 @@
 		 */
 		private function teacherConfirmFee(event:CloseEvent):void {
 			if (event.detail == Alert.OK) {
-				// 发送确认请求
+				// 老师向学生发送确认请求
 				sendStream.send("feeConfirm", userName.text, confirmFee.text);
 				feeRequestBtn.enabled = false;
 			}
@@ -566,9 +564,8 @@
 		private function chargeTimerHandler(event:TimerEvent):void {
 			// 平台费使用秒数累加
 			currFreeSec ++;
-			// 平台费计费
-			if (currFreeSec >= freeMin*60) {
-				currFreeSec=freeMin*60;
+			// 平台费计费-老师端运行
+			if (isTeacher && currFreeSec >= freeMin*60 && currFreeSec%60 == 0) {
 				// 向Java请求平台费记录
 				platformFeeHandler();
 			}
@@ -608,15 +605,6 @@
 			Alert.show("向后台发送平台费请求了");
 			// 计费
 			platformFeeRecord.send();
-		}
-		private function toStudentTimer(_now:Number=0,_start:Number=0):String {
-			var _milliseconds:Number = Math.floor((_now - _start) / 1000);//总毫秒数
-			var _hours:Number = Math.floor(_milliseconds/3600);//时
-			var _minutes:Number = Math.floor((_milliseconds%3600)/60);//分
-			var _seconds:Number = Math.floor((_milliseconds%3600)%60);//秒
-			var temp:Number=roomFee*(_minutes+_hours*60);
-			teacher[0].totalCost=temp.toString()+'(credits)';
-			return ((_hours<10)?"0"+_hours:_hours)+":"+((_minutes<10)?"0"+_minutes:_minutes)+":"+((_seconds<10)?"0"+_seconds:_seconds);
 		}
 		private function activity(event:ActivityEvent):void {
 			addEventListener(Event.ENTER_FRAME, init1);
@@ -781,7 +769,8 @@
 		<insertDate>{periodDate}</insertDate>
 	</mx:request>
 </mx:HTTPService>
-<mx:HTTPService id="platformFeeRecord" showBusyCursor="false" useProxy="false" method="POST" result="platformFeeResult()" fault="platformFeeFault()" url="/CG/chat.do?p=plateformFeeRecord">
+<!-- 平台费处理 -->
+<mx:HTTPService id="platformFeeRecord" showBusyCursor="false" useProxy="false" method="POST" result="platformFeeResult()" fault="platformFeeFault()" url="/CG/chat.do?p=platformFeeRecord">
 	<mx:request>
 		<stuId>{userId}</stuId>
 		<tchId>{myId}</tchId>
