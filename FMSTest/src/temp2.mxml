@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" backgroundColor="white"  initialize="init()">
+	<mx:Script>
+		<![CDATA[
+			import com.tim.chinesegreat.Constants;
+		    import mx.controls.Alert;
+		    private static var nc:NetConnection = null;//本地连接
+		    private var sharedObj:SharedObject = null;//服务器对象
+			private function init():void {
+				nc = new NetConnection();
+				nc.client = this;
+				nc.addEventListener(NetStatusEvent.NET_STATUS, _netStatus);
+				/**var param:Object=Application.application.parameters;
+				if(param["str"]!=null){
+					nc.connect(rtmp,param["str"]);
+				}*/
+				var params:String = ExternalInterface.call("getUserInfo");
+				var userId:String, userName:String;
+				if (params != null) {
+					userId = params.substring(0, params.indexOf(";"));
+					userName = params.substring(params.indexOf(";")+1);
+				}
+				nc.connect(Constants.rtmpUrl, userId, userName);
+			}
+			private function _netStatus(e:NetStatusEvent):void {
+				switch (e.info.code) {
+					case "NetConnection.Connect.Success":
+						Alert.show("FMS 连接成功");
+					break;
+					case "NetConnection.Connect.Closed":
+						Alert.show("FMS 连接错误");
+					break;
+					case "NetConnection.Connect.Failed":
+						Alert.show("连接错误","连接错误");
+					break;
+					case "NetStream.Connect.Closed":
+					break;
+				}
+			}
+		]]>
+	</mx:Script>
+</mx:Application>

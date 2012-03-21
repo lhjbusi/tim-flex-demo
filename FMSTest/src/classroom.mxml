@@ -12,7 +12,16 @@
 		import mx.controls.dataGridClasses.DataGridColumn;
 		import mx.events.SliderEvent;
 		import mx.core.UIComponent;
-
+		import flash.media.H264VideoStreamSettings;
+		import flash.media.VideoStreamSettings;
+		import flash.media.H264Level;
+		import flash.media.VideoCodec;
+		import flash.media.H264Profile;
+		[Bindable]private var netConnection:NetConnection;
+		[Bindable]private var myStream:NetStream;
+		[Bindable]private var outgoingStream:NetStream;
+		[Bindable]private var incomingStream:NetStream;
+		[Bindable]private var controlStream:NetStream;
 		private var keyCode:int;
 		private var shiftKey:Boolean;
 		private var ctrlKey:Boolean;
@@ -23,79 +32,34 @@
 		private var audioInd:Indicator;
 		private var audioInd1:Indicator;
 		private var uc:UIComponent= new UIComponent();
-	    private var sharedObj:SharedObject = null;//服务器对象
-		// 开始时间
-		private var startDate:Number = 0;
-		// 收费监控
-		private var chargeTimer:Timer;
-		// 是否开始课时费收取
-		private var beginPeriodFee:Boolean = false;
-
-		// 已使用的免费秒数
-		private var currFreeSec:int = 0;
-		// 已使用的课时费秒数
-		private var currPeriodSec:int = 0;
-		// 发送流
-		private var sendStream:NetStream;
-		// 接收流
-		private var receiveStream:NetStream;
-		// 是否是老师
-		private var isTeacher:Boolean = false;
-		// 免费使用的时间(分钟)-超过自动开始计算平台费
-		private const freeMin:int = 1;
-
-		[Bindable]private var forChinesegreatFee:Number=1;
-		[Bindable]private var time:String="00:00:00";
-		[Bindable]private var totalEarning:String='0(credits)';
-		[Bindable]private var cost:String='0(credits)';
-		[Bindable]private var student:Array = [{stuName:studentName, stuTime:time,stuFee:roomFee+'(credits)',forChi:forChinesegreatFee+'(credits)',totalEarn:totalEarning}];
-		[Bindable]private var teacher:Array = [{teaName:userName, stuTime:time,stuFee:roomFee+'(credits)',totalCost:cost}];
-		[Bindable]private var netConnection:NetConnection;
-		[Bindable]private var myStream:NetStream;
-		[Bindable]private var controlStream:NetStream;
- 		[Bindable]public var cards:Array = new Array(
-			{label:"USD",data:1000},
-			{label:"EUR",data:1327}, 
-			{label:"CAD",data:1005},
-			{label:"AUD",data:1072},
-			{label:"GBP",data:1585},
-			{label:"JPY",data:630},
-			{label:"CHF",data:1098},
-			{label:"NZD",data:838},
-			{label:"RMB",data:160}
-		);
 		[Bindable]private var camera:Camera;
 		[Bindable]private var mic:Microphone;
+		[Bindable]private var myId:String;
 		//视频关闭按钮标识 0 发送视频 ，1 停止视频
 		[Bindable]private var flag:Number=0;
+		[Bindable]private var myName:String;
+		[Bindable]private var userId:String;
+		[Bindable]private var UserName:String;
 		[Bindable]private var studentName:String;
 	 	[Bindable]private var roomFee:Number=0;
 	 	[Bindable]private var loginState:int=0;
 	 	[Bindable]private var credits:Number=0;
         //fms 参数
         [Bindable]private var fmsConnection:NetConnection;
-	    [Bindable]private var sendStreamFMS:NetStream;
-	    [Bindable]private var receiveStreamFMS:NetStream;
+	    [Bindable]private var outgoingStreamFMS:NetStream;
+	    [Bindable]private var incomingStreamFMS:NetStream;
 	    [Bindable]private var roomName:String;
-	 	// 课时费计费插入时间
-	 	[Bindable]private var periodDate:String="";
-		// 平台费计费插入时间
-		[Bindable]private var platformDate:String="";
-		// 自身编号
-		[Bindable]private var myId:String;
-		// 另一用户编号
-		[Bindable]private var userId:String;
-		[Bindable]private var myName:String;
-		[Bindable]private var UserName:String;
-
+	    private var sharedObj:SharedObject = null;//服务器对象
 		public function returnUserName():void {
 			// 初始化麦克风设置
 			initAudio();
+			getuser.url = ClassRoomConstant.SERVER_URL + "/CG/chat.do?p=updateUserCredits";
 			var ss:String=ExternalInterface.call("returnTheName");
 			//var ss:String="12;154;123;12123;234";
+			//Alert.show(ss);
 			var ss1:Array=ss.split(";");
-			userName.text=ss1[0]; 
-			if (ss1[3] != null) {
+			userName.text=ss1[0];
+			if (ss1[4] != null) {
 				// 教师权限
 				// 设置被呼叫者ID
 				peerId.text=ss1[1];
@@ -110,7 +74,7 @@
 				loginState=0;
 			} else { // 学生权限
 				loginState=1;
-				feeRequestBtn.visible=false;
+				fee.visible=false;
 				myId=ss1[1];
 				credits=ss1[2];
 				//fms 教室名
@@ -149,7 +113,8 @@
 			//fms连接
 			fmsConnection =new NetConnection();
 			fmsConnection.addEventListener(NetStatusEvent.NET_STATUS, fmsconnectionHandler);
-			fmsConnection.connect(ClassRoomConstant.rtmp,myId,userName,credits,roomName);
+			//Alert.show(myId+";"+userName+";"+credits+";"+roomName);
+			fmsConnection.connect(ClassRoomConstant.rtmp,myId,userName.text,credits,roomName);
 			fmsConnection.client=this;
 			info.addEventListener(FlexEvent.UPDATE_COMPLETE,handleMessage);
 			message.textArea.addEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
@@ -164,113 +129,87 @@
 					//info.text += "你的PeerId是:\n"+netConnection.nearID+"\n对方可以用这个ID呼叫你\n\n" 
 					ExternalInterface.call("returnNearID",netConnection.nearID); 
 					ExternalInterface.call("initCall");
-					//initSendStream();
+					initSendStream();
 				break;
 				case "NetConnection.Connect.Closed":
-				break;
+				break; 
 				case "NetStream.Connect.Success":
-					if (isTeacher) {
-						feeRequestBtn.enabled = true;
-					}
-					// 运行定时器
-					if (chargeTimer == null || !chargeTimer.running) {
-						Alert.show("开始运行计时器");
-						chargeTimer = new Timer(1000);
-						chargeTimer.start();
-						chargeTimer.addEventListener(TimerEvent.TIMER, chargeTimerHandler);
-					}
 				break;
 				case "NetConnection.Connect.Failed":
 					Alert.show("连接错误","连接错误");
 				break;
 				case "NetStream.Connect.Closed":
-					// 停止课时费收取
-					stopPeriodFee();
-					feeRequestBtn.enabled=false;
+					stopFee();
+					fee.enabled=false; 
 					NetStreamClose=NetStreamClose+1;
 					if (NetStreamClose==1) {
-						Alert.yesLabel="确定";
+					    Alert.yesLabel="确定";
 						Alert.noLabel="取消";
 						Alert.show("是否要关闭本窗口?", "对方已断开连接", 3, null, alertClickHandler);
-						//videoArea.setStyle("paddingLeft","-90");
-					}
+						//remoteVideoDisplay.visible=false;
+					    //videoArea.setStyle("paddingLeft","-90");
+					 }
 				break;
 			}
 		}
 		//fms 连接处理
-		private function fmsconnectionHandler(e:NetStatusEvent):void{
-			switch (e.info.code) {
-				case "NetConnection.Connect.Success":
-					// Alert.show("FMS 连接成功");
-					publishVideo();
-					if (!sharedObj) {
-						sharedObj = SharedObject.getRemote("room"+roomName, fmsConnection.uri, true);
-						sharedObj.client = this;
-						sharedObj.addEventListener(SyncEvent.SYNC, _netSync);
-						sharedObj.connect(fmsConnection);
+		 private function fmsconnectionHandler(e:NetStatusEvent):void{
+		  switch (e.info.code)
+	        {
+	            case "NetConnection.Connect.Success":
+	                // Alert.show("FMS 连接成功");
+				    publishVideo("fms");
+	                if (!sharedObj){
+					sharedObj = SharedObject.getRemote("room"+roomName, fmsConnection.uri, true);
+					sharedObj.client = this;
+					sharedObj.addEventListener(SyncEvent.SYNC, _netSync);
+					sharedObj.connect(fmsConnection);
 					}
-				break;
-				case "NetConnection.Connect.Closed":
-				break;
-				case "NetStream.Connect.Success":
-					if (isTeacher) {
-						feeRequestBtn.enabled = true;
-					}
-					// 运行定时器
-					if (chargeTimer == null || !chargeTimer.running) {
-						Alert.show("开始运行计时器");
-						chargeTimer = new Timer(1000);
-						chargeTimer.start();
-						chargeTimer.addEventListener(TimerEvent.TIMER, chargeTimerHandler);
-					}
-				break;
-				case "NetConnection.Connect.Failed":
-					Alert.show("连接错误","连接错误")
-				break;
-				case "NetStream.Connect.Closed":
-					// 停止课时费收取
-					stopPeriodFee();
-					feeRequestBtn.enabled=false;
+	                break;    
+	            case "NetConnection.Connect.Closed":
+	                break;             
+	            case "NetStream.Connect.Success":
+	                break;            
+	            case "NetConnection.Connect.Failed":
+	                 Alert.show("连接错误","连接错误")
+	                break; 
+	            case "NetStream.Connect.Closed":
+	                stopFee();
+					fee.enabled=false; 
 					NetStreamClose=NetStreamClose+1;
 					if (NetStreamClose==1) {
-						Alert.yesLabel="确定";
+					Alert.yesLabel="确定";
 						Alert.noLabel="取消";
 						Alert.show("是否要关闭本窗口?", "对方已断开连接", 3, null, alertClickHandler);
-						//videoArea.setStyle("paddingLeft","-90");
-					}
-				break;
-			}
-		}
-		/**
-		 * 初始化发送流.
-		 */
+						//remoteVideoDisplay.visible=false;
+					//videoArea.setStyle("paddingLeft","-90");
+					 }  
+	                break;
+		    }          
+	        }
+	 
 		private function initSendStream():void {	
 			myStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
 			myStream.publish(netConnection.nearID);	
 			//监听onPeerConnect事件
 			var o:Object = new Object();
-			o.onPeerConnect = function(subscriberStream:NetStream):Boolean {
-				//如果p2p连接成功，则关闭fms连接
-				if (sendStreamFMS) {
-					// 终止fms发布流，接入p2p发布流
-					sendStreamFMS.close();
-					sendStreamFMS = null;
-					// 置空FMS接收流
-					receiveStreamFMS.close();
-					receiveStreamFMS = null;
-					// 置空FMS发送刘
-					sendStreamFMS.close();
-					sendStreamFMS = null;
-					fmsConnection.close();
-				}
-				receiveStream = new NetStream(netConnection,subscriberStream.farID);
-				receiveStream.play("caller");
-				sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
-				sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
-				sendStream.publish("callee");
-				publishVideo();
-				receiveStream.receiveAudio(true);
-				receiveStream.receiveVideo(true);
+			o.onPeerConnect = function(subscriberStream:NetStream):Boolean {	
+					 //如果p2p连接成功，则关闭fms连接
+					 if (outgoingStreamFMS)
+	                  {
+	                    Alert.show("终止fms发布流，接入p2p发布流");
+				        outgoingStreamFMS.close();
+				        outgoingStreamFMS = null;
+				        fmsConnection.close();
+	                  }
+				incomingStream = new NetStream(netConnection,subscriberStream.farID);
+				incomingStream.play("caller"); 
+				outgoingStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+				outgoingStream.addEventListener(NetStatusEvent.NET_STATUS, outgoingStreamHandler);
+				outgoingStream.publish("callee");
+				publishVideo("p2p");
+				incomingStream.receiveAudio(true);
+				incomingStream.receiveVideo(true);
 				remoteVideo = new Video();
 				remoteVideo.width = 259;
 				remoteVideo.height = 193;
@@ -278,28 +217,48 @@
 				remoteVideo.y=4;
 				// 指定播放视频时使用平滑处理(插补数据)
 				remoteVideo.smoothing = true;
-				remoteVideo.attachNetStream(receiveStream);
+				remoteVideo.attachNetStream(incomingStream);
 				remoteVideoDisplay.addChild(remoteVideo);
 				//监听onIm事件，用于收取文字信息
-				var i:Object = getCommonReciveStreamHandler();
+				var i:Object = new Object;
+				i.onIm = function(name:String, value:String):void {
+					var dateFormatter:DateFormatter = new DateFormatter(); 
+					dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
+					var time:String = new Date().toLocaleTimeString();
+					var date:String = dateFormatter.format(new Date());
+					info.htmlText += "<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>"; 
+					ExternalInterface.call("focusOn");
+				}
 				//监听onIncomingCall事件，用于确定链接成功
 				i.onIncomingCall = function(name:String):void {
-					studentName = name;
-					accpetHandle();
-					sendStream.send("onConnectSuccess",userName.text,myId);
+					outgoingStream.send("onConnectSuccess",userName.text,myId);
 				}	 
+				i.startFee = function(userName:String,fee:Number):void {	
+					roomFee=fee;
+					if (credits<fee){
+						Alert.show("请充值！","你的余额不足！", 1, null, charge); 
+						stopFee(); 
+						outgoingStream.send("notEnoughCredits");	
+					} else {
+						teacher[0].teaName=userName;					 
+						showStudentTimer();
+						Alert.show("开始计费","提示!");
+					}
+				}
+				i.stopFeeForStudent=function():void {
+					stopFee();
+				}
 				i.updateCredits=function(credit:String):void {		
-					feeArea.text=credit;
-					credits=Number(credit);
-					changeCredits();
-					if (Number(credit)<roomFee) {
-						Alert.show("请充值！","你的余额不足！", 1, null, charge);
-						// 停止课时费收取
-						stopPeriodFee();
-						sendStream.send("notEnoughCredits");
+					feeArea.text=credit; 
+					credits=Number(credit); 
+					changeCredits();	 
+			 		if (Number(credit)<roomFee) {
+					 	Alert.show("请充值！","你的余额不足！", 1, null, charge); 
+					 	stopFee(); 
+						outgoingStream.send("notEnoughCredits");
 					}
 			 	}
-				receiveStream.client = i;
+				incomingStream.client = i;
 				return true;
 			}
 			myStream.client = o; 
@@ -307,112 +266,30 @@
 				call();
 			}
 		}
-		//用sendStream对外接受信息流
-	 	private function accpetHandle():void {
-	 		sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
-			sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
-			sendStream.publish("callee");
-			publishVideo();
-			receiveStream.receiveAudio(true);
-			receiveStream.receiveVideo(true);
-			remoteVideo = new Video();
-			remoteVideo.width = remoteVideoDisplay.width;
-			remoteVideo.height = remoteVideoDisplay.height;
-			// 指定播放视频时使用平滑处理(插补数据)
-			remoteVideo.smoothing = true;
-			remoteVideo.attachNetStream(receiveStream);
-			remoteVideoDisplay.addChild(remoteVideo);
-		}
-		private function getCommonReciveStreamHandler():Object {
-			var i:Object = new Object;
-			// 监听信息发布事件
-			i.onIm=function(name:String, value:String):void {
-				var dateFormatter:DateFormatter = new DateFormatter();
-				dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
-				var time:String=new Date().toLocaleTimeString();
-				var date:String=dateFormatter.format(new Date());
-				info.htmlText+="<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>";
-			}
-			i.onHangup = function():void {
-				//hangup()
-			}
-			if (isTeacher) {
-				// 学生不同意课时费请求
-				i.cancelFeeRequest=function():void {
-					feeRequestBtn.enabled = true;
-					Alert.show("对方没有同意计费请求\n课时费: " + confirmFee.text);
-				}
-				// 学生同意开始计费-开始记录课时费
-				i.startPeriodFee=function():void {
-					// 开始课时费记录
-					beginPeriodFee = true;
-					feeRequestBtn.enabled = true;
-					feeRequestBtn.label="停止计费";
-					feeRequestBtn.setStyle("color", "#ff0000");
-					roomFee = parseInt(confirmFee.text);
-					student[0].stuFee=roomFee+'(credits)';
-					student[0].stuName=studentName;
-				}
-			} else {// 学生
-				// 课时费收费确认
-				i.feeConfirm = function(userName:String,fee:Number):void {
-					roomFee=fee;
-					if (credits<fee) {
-						Alert.show("请充值！", "你的余额不足！", 1, null, charge);
-						// 停止课时费收取
-						stopPeriodFee();
-						sendStream.send("notEnoughCredits");
-					} else {
-						teacher[0].teaName=userName;
-						Alert.show(userName+"准备开始计费\n课时费: " + fee, "确认", Alert.OK | Alert.CANCEL, null, feeConfirmHandler);
-					}
-				}
-				i.stopFeeForStudent=function():void {
-					Alert.show("已停止课时费收取", "提醒");
-					// 停止课时费收取
-					stopPeriodFee();
-				}
-			}
-			return i;
-		}
-		/**
-		 * 学生课时费确认处理.
-		 */
-		private function feeConfirmHandler(event:CloseEvent):void {
-			if (event.detail == Alert.OK) {
-				// 开始课时费记录
-				beginPeriodFee = true;
-				// 开始计费
-				sendStream.send("startPeriodFee");
-			} else if (event.detail == Alert.CANCEL) {
-				beginPeriodFee = false;
-				// 取消计费请求
-				sendStream.send("cancelFeeRequest");
-			}
-		}
-		private function sendStreamHandler(e:NetStatusEvent):void {
+		private function outgoingStreamHandler(e:NetStatusEvent):void {
 			if (e.info.code == "NetStream.Play.Start"){
-				sendStream.send("onIncomingCall",userName.text);
+				outgoingStream.send("onIncomingCall",userName.text);
 				//如果p2p连接成功，则关闭fms连接
-				if (receiveStreamFMS) {
-					Alert.show("终止fms发布流，接入p2p发布流");
-					receiveStreamFMS.close();
-					receiveStreamFMS = null;
-					fmsConnection.close();
-				}
+				 if (incomingStreamFMS)
+				    {
+				     Alert.show("终止fms发布流，接入p2p发布流");
+				     incomingStreamFMS.close();
+				     incomingStreamFMS = null;
+				     fmsConnection.close();
+				    }
 			}
 		}
 		private function call():void {
 			controlStream = new NetStream(netConnection, peerId.text);
 			controlStream.play(peerId.text);
 			//同时对外发布呼叫者的信息流
-			sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
-			sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
-			sendStream.publish("caller");
-			publishVideo();
+			outgoingStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+			outgoingStream.addEventListener(NetStatusEvent.NET_STATUS, outgoingStreamHandler);
+			outgoingStream.publish("caller");
+			publishVideo("p2p");
 			//尝试播放被呼叫者的信息流
-			receiveStream = new NetStream(netConnection, peerId.text);
-			receiveStream.play("callee");
+			incomingStream = new NetStream(netConnection, peerId.text);
+			incomingStream.play("callee");
 			//监听信息发布事件
 			var i:Object = new Object;
 			i.onIm = function(name:String, value:String):void {
@@ -427,27 +304,25 @@
 			i.onConnectSuccess = function(name:String,userid:String):void {
 				info.text += "与"+name + "链接成功\n";
 				studentName=name;
-				feeRequestBtn.enabled=true; 
+				fee.enabled=true; 
 				userId=userid;
-				receiveStream.receiveAudio(true);
-				receiveStream.receiveAudio(true);
+				incomingStream.receiveAudio(true);
+				incomingStream.receiveAudio(true);
 				remoteVideo = new Video();
 				remoteVideo.width = 259;
 				remoteVideo.height = 193;
 				remoteVideo.x=4;
 				remoteVideo.y=4;
 				remoteVideo.smoothing = true;
-				remoteVideo.attachNetStream(receiveStream);
+				remoteVideo.attachNetStream(incomingStream);
 				remoteVideoDisplay.addChild(remoteVideo);
 			}
-			// 点数不够
 			i.notEnoughCredits=function():void {
-				// 停止课时费收取
-				stopPeriodFee();
-				feeRequestBtn.enabled=false;
+				stopFee();
+				fee.enabled=false;
 				Alert.show("对方钱不够，停止计时！");
 			}
-		 	receiveStream.client = i
+		 	incomingStream.client = i
 		}
 		/**
 		 * 用户充值.
@@ -468,8 +343,8 @@
 				var date:String = dateFormatter.format(new Date());
 				info.htmlText+="<font color='#008040' face='Arial' size='13'>"+userName.text +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>"+ message.htmlText + "</textformat>";
 				//p2p 发送文字聊天
-				if (receiveStreamFMS ==null) {
-					sendStream.send("onIm",userName.text,message.htmlText);
+				if (incomingStreamFMS == null) {
+					outgoingStream.send("onIm",userName.text,message.htmlText);
 				} else {
 					//fms 发送文字聊天
 					this.sharedObj.send("sendNews", userName.text, message.htmlText);
@@ -489,19 +364,19 @@
 				ExternalInterface.call("focusOn");
 			}
 		}
-		/**
-		 * 发布音视频.
-		 */
-		private function publishVideo():void {
+		private function publishVideo(type:String):void {
 			camera=Camera.getCamera();
-			var h264Setting:H264VideoStreamSettings = new H264VideoStreamSettings();
-			// 设置关键帧
-			h264Setting.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_5_1);
-			// 设置拍摄模式
-			h264Setting.setMode(200, 150, 12);
-			// 设置视频品质
-			h264Setting.setQuality(0, 100);
+			var h264Setting:H264VideoStreamSettings = null;
 			if (camera) {
+				// 设置关键帧
+				h264Setting = new H264VideoStreamSettings();
+				h264Setting.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_5_1);
+				// 设置拍摄模式
+				h264Setting.setMode(400, 300, 12);
+				// 设置视频品质
+				h264Setting.setQuality(0, 100);
+				// 设置关键帧
+				h264Setting.setKeyFrameInterval(15);
 				localVideo = new Video();
 				localVideo.width = localVideoDisplay.width;
 				localVideo.height = localVideoDisplay.height;
@@ -511,14 +386,15 @@
 				localVideo.smoothing = true;
 				localVideo.attachCamera(camera);
 				localVideoDisplay.addChild(localVideo);
-				
-				// 获取增强类型的对象
-				var mic:Microphone= Microphone.getEnhancedMicrophone(0);
+			}
+			// 获取增强类型的对象
+			var mic:Microphone= Microphone.getEnhancedMicrophone(0);
+			if (mic) {
 				// 使用Speex编码，无需指定取样速率
 				mic.codec = SoundCodec.SPEEX;
 				// 设置可认定为有声的最低音量输入水平，可选值0~100
-            	// 以及实际静音前需经历的无声时间长度(毫秒)
-				mic.setSilenceLevel(40, 1000);
+	        	// 以及实际静音前需经历的无声时间长度(毫秒)
+				mic.setSilenceLevel(30, 1000);
 				// 只在SPEEX下使用
 				mic.enableVAD = true;
 				// 设置声音比特率,只在SPEEX下使用,0~10,默认6
@@ -528,14 +404,6 @@
 				mic.framesPerPacket = 2;
 				// 麦克风属性设置
 				var options:MicrophoneEnhancedOptions = new MicrophoneEnhancedOptions();
-				// USB类型麦克风
-				/**if (mic.name.toLowerCase().indexOf("usb") != -1) {
-					// USB麦克风默认值
-					options.mode = MicrophoneEnhancedMode.HALF_DUPLEX;
-				} else {
-					// 非USB麦克风默认值
-					options.mode = MicrophoneEnhancedMode.FULL_DUPLEX;
-				}*/
 				// 是否启用自动增益控制
 				options.autoGain = true;
 				// 回声路径,值越大，回声抑制效果越好，但声音的延迟会越大
@@ -555,18 +423,27 @@
 				// 使用回声抑制功能
 				mic.setUseEchoSuppression(true);
 			}
-			if (netConnection == null) {
-				 sendStreamFMS = new NetStream(fmsConnection);
-			     sendStreamFMS.client=this;
-			     sendStreamFMS.attachCamera(camera);
-			     sendStreamFMS.attachAudio(mic);
-			     sendStreamFMS.videoStreamSettings = h264Setting;
-			     sendStreamFMS.publish("room"+myId);
+			if (type=="fms") {
+				outgoingStreamFMS = new NetStream(fmsConnection);
+			    outgoingStreamFMS.client=this;
+			    if (camera != null) {
+					// 设置视频编码方式
+				    outgoingStreamFMS.videoStreamSettings = h264Setting;
+				    outgoingStreamFMS.attachCamera(camera);
+			    }
+			    if (mic != null) {
+			    	outgoingStreamFMS.attachAudio(mic);
+			    }
+			    outgoingStreamFMS.publish("room"+myId);
 			} else {
-				// 设置视频编码方式
-				sendStream.videoStreamSettings = h264Setting;
-				sendStream.attachCamera(camera);
-				sendStream.attachAudio(mic);	
+			    if (camera != null) {
+					// 设置视频编码方式
+					outgoingStream.videoStreamSettings = h264Setting;
+					outgoingStream.attachCamera(camera);
+			    }
+			    if (mic != null) {
+					outgoingStream.attachAudio(mic);
+			    }
 			}
 		}				
 		//显示文本控制按钮
@@ -593,107 +470,82 @@
 			message.underlineButton.height=24;
 			message.addChildAt(message.toolbar,0);
 		}
+		private var startDate:Number = 0;//开始时间
+		private var _timer:Timer = new Timer(1000);
+		[Bindable]private var forChinesegreatFee:Number=1;
+		[Bindable]private var time:String="00:00:00";
+		[Bindable]private var totalEarning:String='0(credits)';
+		[Bindable]private var cost:String='0(credits)';
+		[Bindable]private var student:Array = [{stuName:studentName, stuTime:time,stuFee:roomFee+'(credits)',forChi:forChinesegreatFee+'(credits)',totalEarn:totalEarning}];
+		[Bindable]private var teacher:Array = [{teaName:userName, stuTime:time,stuFee:roomFee+'(credits)',totalCost:cost}];
 		//老师计费并启动学生端计费
-		private function periodFeeRequest():void {
-			if (feeRequestBtn.label == "停止计费") {
-				// 停止课时费收取
-	 			stopPeriodFee();
-				sendStream.send("stopFeeForStudent");
-			 	feeRequestBtn.label="开始计费";
-				feeRequestBtn.setStyle("color","#385A62");
+		private function showTimer():void {
+			if (fee.label == "停止计费") {
+	 			stopFee();
+				//p2p流
+				if(incomingStreamFMS ==null){
+				outgoingStream.send("stopFeeForStudent");
+				}else{
+				//fms流
+				this.sharedObj.send("stopFeeForStudent");
+				}
+			 	fee.label="开始计费";
+				fee.setStyle("color","#385A62");
 			 	return;
 	 		}
-	 		if (isTrueFee(confirmFee.text)) {
-	 			Alert.show("课时费用将修正为：\n" + Number(confirmFee.text) + "/min", "提示", Alert.OK|Alert.CANCEL, null, teacherConfirmFee);
-	 		} else {
-	 			Alert.show("您的课时费用不正常\n课时费: " + confirmFee.text, "错误");
-	 		}
-		}
-		/**
-		 * 是否是正常的课时费.
-		 */
-		private function isTrueFee(numStr:String):Boolean {
-			if (Number(numStr) < 1) {
-				return false;
-			}
-			return true;
-		}
-		/**
-		 * 老师确认课时费.
-		 */
-		private function teacherConfirmFee(event:CloseEvent):void {
-			if (event.detail == Alert.OK) {
-				// 老师向学生发送确认请求
-				sendStream.send("feeConfirm", userName.text, confirmFee.text);
-				feeRequestBtn.enabled = false;
-			}
-		}
-		/**
-		 * 停止课时费收取.
-		 */
-		private function stopPeriodFee():void {
-			// 停止课时费收取
-			beginPeriodFee = false;
-			// 清除课时费计费插入时间
-			periodDate = "";
-		}
-		/**
-		 * 停止平台费收取.
-		 */
-		private function stopPlatformFee():void {
-			Alert.show("清除平台费收取");
-			// 清除平台费计费插入时间
-			platformDate = "";
-		}
-		/**
-		 * 费用收取检测.
-		 */
-		private function chargeTimerHandler(event:TimerEvent):void {
-			// 平台费使用秒数累加
-			currFreeSec ++;
-			// 平台费计费-老师端运行
-			if (isTeacher && currFreeSec >= freeMin*60 && currFreeSec%60 == 0) {
-				// 向Java请求平台费记录
-				platformFeeHandler();
-			}
-			// 教室计费
-			if (beginPeriodFee) {
-				currPeriodSec ++;
-				if (isTeacher) {// 老师处理
-					if (currPeriodSec%60 == 0) {// 已满一分钟
-						student[0].totalEarn=(roomFee*currPeriodSec/60)+'(credits)';
-						Alert.show("开始课时费记录请求");
-						periodFeeRecord.send();
-					}
-					student[0].stuTime=convertSecondToDate(currPeriodSec);
-					student[0].stuName=studentName;
-					stu.dataProvider=student;
-				} else {// 学生处理
-					if (currPeriodSec%60 == 0) {// 已满一分钟
-						teacher[0].totalCost=(roomFee*currPeriodSec/60)+'(credits)';
-					}
-					teacher[0].stuTime=convertSecondToDate(currPeriodSec);
-					teacher[0].stuFee=roomFee+'(credits)';
-					tch.dataProvider=teacher;
+			startDate = getTimer();//开始时间
+			_timer.start();//开始记时
+			student[0].stuFee=roomFee+'(credits)';
+			student[0].stuName=studentName;
+			this._timer.addEventListener(TimerEvent.TIMER, _timerEvent);//视频计时器
+			    //p2p流
+				if(incomingStreamFMS ==null){
+				outgoingStream.send("startFee",userName.text,roomFee);
+				}else{
+				//fms流
+				this.sharedObj.send("startFee",userName.text,roomFee);
 				}
+			fee.label="停止计费";
+			fee.setStyle("color","#ff0000");
+		}
+		private function stopFee():void {
+			_timer.stop();
+		}
+		private function _timerEvent(e:TimerEvent):void {
+			student[0].stuTime= this.toStringTimer(getTimer(), this.startDate);
+			stu.dataProvider=student;
+		}
+		private function toStringTimer(_now:Number=0,_start:Number=0):String {
+			var _milliseconds:Number= Math.floor((_now - _start) / 1000);//总毫秒数
+			var _hours:Number = Math.floor(_milliseconds/3600);//时
+			var _minutes:Number = Math.floor((_milliseconds%3600)/60);//分
+			var _seconds:Number = Math.floor((_milliseconds%3600)%60);//秒
+			var earning:Number=(_minutes+_hours*60)*(roomFee-forChinesegreatFee);
+			student[0].totalEarn =earning.toString()+'(credits)';
+			if (_seconds==0) {
+				getuser.send();
 			}
+			return ((_hours<10)?"0"+_hours:_hours)+":"+((_minutes<10)?"0"+_minutes:_minutes)+":"+((_seconds<10)?"0"+_seconds:_seconds);
 		}
-		/**
-		 * 平台费监控处理.
-		 */
-		private function platformFeeHandler():void {
-			Alert.show("向后台发送平台费请求了");
-			// 计费
-			platformFeeRecord.send();
+		//学生计费
+		private function showStudentTimer():void {
+			startDate = getTimer();//开始时间
+			_timer.start();//开始记时
+			teacher[0].stuFee=roomFee+'(credits)';
+			this._timer.addEventListener(TimerEvent.TIMER, _studentTimerEvent);//视频计时器
 		}
-		/**
-		 * 将秒数转换为hh:mm:ss时间格式字符串.
-		 */
-		private function convertSecondToDate(second:int):String {
-			var hour:int = second/3600;
-			var min:int = second/60;
-			var sec:int = second%60;
-			return (hour<10?"0":"")+hour+":"+(min<10?"0":"")+min+":"+(sec<10?"0":"")+sec;
+		private function _studentTimerEvent(e:TimerEvent):void {
+			teacher[0].stuTime=this.toStudentTimer(getTimer(), this.startDate);
+			tea.dataProvider=teacher;
+		}
+		private function toStudentTimer(_now:Number=0,_start:Number=0):String {
+			var _milliseconds:Number = Math.floor((_now - _start) / 1000);//总毫秒数
+			var _hours:Number = Math.floor(_milliseconds/3600);//时
+			var _minutes:Number = Math.floor((_milliseconds%3600)/60);//分
+			var _seconds:Number = Math.floor((_milliseconds%3600)%60);//秒
+			var temp:Number=roomFee*(_minutes+_hours*60);
+			teacher[0].totalCost=temp.toString()+'(credits)';
+			return ((_hours<10)?"0"+_hours:_hours)+":"+((_minutes<10)?"0"+_minutes:_minutes)+":"+((_seconds<10)?"0"+_seconds:_seconds);
 		}
 		private function activity(event:ActivityEvent):void {
 			addEventListener(Event.ENTER_FRAME, init1);
@@ -706,9 +558,9 @@
 		}
 		// 说话音量调节
 		private function speakerVolumeChanged(e:SliderEvent):void {
-			if (receiveStream) {
+			if (incomingStream) {
 				var st:SoundTransform = new SoundTransform(e.value);
-				receiveStream.soundTransform = st;
+				incomingStream.soundTransform = st;
 				//audioInd1.Current = 0.05 + e.value;
 			}
 		}
@@ -761,6 +613,35 @@
 				});
 			}
 		}
+		private function showResult():void {	 
+			var returnValue:String=getuser.lastResult.user;
+			var temp:Array=returnValue.split(";"); 		 
+			feeArea.text=temp[0];
+			credits=Number(temp[0]); 
+			changeCredits();
+			    //p2p流
+				if(incomingStreamFMS ==null){
+				outgoingStream.send("updateCredits",userName.text,roomFee);
+				}else{
+				//fms流
+				this.sharedObj.send("updateCredits",userName.text,roomFee);
+				} 
+ 		} 
+	 	private function showFault():void { 
+			Alert.show("调用错误！");
+			getuser.send();	 	 
+	 	} 
+ 		[Bindable] public var cards:Array = new Array(
+			{label:"USD",data:1000},
+			{label:"EUR",data:1327}, 
+			{label:"CAD",data:1005},
+			{label:"AUD",data:1072},
+			{label:"GBP",data:1585},
+			{label:"JPY",data:630},
+			{label:"CHF",data:1098},
+			{label:"NZD",data:838},
+			{label:"RMB",data:160}
+		);
 		private function closeHandler(event:Event):void {
 		 	var money:Number=(credits*10)/ComboBox(event.target).selectedItem.data;
 		 	rate1.text=money.toFixed(2).toString();
@@ -770,120 +651,106 @@
 		 	rate1.text=money.toFixed(2).toString();
 		}
 		//停止发送视频
-		private function stopVideo(num:Number):void {
+    private function stopVideo(num:Number):void {
 			//0 发送视频， 1 停止视频
 			if (num==0) {
 				flag=1;
 				stopVideoButton.source='assert/video2.jpg';
 				localVideoDisplay.setStyle("backgroundImage","assert/1.jpg");
 				camera=null;
-				sendStream.attachCamera(camera);
+				outgoingStream.attachCamera(camera);
 			} else {
 				flag=0;
-				stopVideoButton.source='assert/video.jpg';
-				sendStream.attachCamera(camera);
-			}
+				stopVideoButton.source='assert/video.jpg';	
+				outgoingStream.attachCamera(camera);
+			}	
 		}
-	    //fms 同步事件
-	    private function _netSync(evt:SyncEvent):void {
-	    	for each(var item:Object in evt.changeList) {
-	    		switch (item.code) {
-					case "change":
-					case "success":
-						if (item.name == "Members")
+	  //fms 扣费
+	private function updateCredits(credit:String,obj:Object=null):void{
+	                feeArea.text=credit; 
+					credits=Number(credit); 
+					changeCredits();	 
+			 		if (Number(credit)<roomFee) {
+					 	Alert.show("请充值！","你的余额不足！", 1, null, charge); 
+					 	stopFee(); 
+					 	this.sharedObj.send("notEnoughCredits");
+					}
+	    } 
+	 //fms停止计费
+	private function stopFeeForStudent(obj:Object=null):void{
+	          stopFee();    
+	    } 
+	//fms停止计费
+	private function notEnoughCredits(obj:Object=null):void{
+            stopFee();
+			fee.enabled=false;
+			Alert.show("对方钱不够，停止计时！");  
+	    } 
+	 //fms开始计费
+   private function startFee(userName:String,fee:Number,obj:Object=null):void{
+	                 roomFee=fee;
+					if (credits<fee) {
+						Alert.show("请充值！","你的余额不足！", 1, null, charge); 
+						stopFee(); 
+						this.sharedObj.send("notEnoughCredits");	
+					} else {
+						teacher[0].teaName=userName;					 
+						showStudentTimer();
+						Alert.show("开始计费","提示!");
+					}  
+	    }   
+	 //fms 同步事件
+     private function _netSync(evt:SyncEvent):void{
+				for each(var item:Object in evt.changeList){
+					switch(item.code){
+						case "change":
+						if (item.name == "Members") {										
 							resetMembers();
-					break;
-					case "reject":
-					case "delete":
-					break;
+							break;
+							}	
+						case "success":
+							if (item.name == "Members") {										
+							resetMembers();
+							break;
+							}
+						case "reject":
+							break;
+						case "delete":
+							break;
+					}					
 				}
 			}
-		}
-		private function resetMembers():void {
+     private function resetMembers():void {
 			if (sharedObj.data.Members is Array) {
 				var _ar:Array = sharedObj.data.Members;
 				for (var i:int = 0; i < _ar.length; i++ ) {
-					if (Number(_ar[i].myId).toString() != myId){ 
-						feeRequestBtn.enabled=true;
-						Alert.show(_ar[i].userName);
-						studentName=_ar[i].userName;
-						receiveStreamFMS= new NetStream(fmsConnection);
-						receiveStreamFMS.client=this;
-				        remoteVideo = new Video();
-						remoteVideo.width = 259;
-						remoteVideo.height = 193;
-						remoteVideo.x=4;
-						remoteVideo.y=4;
-		                remoteVideo.smoothing = true;
-					    remoteVideo.attachNetStream(receiveStreamFMS);
-					    remoteVideoDisplay.addChild(remoteVideo);
-					    receiveStreamFMS.play("room"+_ar[i].myId);
-					    continue;
+						if (Number(_ar[i].myId).toString() != myId){ 
+							//fee.enabled=true;
+							//Alert.show(_ar[i].userName);
+							//studentName=_ar[i].userName;
+							incomingStreamFMS= new NetStream(fmsConnection);
+							incomingStreamFMS.client=this;
+					        remoteVideo = new Video();
+							remoteVideo.width = 259;
+							remoteVideo.height = 193;
+							remoteVideo.x=4;
+							remoteVideo.y=4;
+			                remoteVideo.smoothing = true;
+						    remoteVideo.attachNetStream(incomingStreamFMS);
+						    remoteVideoDisplay.addChild(remoteVideo);
+						    incomingStreamFMS.play("room"+_ar[i].myId);
+						    continue;
 					}
 				 }
 			}
 		}
-		// 课时费计费成功
-		private function periodFeeResult():void {	 
-			var result:String=periodFeeRecord.lastResult.result;
-			Alert.show(result);
-			var tempArray:Array=result.split(",");
-			var temp:Array;
-			if(tempArray.length == 1) {// 非插入
-				temp = tempArray[0].toString().split(";");
-			} else if (tempArray.length == 2) {// 插入操作
-				periodDate = tempArray[0].toString();
-				temp = tempArray[1].toString().split(";");
-			}
-			// 更新用户积分
-			updateUsersCredits(temp);	 
- 		}
- 		// 平台费计费成功
- 		private function platformFeeResult():void {
- 			var result:String=platformFeeRecord.lastResult.result;
-			Alert.show(result);
-			var tempArray:Array=result.split(",");
-			var temp:Array;
-			if(tempArray.length == 1) {// 非插入
-				temp = tempArray[0].toString().split(";");
-			} else if (tempArray.length == 2) {// 插入操作
-				platformDate = tempArray[0].toString();
-				temp = tempArray[1].toString().split(";");
-			}
-			// 更新用户积分
-			updateUsersCredits(temp);
- 		}
- 		// 更新用户积分
- 		private function updateUsersCredits(temp:Array):void {
- 			feeArea.text=temp[0];
-			credits=Number(temp[0]);
-			changeCredits();
-			sendStream.send("updateCredits", temp[1]);
- 		}
- 		// 课时费计费错误 
-	 	private function periodFeeFault():void { 
-			// 做一定尝试，若无法进行操作，关闭浏览器
-	 	}
-	 	// 平台费计费错误
-	 	private function platformFeeFault():void {
-	 	}
 	]]>
 </mx:Script>
-<!-- 课时费处理 -->
-<mx:HTTPService id="periodFeeRecord" showBusyCursor="false" useProxy="false" method="POST" result="periodFeeResult()" fault="periodFeeFault()" url="/CG/chat.do?p=periodFeeRecord">
+<mx:HTTPService showBusyCursor="false" useProxy="false" method="POST" id="getuser" result="showResult();" fault="showFault();" url="/CG/chat.do?p=updateUserCredits">
 	<mx:request>
-		<stuId>{userId}</stuId>
-		<tchId>{myId}</tchId>
-		<fee>{roomFee}</fee>
-		<insertDate>{periodDate}</insertDate>
-	</mx:request>
-</mx:HTTPService>
-<!-- 平台费处理 -->
-<mx:HTTPService id="platformFeeRecord" showBusyCursor="false" useProxy="false" method="POST" result="platformFeeResult()" fault="platformFeeFault()" url="/CG/chat.do?p=platformFeeRecord">
-	<mx:request>
-		<stuId>{userId}</stuId>
-		<tchId>{myId}</tchId>
-		<insertDate>{platformDate}</insertDate>
+		<userid>{userId}</userid>
+		<myid>{myId}</myid>
+		<fee>{roomFee}</fee> 
 	</mx:request>
 </mx:HTTPService>
 
@@ -894,9 +761,9 @@
 			<mx:VideoDisplay id="localVideoDisplay" width="133" height="100"/>
 			<mx:Image source="@Embed('/assert/video.jpg')" useHandCursor="true" buttonMode="true" id="stopVideoButton" click="stopVideo(flag)" height="22"/> 
 			<mx:HBox><mx:Image source="@Embed('/assert/micVol.jpg')" height="22"/> 
-			<mx:HSlider id="micVolumeSlider" trackSkin="STSliderTrackSkin" value="90" width="72" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/></mx:HBox>
+			<mx:HSlider id="micVolumeSlider" thumbSkin="@Embed('/assert/icon.png')" trackSkin="STSliderTrackSkin" value="90" width="72" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/></mx:HBox>
 			<mx:HBox><mx:Image source="@Embed('/assert/speakVol.jpg')" height="22"/> 
-			<mx:HSlider id="speakerVolumeSlider" trackSkin="STSliderTrackSkin" showDataTip="false" value="0.9" width="72" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/></mx:HBox>
+			<mx:HSlider id="speakerVolumeSlider" thumbSkin="@Embed('/assert/icon.png')" trackSkin="STSliderTrackSkin" showDataTip="false" value="0.9" width="72" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/></mx:HBox>
 		</mx:VBox>
 	</mx:HBox>
 	<mx:VBox paddingTop="10">
@@ -906,16 +773,19 @@
 				<mx:HBox paddingBottom="-22"><mx:RichTextEditor borderStyle="none" id="message" creationComplete="showControlBar();" width="350" height="120" backgroundColor="#f2f2f2" textAlign="left" fontStyle="normal" fontFamily="Verdana" horizontalScrollPolicy="off" verticalScrollPolicy="off" paddingLeft="0" paddingRight="0" headerHeight="0" fontSize="12"/></mx:HBox>
 			</mx:VBox>
 			<mx:VBox paddingTop="3">	
-				<mx:Button id="feeRequestBtn" enabled="false" label="开始计费" click="periodFeeRequest();" fontFamily="Arial" width="60" alpha="0.8" fontSize="11" cornerRadius="5" fontWeight="bold" paddingLeft="0" paddingRight="0"/>
+				<mx:Button id="fee" enabled="false" label="开始计费" click="showTimer();" fontFamily="Arial" width="60" alpha="0.8" fontSize="11" cornerRadius="5" fontWeight="bold" paddingLeft="0" paddingRight="0"/>
 				<mx:Button id="sendMessageBtn" label="发送" width="60" click="send()"/>
 				<mx:Button id="closeBtn" click="closeMessage();" label="关闭" width="60"/>
 			 </mx:VBox>
 		</mx:HBox>
 		<!--老师计费区-->
 		<mx:HBox>
-			<mx:Label text="余额:"/><mx:Label id="feeArea"/><mx:Label text="="/>
-			<mx:Label id="rate1"/><mx:ComboBox id="reta2" dataProvider="{cards}" rowCount="3" close="closeHandler(event);"/>
-			<mx:Label text="课时费:"/><mx:TextInput id="confirmFee" text="{roomFee}" width="50"/>
+			<mx:Label text="计费区您当前的余额为:"/>
+			<mx:Label id="feeArea"/>
+			<mx:Label text="(credits)"/>
+			<mx:Label text="="/>
+			<mx:TextInput id="rate1" width="60" height="21" borderColor="#B7BABC" editable="false"/>
+			<mx:ComboBox id="reta2" width="65" height="21" dataProvider="{cards}" rowCount="3" close="closeHandler(event);"/>
 		</mx:HBox>
 		<mx:ViewStack selectedIndex="{loginState}">
 			<mx:HBox>
@@ -928,10 +798,10 @@
 				</mx:columns></mx:DataGrid>
 			</mx:HBox>
 			<mx:HBox>
-				<mx:DataGrid dataProvider="{teacher}" id="tch" width="410" height="52"><mx:columns>
+				<mx:DataGrid dataProvider="{teacher}" id="tea" width="410" height="52"><mx:columns>
 					<mx:DataGridColumn dataField="teaName" headerText="Teacher"/> 
 					<mx:DataGridColumn dataField="stuTime" headerText="Duration"/> 
-					<mx:DataGridColumn dataField="stuFee" headerText="For Teacher"/> 
+					<mx:DataGridColumn dataField="stuFee" headerText="forTeacher"/> 
 					<mx:DataGridColumn dataField="totalCost" headerText="Cost"/> 
 				</mx:columns></mx:DataGrid>
 			</mx:HBox>
