@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="605" height="590" creationComplete="initApp()" backgroundColor="#ffffff" borderStyle="none">
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ScrollEventDirection;
+			import com.devaldi.events.DocumentLoadedEvent;
+			import mx.events.ScrollEvent;
+			import mx.events.FlexEvent;
+			import com.devaldi.controls.flexpaper.FlexPaperViewer;
+			import com.devaldi.controls.flexpaper.Viewer;
+			import mx.binding.utils.BindingUtils;
+			import mx.events.CloseEvent;
+			import mx.core.Container;
+			import mx.controls.Alert;
+			import flash.events.MouseEvent;
+			import flash.events.Event;		
+			import com.MousePoint;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Label;
+			private var netConnection:NetConnection;
+			private var netStream:NetStream;
+			//private var appServer:String="rtmp://192.168.1.199/whiteboard";
+			private var appServer:String="rtmp://192.168.1.199/whiteboard";
+			private var paint_so:SharedObject;	
+			private var responder:Responder;
+			// 画笔X坐标			
+			private var point_x:Number;
+			// 画笔Y坐标
+			private var point_y:Number;
+			private var theId:uint=0;
+			private var flexpaper:FlexPaperViewer=new FlexPaperViewer();
+			// 画板区域原有控件的缩放比例
+			private var oldZoom:Number=1;
+			// 是否首次加载
+			private var isFirstLoad:Boolean=true;
+            private var _displayContainer:Container;
+			// 画笔当前尺寸
+			[Bindable]private var __lineSize:uint;
+			// 画笔当前颜色
+			[Bindable]private var __lineColor:uint;
+			// 首次加载文件标识
+			[Bindable]private var flag:uint=0;
+			// 首次加载文件页数标识
+			[Bindable]private var pageFlag:uint;
+			[Bindable]private var dragFlag:uint=0;
+			// 文件页面数
+			[Bindable]private var arr:Array=new Array({label:0,data:0});
+			// 画板缩放比例
+			[Bindable]private var amplifyArr:Array= new Array({label:"100%",data:100},{label:"150%",data:150},{label:"200%",data:200},{label:"250%",data:250},{label:"300%",data:300},{label:"400%",data:400});
+			// 画笔尺寸
+			[Bindable]private var penSize:Array=new Array({label:1,data:1},{label:2,data:2},{label:3,data:3},{label:4,data:4},{label:5,data:5});
+            // 语言
+			[Bindable]private var language:Array=new Array();
+
+			private function initApp():void {
+				netConnection = new NetConnection();
+				netConnection.connect(appServer);
+				netConnection.addEventListener(NetStatusEvent.NET_STATUS,netStatusHandler);
+				flexpaper.width=600;
+				flexpaper.height=1000;
+				flexpaper.Scale=1;
+				dr.addChild(myPaper);
+				dr.addChildAt(flexpaper, 0);
+				//初始空白swf文件加载
+				flexpaper.addEventListener(FlexEvent.CREATION_COMPLETE, initSwf);
+				//监听画板滚动事件
+				mainPanel.addEventListener(ScrollEvent.SCROLL, mainPanelScroll);
+				//swf加载完成
+				flexpaper.addEventListener(DocumentLoadedEvent.DOCUMENT_LOADED, loadSwfComplete);
+
+				// 监听Panel容器鼠标按下事件
+				//mainPanel.addEventListener(MouseEvent.MOUSE_DOWN, moveBoardFileDown);
+				// 监听Panel容器鼠标弹起事件
+				//mainPanel.addEventListener(MouseEvent.MOUSE_UP, moveBoardFileUp);
+			}
+			private function initSwf(evt:FlexEvent):void {
+				//切换文件前清空画板
+				//flexpaper.SwfFile="blank.swf";
+			}
+			private function changPage(evt:DocumentLoadedEvent):void {
+				//切换文件前清空画板
+				flexpaper.paper1.gotoPage(pageFlag);
+			}
+			/**
+			 * 暴露给JS同步FlexPaper显示文件.
+			 */
+			private function tranFile(param1:String):void {
+				paint_so.setProperty("changeFile", param1);
+			}
+			/**
+			 * 转换FlexPaper显示文件.
+			 */
+			private function changeFile(swfFilePath:String):void {
+				//切换文件前清空画板
+				myPaper.graphics.clear();
+				flexpaper.SwfFile=swfFilePath;
+			}
+			/**
+			 * 主窗体滚动处理.
+			 */
+			private function mainPanelScroll(event:ScrollEvent):void {
+				if (event.direction == ScrollEventDirection.VERTICAL) {  //垂直滚动事件
+					paint_so.setProperty("verRoll", event.position);
+				} else {// 水平滚动
+					paint_so.setProperty("horRoll", event.position);
+				}
+			}
+			/**
+			 * 共享滚动事件.
+			 */
+			private function shareRoll(num:Number, postion:String):void {
+				//共享滚动事件
+				if (postion=="verRoll") {
+					mainPanel.verticalScrollPosition=num;
+				} else {
+					mainPanel.horizontalScrollPosition=num;
+				}
+			}
+			/**
+			 * FlexPager加载SWF完成
+			 */
+			private function loadSwfComplete(evt:DocumentLoadedEvent):void {
+				var aa:Viewer =flexpaper.viewer;
+				_displayContainer = aa.DisplayContainer;
+				myPaper.width=_displayContainer.width;
+				flexpaper.width=_displayContainer.width+20;
+				dr.width=_displayContainer.width;
+				dr.height=_displayContainer.height;
+				arr=new Array();
+				for(var i:int=0; i<flexpaper.paper1.numPages; i++) {
+					var pagenum:Object=new Object();
+					pagenum.label=i+1;
+					pagenum.data=i+1;
+					arr.push(pagenum);
+				}
+				pageNoList.dataProvider=arr;
+				//重新加载文件页数
+				flexpaper.paper1.gotoPage(pageFlag);
+				if (pageFlag != 0)
+					pageNoList.selectedIndex=pageFlag-1;
+				else 
+					pageNoList.selectedIndex=0;
+			}
+			private function netStatusHandler(evt:NetStatusEvent):void {
+				var info:Object = evt.info;
+				switch (info.code) {
+					case "NetConnection.Connect.Success":
+						myPaper.addEventListener(MouseEvent.MOUSE_DOWN,downHandler);
+						var param:Object=this.stage.loaderInfo.parameters;
+						//获取当前语言
+						if(param["lan"]=="CN"){
+						language=new Array("颜色","粗细","页码","缩放","清除画板","确定要删除吗？","警告","上海悦琨信息科技有限公司 网络教室");
+						}else{
+						language=new Array("Color","Size","Page","Zoom","clear","Sure to delete?","Alert","ChineseGreat Classroom Online");	
+						}
+						//获取教室的唯一id
+						if (param["str"]!=null) {
+							paint_so = SharedObject.getRemote(param["str"], netConnection.uri, true);
+						} else {
+							paint_so = SharedObject.getRemote("TimZhao03130002", netConnection.uri, true);
+						}
+						paint_so.addEventListener(SyncEvent.SYNC, paintSoSyncHandler);
+						paint_so.connect(netConnection);
+						paint_so.fps=180;
+						// 暴露添加上传图标方法
+						ExternalInterface.addCallback("addUploadIcon", fileSyn);
+						// 暴露切换SWF文件方法于JS
+						ExternalInterface.addCallback("tranFile", tranFile);
+					break;
+					case "NetConnection.Connect.Rejected":
+						//Alert.show("fms连接被拒绝"+info.code);
+					break;
+					case "NetConnection.Connect.Failed":
+						//Alert.show("fms连接失败"+evt.info.code);
+					break;
+					case "NetConnection.Connect.Closed":
+						//Alert.show("fms连接已经关闭"+evt.info.code);
+						paint_so.clear();
+					break;
+				}
+			}
+			/**
+			 * 暴露给JS上传文件后同步.
+			 */
+			private function fileSyn(upFile:String, swfPath:String, upFileType:String, domain:String):void {
+ 				paint_so.setProperty("fileSyn", upFile+";"+swfPath+";"+upFileType+";"+domain);
+			}
+			/**
+			 * 画板鼠标按下处理.
+			 */
+			private function downHandler(evt:MouseEvent):void {
+			 	myPaper.addEventListener(MouseEvent.MOUSE_MOVE,moveHandler);
+			 	myPaper.removeEventListener(MouseEvent.MOUSE_DOWN,downHandler);
+			 	theId=paint_so.data.Point_ID++;
+			}
+			/**
+			 * 画板鼠标移动处理.
+			 */
+			private function moveHandler(evt:MouseEvent):void{
+				if (evt.buttonDown) { // 鼠标是按下的
+					myPaper.addEventListener(MouseEvent.MOUSE_UP, upHandler);
+					var MouseArray:ArrayCollection=new ArrayCollection();
+					if (paint_so.data.dataArr!=null) {
+						convertArrayCollection(MouseArray,paint_so.data.dataArr as ArrayCollection);	
+					}
+					var thePoint:MousePoint = new MousePoint();
+					thePoint.point_x=myPaper.mouseX;
+					thePoint.point_y=myPaper.mouseY;
+					thePoint.id=theId;
+					MouseArray.addItem(thePoint);
+					paint(MouseArray,paint_so.data.lineSize,paint_so.data.lineColor);
+					paint_so.setProperty("dataArr", MouseArray);
+				}
+			}
+			/**
+			 * 画板远程对象同步处理.
+			 */
+			private function paintSoSyncHandler(evt:SyncEvent):void {
+				for each(var item:Object in evt.changeList){
+					switch(item.code){
+						case "change":
+						case "success":
+							doAction(item);
+							break;
+						case "reject":
+							break;
+						case "delete":
+							break;
+					}					
+				}
+			}
+
+			private function doAction(item:Object):void {
+				// 画笔尺寸同步
+				if (item.name=="lineSize") {
+					__lineSize=paint_so.data.lineSize;
+					pen_size.selectedIndex=paint_so.data.lineSize-1;
+				}
+				// 画笔颜色同步
+				if (item.name=="lineColor") {
+					pen_color.selectedColor=paint_so.data.lineColor;
+					__lineColor=paint_so.data.lineColor;
+				}
+				//换文件同步
+				if (item.name=="changeFile") {
+					myPaper.graphics.clear();
+					pageFlag=1;
+					changeFile(paint_so.data.changeFile);
+				}
+				//清除画板内容同步
+				if (item.name=="action") {
+					myPaper.graphics.clear();
+				}
+				//换页同步
+				if (item.name=="changePage") {
+					// 设置下拉选定项
+					pageNoList.selectedIndex=(paint_so.data.changePage-1);
+					if (flag != 0) {
+						// 清除画板
+						myPaper.graphics.clear();
+						// 跳转至指定页面
+						flexpaper.paper1.gotoPage(paint_so.data.changePage);
+					} else {
+						pageFlag=paint_so.data.changePage;
+						flag=1;
+					}
+					// 设置下拉选定项
+					pageNoList.selectedIndex=(paint_so.data.changePage-1);
+				}
+				//画板滚动同步
+				if (item.name=="verRoll" && paint_so.data.verRoll!=null) {
+					shareRoll(paint_so.data.verRoll, "verRoll");
+				}
+				if (item.name=="horRoll" && paint_so.data.horRoll!=null) {
+					shareRoll(paint_so.data.horRoll, "horRoll");
+				}
+				// JSP上传文件后同步处理
+				if (item.name=="fileSyn") {
+					var str:String=paint_so.data.fileSyn as String;
+					var str1:Array=str.split(";");
+					ExternalInterface.call("addUploadIcon", str1[0], str1[1], str1[2], str1[3]);
+				}
+				// 画板缩放
+				if (item.name=="boardSize") {
+					changeBoardSizeHandler(paint_so.data.boardSize as Number);
+				}
+				// 画笔轨迹同步
+				if (item.name=="dataArr" && paint_so.data.dataArr!=null) {
+					var contrailArr:ArrayCollection = new ArrayCollection();
+					convertArrayCollection(contrailArr, paint_so.data.dataArr as ArrayCollection);
+					paint(contrailArr, __lineSize, __lineColor);
+				}
+			}
+			private function paint(_Arr:ArrayCollection, lineSize:int, lineColor:uint):void {				
+				var len:int=_Arr.length;
+				if (len>0) {
+					myPaper.graphics.lineStyle(lineSize, lineColor, 1);
+					myPaper.graphics.moveTo(_Arr.getItemAt(0).point_x, _Arr.getItemAt(0).point_y);
+					for(var i:int=0; i<len-1; i++) {
+						myPaper.graphics.lineTo(_Arr.getItemAt(i).point_x,_Arr.getItemAt(i).point_y);
+					}
+				}
+			}
+			/**
+			 * 画板鼠标弹起处理.
+			 */
+			private function upHandler(evt:MouseEvent):void {
+				myPaper.removeEventListener(MouseEvent.MOUSE_MOVE, moveHandler);
+				myPaper.addEventListener(MouseEvent.MOUSE_DOWN, downHandler); 	
+				//清除上次记录
+				var MouseArray:ArrayCollection=new ArrayCollection();
+				MouseArray.removeAll();
+				paint_so.setProperty("dataArr",MouseArray);
+			}
+			private function convertArrayCollection(arrNew:ArrayCollection,arrOld:ArrayCollection):void {
+				arrNew.removeAll();
+				for(var i:int=0; i<arrOld.length; i++) {
+					arrNew.addItemAt(arrOld.getItemAt(i), i);
+				}
+			}
+			// 改变画笔颜色
+			private function changeColor():void {
+				paint_so.setProperty("lineColor", pen_color.selectedColor);
+			}
+			// 改变画笔尺寸
+			private function changeSize():void {
+				paint_so.setProperty("lineSize", pen_size.selectedItem.data);
+			}
+			private function clear():void {
+				Alert.show(language[5], language[6], Alert.YES | Alert.NO, this, closeHandler);
+			}
+			private function closeHandler(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES) {
+					var rnd:int=Math.random()*1000;
+					if (paint_so.data.action==rnd) {
+						rnd=Math.random()*2000+1000;
+					}
+					paint_so.setProperty("action",rnd);
+				}
+			}	
+			private function closeHandler1():void {
+				var rnd:int=Math.random()*1000;
+				if(paint_so.data.action==rnd){
+					rnd=Math.random()*2000+1000;
+				}
+				paint_so.setProperty("action",rnd);
+			}
+			/**
+			 * 文档换页.
+			 */
+			private function change(type:Number):void {
+				var pages:Number=pageNoList.selectedItem.data;
+
+				if (type==-1 && pageNoList.selectedItem.data>1) {// 上一页
+					pages=pageNoList.selectedItem.data-1;
+				} else if (type==1 && pageNoList.selectedItem.data<flexpaper.paper1.numPages) {// 下一页
+					pages=pageNoList.selectedItem.data+1;
+				}
+
+				// 写字板清空
+				myPaper.graphics.clear();
+				flexpaper.paper1.gotoPage(pages);
+				paint_so.setProperty("changePage", pages);
+			}
+			/**
+			 * 尺寸修改同步.
+			 */
+			private function changeBoardSize():void {
+				paint_so.setProperty("boardSize", boardSize.selectedIndex);
+			}
+			/**
+			 * 修改尺寸.
+			 */
+			private function changeBoardSizeHandler(index:Number):void {
+				boardSize.selectedIndex = index;
+				var zoom:Number = boardSize.selectedItem.data/100;
+				// 设置FlexPaper缩放比例
+				flexpaper.Zoom(zoom);
+				// 容器缩放
+				dr.width = (dr.width/oldZoom)*zoom;
+				dr.height = (dr.height/oldZoom)*zoom;
+				dr.x = (dr.x/oldZoom)*zoom;
+				
+				flexpaper.y = (flexpaper.y/oldZoom)*zoom;
+				flexpaper.x = (flexpaper.x/oldZoom)*zoom;
+
+				// 文档展示组件缩放
+				if (isFirstLoad) {
+					flexpaper.width = ((flexpaper.width)/oldZoom + 28)*zoom;
+					myPaper.width = (myPaper.width/oldZoom)*zoom;
+					isFirstLoad = false;
+				} else {
+					flexpaper.width = ((flexpaper.width)/oldZoom)*zoom;
+					myPaper.width = (myPaper.width/oldZoom)*zoom;
+				}
+				flexpaper.height = (flexpaper.height/oldZoom)*zoom;
+				// 画板缩放
+				myPaper.height = (myPaper.height/oldZoom)*zoom;
+
+				// 将当前缩放比率设置为原有比率
+				oldZoom = zoom;
+
+				// 重新定位写字板
+				// postionBoard();
+			}
+
+			// 鼠标点下X坐标
+			private var startX:Number;
+			// 鼠标点下Y坐标
+			private var startY:Number;
+		
+			private function postionBoard():void {
+				// 左移
+				if (((flexpaper.width-30)/oldZoom - flexpaper.x) > flexpaper.width) {// FlexPaper有缩放
+					flexpaper.x = (flexpaper.width-30)/oldZoom - flexpaper.width + 30;
+				} else if (flexpaper.x > 0) {// 右移
+					flexpaper.x = 0;
+				}
+				//上移
+				if ((flexpaper.height/oldZoom - flexpaper.y) > flexpaper.height) { // FlexPaper有缩放
+					flexpaper.y = flexpaper.height/oldZoom - flexpaper.height;
+				} else if (flexpaper.y > 0) {
+					flexpaper.y = 0;
+				}
+			}
+			private function changePointDomain(temp:uint):void{
+			if(temp==0){
+			dr.removeChildAt(1);
+			dragFlag=1
+			}else{
+			//mainPanel.addChild(dr);
+			dr.addChild(flexpaper);
+			dragFlag =0;
+			}
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Panel id="mainPanel" titleIcon="@Embed(source='assets/logo.jpg')" title="{language[7]}" x="1" y="1" fontFamily="_sans" fontSize="13" fontWeight="bold" width="600" height="550" layout="absolute" horizontalScrollPolicy="on" verticalScrollPolicy="on">
+		<mx:Canvas id="myPaper" width="585" height="850" top="22" backgroundAlpha="0" horizontalScrollPolicy="off" verticalScrollPolicy="off" styleName="paper" y="0" x="0"></mx:Canvas>
+		<mx:Canvas id="dr" width="600" height="850" left="-10" horizontalScrollPolicy="off" verticalScrollPolicy="off" backgroundSize="100%" backgroundAlpha="1.0"></mx:Canvas>
+	</mx:Panel>
+	<!-- 下面这句用在禁掉滚动条之后的情况 -->
+	<!--<mx:HBox x="10" y="30" paddingLeft="35" width="585" height="32" backgroundColor="#F2F2F2">-->
+	    <mx:HBox x="10" y="30" paddingLeft="35" width="565" height="32" backgroundColor="#F2F2F2">
+		<mx:Label fontSize="12" text="{language[0]}"/>
+		<mx:ColorPicker id="pen_color"  width="20" height="20" change="changeColor()"/>
+		<mx:Label paddingLeft="3" fontSize="12" text="{language[1]}"/>
+		<mx:ComboBox   dataProvider="{penSize}" width="50" id="pen_size" change="changeSize();"/>
+		<mx:Label paddingLeft="3" fontSize="12" text="{language[2]}"/>
+		<mx:Image useHandCursor="true" buttonMode="true" mouseChildren="false" source="@Embed('assets/2.gif')" click="change(-1)"/>
+		<mx:ComboBox id="pageNoList" dataProvider="{arr}" width="55" change="change(0);"/>
+		<mx:Image useHandCursor="true" buttonMode="true" mouseChildren="false" source="@Embed('assets/1.gif')" click="change(1)"/>
+		<mx:Label paddingLeft="3" fontSize="12" text="{language[3]}"/>
+		<mx:ComboBox id="boardSize" dataProvider="{amplifyArr}" change="changeBoardSize();" width="60"/>
+		<mx:VBox paddingLeft="3"><mx:Button id="clearBtn" fontSize="12" label="{language[4]}" click="clear()"/></mx:VBox>
+		<mx:Button id="controlBtn" label="拖动" click="changePointDomain(dragFlag)"/>
+	</mx:HBox>
+</mx:Application>
+
