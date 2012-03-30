@@ -1,16 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="connectFMS();" width="426" height="112">
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="connectFMS();" width="408" height="152">
 	<mx:Script>
 		<![CDATA[
-			import mx.events.CloseEvent;
-			import mx.rpc.events.ResultEvent;
 			import com.tim.chinesegreat.Constants;
-			import mx.controls.Alert;
 
 			private var netConn:NetConnection;
-			private var myStream:NetStream;
-			// 用户已请求过的聊天|教室信息
-			//private var requestMap:Object = new Object();
 
 			/**
 			 * 页面初始化.
@@ -19,15 +13,24 @@
 				netConn = new NetConnection();
 				netConn.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
 				netConn.client = this;
-				var params:String = ExternalInterface.call("getUserInfo");
-				var userId:String, userName:String;
-				if (params != null) {
-					userId = params.substring(0, params.indexOf(";"));
-					userName = params.substring(params.indexOf(";")+1);
-				}
-				netConn.connect(Constants.rtmpUrl, userId, userName, "request");
-			}
 
+				var params:String = Application.application.parameters.initValue;
+
+				//var params:String = ExternalInterface.call("getUserInfo");
+				var userId:String, userName:String, roomId:String, calleeId:String = null;
+				var arrs:Array = params.split(";");
+				if (params != null) {
+					userId = arrs[0];
+					userName = arrs[1];
+					if (arrs.length > 2) {
+						roomId = arrs[2];
+					}
+					if (arrs.length > 3) {
+						calleeId = arrs[3];
+					}
+				}
+				netConn.connect(Constants.rtmpUrl, userId, userName, roomId, calleeId);
+			}
 			private function netConnectionHandler(event:NetStatusEvent):void {
 				switch (event.info.code) {
 					case "NetConnection.Connect.Success":
@@ -41,103 +44,36 @@
 					break;
 				}
 			}
-
 			/**
 			 * 向被请求者提示.
 			 */
-			public function calleeConfirm(callerId:String, callerName:String, requestType:String):void {
+			public function calleeConfirm(callerId:String, callerName:String, requestType:String, roomId:String, calleeId:String):void {
 				// 调用页面JS提醒被呼叫者
-				ExternalInterface.call("calleeConfirm", callerId, callerName, requestType);
-				/**Alert.show(callerName + "向你发起" + requestType + "请求", "提醒", Alert.YES|Alert.NO, null, function(event:CloseEvent):void {
-					// 获取请求者信息
-					var key:String = requestType+callerId;
-					var requestInfo:Object = requestMap[key];
-					if (requestInfo == null) {
-						requestInfo = new Object();
-					}
-					if (event.detail == Alert.YES) {
-						netConn.call("sendRequestStatus", null, callerId, requestType, 1);
-						requestInfo.status = Constants.ACCEPT_HANDLE;
-					} else if (event.detail == Alert.NO) {
-						netConn.call("sendRequestStatus", null, callerId, requestType, 0);
-						requestInfo.status = Constants.NO_HANDLE;
-					}
-					requestMap[key] = requestInfo;
-				});*/
+				ExternalInterface.call("calleeConfirm", callerId, callerName, requestType, roomId, calleeId);
 			}
 			/**
 			 * 被请求者请求处理结果.
 			 */
-			private function calleeHandlerResult(callerId:String, callerName:String, requestType:String, result:String):void {
-				// 获取请求者信息
-				if (result == "Yes") {
-					netConn.call("sendRequestStatus", null, callerId, requestType, 1);
-				} else if (result == "No") {
-					netConn.call("sendRequestStatus", null, callerId, requestType, 0);
-				}
+			private function calleeHandlerResult(callerId:String, callerName:String, requestType:String, result:String, roomId:String, calleeId:String):void {
+				netConn.call("sendRequestStatus", null, callerId, requestType, result, roomId, calleeId);
 			}
-
 			/**
-			 * 告知请求者正在处理.
+			 * 告知请求者，被请求者正在处理请求.
 			 */
 			public function sendRequestResult(calleeId:String, requestType:String):void {
 				// TODO 告知请求者正在处理.
 			}
-
 			/**
 			 * 请求处理结果.请求者接收被请求者处理结果
 			 */
-			public function requestStatusResult(calleeId:String, calleeName:String, requestType:String, status:int):void {
-				// 获取被请求者信息
-				var key:String = requestType+calleeId;
-				//var requestInfo:Object = requestMap[key];
-				if (status == 0) {// 拒绝
-					//requestInfo.status = Constants.REJECT_HANDLE;
-					ExternalInterface.call("requestResult", calleeName, requestType, 0);
-					//Alert.show(calleeName + "拒绝了您的" + requestType + "请求");
-				} else {// 接受
-					//requestInfo.status = Constants.ACCEPT_HANDLE;
-					ExternalInterface.call("requestResult", calleeName, requestType, 1);
-					//Alert.show(calleeName + "接受了您的" + requestType + "请求");
-				}
+			public function requestStatusResult(calleeId:String, calleeName:String, requestType:String, status:String, roomId:String, teacherId:String):void {
+				ExternalInterface.call("requestResult", calleeId, calleeName, requestType, status, roomId, teacherId);
 			}
 			/**
 			 * 向指定用户发送特定请求.
 			 */
-			private function sendRequest(userId:String, requestType:String):void {
-				if (userId == null) {
-					//userId = this.userId.text;
-				}
-				if (requestType == null) {
-					//requestType = this.type.text;
-				}
-				var key:String = requestType+userId;
-				/**var requestInfo:Object = requestMap[key];
-				if (requestInfo == null) {// 新的请求
-					requestInfo = new Object();
-					// 未处理过的请求
-					requestInfo.status = Constants.NO_HANDLE;
-					requestMap[key] = requestInfo;
-					// 向被请求者发送请求
-					netConn.call("sendRequest", null, userId, requestType);
-				} else {
-					switch(requestInfo.status) {
-						case Constants.ACCEPT_HANDLE:
-							Alert.show("正在聊天中，无需再次请求.");
-						break;
-						case Constants.CURRENT_HANDLE:
-							Alert.show("请求已发出，请等待用户确认.");
-						break;
-						case Constants.LOSE_HANDLE:
-						case Constants.REJECT_HANDLE:
-							// 重置为新的请求
-							requestInfo.status = Constants.NO_HANDLE;
-							requestMap[key] = requestInfo;
-							netConn.call("sendRequest", null, userId, requestType);
-						break;
-					}
-				}*/
-				netConn.call("sendRequest", null, userId, requestType);
+			private function sendRequest(requestType:String, roomId:String, teacherId:String):void {
+				netConn.call("sendRequest", null, requestType, roomId, teacherId);
 			}
 			/**
 			 * 用户不在线.
@@ -145,14 +81,12 @@
 			public function userIsOffline():void {
 				ExternalInterface.call("userIsOffline");
 			}
+			/**
+			 * 无效的请求.
+			 */
+			public function invalidRequest(calleeName:String, result:int):void {
+				ExternalInterface.call("invalidRequest", calleeName, result);
+			}
 		]]>
 	</mx:Script>
-	<mx:Label x="37" y="24" text="请求人编号" fontSize="18" width="95" textAlign="right"/>
-	<mx:Label x="19" y="56" text="被请求人编号" fontSize="18"/>
-	<mx:TextInput id="userId" x="140" y="25" width="66" fontSize="15"/>
-	<mx:TextInput id="userName" x="214" y="25" width="122" fontSize="15"/>
-	<mx:TextInput id="type" x="214" y="57" width="122" fontSize="15"/>
-	<mx:TextInput id="toUserId" x="140" y="57" width="66" fontSize="15"/>
-	<mx:Button x="344" y="25" label="连接" fontSize="15" click="connectFMS();"/>
-	<mx:Button x="344" y="57" label="请求" fontSize="15" click='sendRequest(null, null);'/>
 </mx:Application>

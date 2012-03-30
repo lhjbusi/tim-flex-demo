@@ -130,6 +130,7 @@
 			language =ss1[5];
 			// 平台费
 			platFee=ss1[6];
+			Alert.show(ss);
 			if (ss1[7]=="teacher") {
 				userId = ss1[8]
 				isTeacher = true;
@@ -341,6 +342,13 @@
 							teacher[0].teaName=event.info.message.userName;
 							Alert.show(userName+lan[0].charging_started+"\n"+lan[0].teacher1+": "+fee, lan[0].prompt, Alert.OK | Alert.CANCEL, null, feeConfirmHandler);
 						}
+					}
+					// 开始上课请求处理
+					if (event.info.message.name == "beginClassConfirm") {
+					}
+					// 拒绝上课请求处理
+					if (event.info.message.name == "rejectClassRequest") {
+						Alert.show("对方拒绝了上课请求");
 					}
 				break;
 			}
@@ -817,7 +825,7 @@
 				roomFee = new Number(confirmFee.text);
 				// 老师向学生发送确认请求
 				//p2p流
-				if (incomingStreamFMS == null) {
+				if (!isFmsConnection()) {
 					var func_msg:Object = new Object;
 					func_msg.name = "feeConfirm";
 					func_msg.userName=myName;
@@ -861,8 +869,42 @@
 			// 清除平台费计费插入时间
 			platformDate = "";
 		}
-		public function invalidRequest():void {
-			
+		private function beginClassRequest():void {
+			// 发起上课请求
+			if (isFmsConnection()) {// FMS处理
+				this.sharedObj.send("beginClassConfirm", myName);
+			} else {// P2P处理
+				var obj:Object = new Object();
+				obj.name = "beginClassConfirm";
+				obj.userName = myName;
+				_netGroup.sendToAllNeighbors(obj);
+			}
+		}
+		/**
+		 * 学生开始上课确认.
+		 */
+		public function beginClassConfirm(userName:String):void {
+			Alert.show(userName+"准备开始上课了", "提示", Alert.YES|Alert.NO, null, beginClassConfirmHandler);
+		}
+		private function beginClassConfirmHandler(event:CloseEvent):void {
+			if (event.detail == Alert.YES) {// 同意上课
+				if (isFmsConnection()) {
+					this.sharedObj.send("rejectClassRequest");
+				}
+			} else {// 不同意上课
+				var message:Object = new Object();
+				message.name = "rejectClassRequest";
+				_netGroup.sendToAllNeighbors(message);
+			}
+		}
+		private function rejectClassRequest():void {
+			Alert.show("对方没有同意上课请求", "提示");
+		}
+		/**
+		 * 是否是FMS链接.
+		 */
+		private function isFmsConnection():Boolean {
+			return incomingStreamFMS != null;
 		}
 	]]>
 </mx:Script>
@@ -901,14 +943,15 @@
 				<mx:VBox>
 					<mx:HBox paddingLeft="-10" paddingBottom="-22"><mx:RichTextEditor borderStyle="none" id="message" creationComplete="showControlBar();" width="348" height="120" backgroundColor="#f2f2f2" textAlign="left" fontStyle="normal" fontFamily="Verdana" horizontalScrollPolicy="off" verticalScrollPolicy="off" paddingLeft="0" paddingRight="0" headerHeight="0" fontSize="12"/></mx:HBox>
 				</mx:VBox>
-				<mx:VBox paddingTop="3" >	
-					<mx:Button id="feeRequestBtn" enabled="false" toolTip="{lan[0].charging_start_hint}" label="{lan[0].charging_started}" click="periodFeeRequest();" fontFamily="Arial" width="58" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold" paddingLeft="0" paddingRight="0"/>
+				<mx:VBox paddingTop="3">
+					<mx:Button id="startTeachBtn" toolTip="{lan[0].charging_start_hint}" label="开始上课" click="beginClassRequest();" fontFamily="Arial" width="58" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold" paddingLeft="0" paddingRight="0" x="0" y="0"/>
+					<mx:Button visible="false" includeInLayout="false" id="feeRequestBtn" enabled="false" toolTip="{lan[0].charging_start_hint}" label="{lan[0].charging_started}" click="periodFeeRequest();" fontFamily="Arial" width="58" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold" paddingLeft="0" paddingRight="0" x="0" y="0"/>
 					<mx:Button id="sendMessageBtn" label="{lan[0].send}" width="58" click="send()"/>
 					<mx:Button id="closeBtn" click="closeMessage();" label="{lan[0].close}" width="58"/>
 				</mx:VBox>
 			</mx:HBox>
 			<!--老师计费区-->
-			<mx:HBox>
+			<mx:Canvas id="feeCanvas" visible="false" includeInLayout="false"><mx:HBox>
 				<mx:Label text="{lan[0].current_balance}:"/><mx:Label id="feeArea" letterSpacing="-10"/><mx:Label text="=" letterSpacing="-10"/>
 				<mx:Label id="rate1"/><mx:ComboBox id="rate2" dataProvider="{cards}" rowCount="3" close="closeHandler(event);"/>
 				<mx:Label text="课时费:"/><mx:TextInput id="confirmFee" text="{roomFee}" width="50"/>
@@ -932,7 +975,7 @@
 						<mx:DataGridColumn dataField="totalCost" headerText="{lan[0].total1}" width="50" textAlign="center"/>
 					</mx:columns></mx:DataGrid>
 				</mx:HBox>
-			</mx:ViewStack>
+			</mx:ViewStack></mx:Canvas>
 		</mx:VBox>
 	</mx:Panel>
 </mx:Application>
