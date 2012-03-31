@@ -17,7 +17,7 @@
 				var params:String = Application.application.parameters.initValue;
 
 				//var params:String = ExternalInterface.call("getUserInfo");
-				var userId:String, userName:String, roomId:String, calleeId:String = null;
+				var userId:String, userName:String, roomId:String, calleeId:String = null, reqType:String = null;
 				var arrs:Array = params.split(";");
 				if (params != null) {
 					userId = arrs[0];
@@ -28,8 +28,11 @@
 					if (arrs.length > 3) {
 						calleeId = arrs[3];
 					}
+					if (arrs.length > 4) {
+						reqType = arrs[4];
+					}
 				}
-				netConn.connect(Constants.rtmpUrl, userId, userName, roomId, calleeId);
+				netConn.connect(Constants.rtmpUrl, userId, userName, roomId, calleeId, reqType);
 			}
 			private function netConnectionHandler(event:NetStatusEvent):void {
 				switch (event.info.code) {
@@ -38,6 +41,7 @@
 						ExternalInterface.addCallback("sendRequest", sendRequest);
 						// 被请求者请求处理结果.
 						ExternalInterface.addCallback("calleeHandlerResult", calleeHandlerResult);
+						ExternalInterface.call("loadFlashComplete");
 					break;
 					case "NetConnection.Connect.Rejected":
 					case "NetConnection.Connect.Closed":

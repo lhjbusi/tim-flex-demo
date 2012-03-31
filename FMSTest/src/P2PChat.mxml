@@ -107,7 +107,7 @@
 			charging_start_hint:"Charging started",charging_stop_hint:"Charging stopped",course_fee_modified:"course fees will be modified as",
 			course_fee_abnormal:"The course fees you enter is abnormal",rejected_charging_request:"charging request rejected on the other side"}
 		);
-	
+
 		/**
 		 * Flash初始化.
 		 */
@@ -127,7 +127,7 @@
 			// 教室名称
 			roomName="room"+ss1[4];
 			// Flash语言
-			language =ss1[5];
+			language=ss1[5];
 			// 平台费
 			platFee=ss1[6];
 			Alert.show(ss);
