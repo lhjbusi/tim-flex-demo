@@ -66,6 +66,7 @@
 			 */
 			public function sendRequestResult(calleeId:String, requestType:String):void {
 				// TODO 告知请求者正在处理.
+				ExternalInterface.call("");
 			}
 			/**
 			 * 请求处理结果.请求者接收被请求者处理结果
