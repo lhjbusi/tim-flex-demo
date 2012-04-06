@@ -2,6 +2,7 @@
 <mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="connectFMS();" width="408" height="152">
 	<mx:Script>
 		<![CDATA[
+			import mx.controls.Alert;
 			import com.tim.chinesegreat.Constants;
 
 			private var netConn:NetConnection;
@@ -9,7 +10,7 @@
 			/**
 			 * 页面初始化.
 			 */
-			private function connectFMS():void {
+			public function connectFMS():void {
 				netConn = new NetConnection();
 				netConn.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
 				netConn.client = this;
@@ -41,12 +42,19 @@
 						ExternalInterface.addCallback("sendRequest", sendRequest);
 						// 被请求者请求处理结果.
 						ExternalInterface.addCallback("calleeHandlerResult", calleeHandlerResult);
+						ExternalInterface.addCallback("resetUserStatus", resetUserStatus);
+						// 暴露打开浏览器方法
+						//ExternalInterface.addCallback("openWindow", openWindow);
 						ExternalInterface.call("loadFlashComplete");
 					break;
 					case "NetConnection.Connect.Rejected":
 					case "NetConnection.Connect.Closed":
 					break;
 				}
+			}
+			public function resetUserStatus():void {
+				Alert.show("执行resetUserStatus");
+				netConn.call("resetUserStatus", null);
 			}
 			/**
 			 * 向被请求者提示.
@@ -58,7 +66,7 @@
 			/**
 			 * 被请求者请求处理结果.
 			 */
-			private function calleeHandlerResult(callerId:String, callerName:String, requestType:String, result:String, roomId:String, calleeId:String):void {
+			public function calleeHandlerResult(callerId:String, callerName:String, requestType:String, result:String, roomId:String, calleeId:String):void {
 				netConn.call("sendRequestStatus", null, callerId, requestType, result, roomId, calleeId);
 			}
 			/**
@@ -77,7 +85,7 @@
 			/**
 			 * 向指定用户发送特定请求.
 			 */
-			private function sendRequest(requestType:String, roomId:String, teacherId:String):void {
+			public function sendRequest(requestType:String, roomId:String, teacherId:String):void {
 				netConn.call("sendRequest", null, requestType, roomId, teacherId);
 			}
 			/**

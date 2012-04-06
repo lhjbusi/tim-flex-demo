@@ -29,6 +29,10 @@
 		private var chargeTimer:Timer;
 		// 是否开始课时费收取
 		private var beginPeriodFee:Boolean = false;
+		// 是否开始退出倒计时
+		private var beginOutTimer:Boolean = false;
+		// 退出倒计时长-秒数
+		private var outSec:int = 10;
 		// 已使用的免费秒数
 		private var currFreeSec:int = 0;
 		// 已使用的课时费秒数
@@ -192,6 +196,13 @@
 		private function chargeTimerHandler(event:TimerEvent):void {
 			// 平台费使用秒数累加
 			currFreeSec ++;
+			if (beginOutTimer) {// 开始退出倒计时
+				if (currFreeSec == outSec) {
+					// 关闭页面
+					closeMessage();
+				}
+				return;
+			}
 			// 平台费计费-老师端运行
 			if (isTeacher && currFreeSec >= freeMin*60 && currFreeSec%60 == 0) {
 				// 向Java请求平台费记录
@@ -273,6 +284,17 @@
 					feeRequestBtn.enabled=false;
 					Alert.yesLabel=lan[0].ok;
 					Alert.noLabel=lan[0].cancel;
+					// 关闭流
+					incomingStreamp2p.close();
+					outgoingStreamp2p.close();
+					p2pConnection.close();
+					// 停止课时费计费
+					beginPeriodFee = false;
+					// 开启退出定时
+					beginOutTimer = true;
+					currFreeSec = 0;
+					// 修正用户聊天状态
+					ExternalInterface.call("resetUserStatus");
 					Alert.show(lan[0].close_window, lan[0].disconnected, 3, null, alertClickHandler);
 				break;
 				case "NetGroup.SendTo.Notify":
@@ -366,8 +388,9 @@
 			camera= Camera.getCamera();
 			mic= Microphone.getMicrophone();
 			if (camera) {
-				camera.setMode(320, 240, 15);
+				camera.setMode(320, 240, 12);
 				camera.setQuality(0, 80);
+				camera.setKeyFrameInterval(15);
 				var localVideo:Video= new Video();
 				localVideo.width = localVideoDisplay.width;
 				localVideo.height = localVideoDisplay.height;
