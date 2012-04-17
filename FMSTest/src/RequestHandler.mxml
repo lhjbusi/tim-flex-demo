@@ -2,104 +2,147 @@
 <mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="connectFMS();" width="408" height="152">
 	<mx:Script>
 		<![CDATA[
-			import mx.controls.Alert;
 			import com.tim.chinesegreat.Constants;
 
-			private var netConn:NetConnection;
+var netConn:NetConnection;
+var userId:String, userName:String, roomId:String, calleeId:String = null, reqType:String = null;
+var loadFirst:Boolean = true;
+var timer:Timer = new Timer(100000);
 
-			/**
-			 * 页面初始化.
-			 */
-			public function connectFMS():void {
-				netConn = new NetConnection();
-				netConn.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
-				netConn.client = this;
+/**
+ * 页面初始化.
+ */
+function connectFMS():void {
+	netConn = new NetConnection();
+	netConn.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+	netConn.client = this;
 
-				var params:String = Application.application.parameters.initValue;
+	if (userId == null) {
+		// Flex
+		var params:String = Application.application.parameters.initValue;
+		// Flash
+		//var params:String = this.stage.loaderInfo.parameters.initValue;
 
-				//var params:String = ExternalInterface.call("getUserInfo");
-				var userId:String, userName:String, roomId:String, calleeId:String = null, reqType:String = null;
-				var arrs:Array = params.split(";");
-				if (params != null) {
-					userId = arrs[0];
-					userName = arrs[1];
-					if (arrs.length > 2) {
-						roomId = arrs[2];
-					}
-					if (arrs.length > 3) {
-						calleeId = arrs[3];
-					}
-					if (arrs.length > 4) {
-						reqType = arrs[4];
-					}
-				}
-				netConn.connect(Constants.rtmpUrl, userId, userName, roomId, calleeId, reqType);
+		//var params:String = ExternalInterface.call("getUserInfo");
+		var userId:String, userName:String, roomId:String, calleeId:String = null, reqType:String = null;
+		var arrs:Array = params.split(";");
+		if (params != null) {
+			userId = arrs[0];
+			userName = arrs[1];
+			if (arrs.length == 2) {
+				timer.addEventListener(TimerEvent.TIMER, timerHandler);
+				timer.start();
 			}
-			private function netConnectionHandler(event:NetStatusEvent):void {
-				switch (event.info.code) {
-					case "NetConnection.Connect.Success":
-						// 暴露请求方法.
-						ExternalInterface.addCallback("sendRequest", sendRequest);
-						// 被请求者请求处理结果.
-						ExternalInterface.addCallback("calleeHandlerResult", calleeHandlerResult);
-						ExternalInterface.addCallback("resetUserStatus", resetUserStatus);
-						// 暴露打开浏览器方法
-						//ExternalInterface.addCallback("openWindow", openWindow);
-						ExternalInterface.call("loadFlashComplete");
-					break;
-					case "NetConnection.Connect.Rejected":
-					case "NetConnection.Connect.Closed":
-					break;
-				}
+			if (arrs.length > 2) {
+				roomId = arrs[2];
 			}
-			public function resetUserStatus():void {
-				Alert.show("执行resetUserStatus");
-				netConn.call("resetUserStatus", null);
+			if (arrs.length > 3) {
+				calleeId = arrs[3];
 			}
-			/**
-			 * 向被请求者提示.
-			 */
-			public function calleeConfirm(callerId:String, callerName:String, requestType:String, roomId:String, calleeId:String):void {
-				// 调用页面JS提醒被呼叫者
-				ExternalInterface.call("calleeConfirm", callerId, callerName, requestType, roomId, calleeId);
+			if (arrs.length > 4) {
+				reqType = arrs[4];
 			}
-			/**
-			 * 被请求者请求处理结果.
-			 */
-			public function calleeHandlerResult(callerId:String, callerName:String, requestType:String, result:String, roomId:String, calleeId:String):void {
-				netConn.call("sendRequestStatus", null, callerId, requestType, result, roomId, calleeId);
+		}
+	}
+	netConn.connect("rtmp://192.168.1.199/tim-test", userId, userName, roomId, calleeId, reqType);
+}
+function close():void {
+}
+function timerHandler(event:TimerEvent):void {
+	if (netConn.connected) {
+		netConn.call("pingTheServer", null);
+	}
+}
+function netConnectionHandler(event:NetStatusEvent):void {
+	switch (event.info.code) {
+		case "NetConnection.Connect.Success":
+			if (loadFirst) {
+				// 暴露请求方法.
+				ExternalInterface.addCallback("sendRequest", sendRequest);
+				// 被请求者请求处理结果.
+				ExternalInterface.addCallback("calleeHandlerResult", calleeHandlerResult);
+				// 重置用户状态为可接受请求.
+				ExternalInterface.addCallback("resetUserStatus", resetUserStatus);
+				// 暴露打开浏览器方法.
+				// ExternalInterface.addCallback("openWindow", openWindow);
+				// 告诉HTML页面，功能已加载完成.
+				ExternalInterface.call("loadFlashComplete");
+				loadFirst = false;
 			}
-			/**
-			 * 告知请求者，被请求者正在处理请求.
-			 */
-			public function sendRequestResult(calleeId:String, requestType:String):void {
-				// TODO 告知请求者正在处理.
-				ExternalInterface.call("");
-			}
-			/**
-			 * 请求处理结果.请求者接收被请求者处理结果
-			 */
-			public function requestStatusResult(calleeId:String, calleeName:String, requestType:String, status:String, roomId:String, teacherId:String):void {
-				ExternalInterface.call("requestResult", calleeId, calleeName, requestType, status, roomId, teacherId);
-			}
-			/**
-			 * 向指定用户发送特定请求.
-			 */
-			public function sendRequest(requestType:String, roomId:String, teacherId:String):void {
-				netConn.call("sendRequest", null, requestType, roomId, teacherId);
-			}
-			/**
-			 * 用户不在线.
-			 */
-			public function userIsOffline():void {
-				ExternalInterface.call("userIsOffline");
-			}
-			/**
-			 * 无效的请求.
-			 */
-			public function invalidRequest(calleeName:String, result:int):void {
-				ExternalInterface.call("invalidRequest", calleeName, result);
-			}
+		break;
+		case "NetConnection.Connect.Rejected":
+		case "NetConnection.Connect.Closed":
+			//connectFMS();
+		break;
+	}
+}
+// 打开教室评价表单.
+function commentClass(roomId:int):void {
+	ExternalInterface.call("commentClass", roomId);
+}
+// 重置用户状态为可接受请求.
+function resetUserStatus():void {
+	netConn.call("resetUserStatus", null);
+}
+/**
+ * 被请求用户正忙.
+ */
+function userIsBusy(type:String):void {
+	ExternalInterface.call("userIsBusy", type);
+}
+/**
+ * 自己正忙.
+ */
+function selfBusy(type:String):void {
+	ExternalInterface.call("selfBusy", type);
+}
+/**function openWindow(url:String, target:String):void {
+	var urlRequest:URLRequest = new URLRequest(url);
+	navigateToURL(urlRequest, target);
+}*/
+/**
+ * 向被请求者提示.
+ */
+function calleeConfirm(callerId:String, callerName:String, requestType:String, roomId:String, calleeId:String):void {
+	// 调用页面JS提醒被呼叫者
+	ExternalInterface.call("calleeConfirm", callerId, callerName, requestType, roomId, calleeId);
+}
+/**
+ * 被请求者请求处理结果.
+ */
+function calleeHandlerResult(callerId:String, callerName:String, requestType:String, result:String, roomId:String, calleeId:String):void {
+	netConn.call("sendRequestStatus", null, callerId, requestType, result, roomId, calleeId);
+}
+/**
+ * 告知请求者，被请求者正在处理请求.
+ */
+function sendRequestResult(calleeId:String, requestType:String):void {
+	// TODO 告知请求者正在处理.
+}
+/**
+ * 请求处理结果.请求者接收被请求者处理结果
+ */
+function requestStatusResult(calleeId:String, calleeName:String, requestType:String, status:String, roomId:String, teacherId:String):void {
+	ExternalInterface.call("requestResult", calleeId, calleeName, requestType, status, roomId, teacherId);
+}
+/**
+ * 向指定用户发送特定请求.
+ */
+function sendRequest(requestType:String, roomId:String, teacherId:String):void {
+	netConn.call("sendRequest", null, requestType, roomId, teacherId);
+}
+/**
+ * 用户不在线.
+ */
+function userIsOffline():void {
+	ExternalInterface.call("userIsOffline");
+}
+/**
+ * 无效的请求.
+ */
+function invalidRequest(calleeName:String, result:int):void {
+	ExternalInterface.call("invalidRequest", calleeName, result);
+}
 		]]>
 	</mx:Script>
 </mx:Application>

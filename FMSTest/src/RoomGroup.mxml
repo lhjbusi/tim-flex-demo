@@ -204,7 +204,7 @@
 				return;
 			}
 			// 平台费计费-老师端运行
-			if (isTeacher && currFreeSec >= freeMin*60 && currFreeSec%60 == 0) {
+			if (!beginPeriodFee && (isTeacher && currFreeSec >= freeMin*60 && currFreeSec%60 == 0)) {
 				// 向Java请求平台费记录
 				platformFeeHandler();
 			}
@@ -213,7 +213,7 @@
 				currPeriodSec ++;
 				if (isTeacher) {// 老师处理
 					if (currPeriodSec%60 == 0) {// 已满一分钟
-						student[0].totalEarn=(roomFee*currPeriodSec/60)+'(credits)';
+						student[0].totalEarn=((roomFee*currPeriodSec/60)-(platFee*(currFreeSec/60 - freeMin)))+'(credits)';
 						periodFeeRecord.send();
 					}
 					student[0].stuTime=convertSecondToDate(currPeriodSec);
@@ -221,7 +221,7 @@
 					stu.dataProvider=student;
 				} else {// 学生处理
 					if (currPeriodSec%60 == 0) {// 已满一分钟
-						teacher[0].totalCost=(roomFee*currPeriodSec/60)+'(credits)';
+						teacher[0].totalCost=((roomFee*currPeriodSec/60)+(platFee*(currFreeSec/60 - freeMin)))+'(credits)';
 					}
 					teacher[0].stuTime=convertSecondToDate(currPeriodSec);
 					teacher[0].stuFee=roomFee+'(credits)';
@@ -386,7 +386,7 @@
 		private function publishVideo(type:String):void {	
 			//发布自己的音视频
 			camera= Camera.getCamera();
-			mic= Microphone.getEnhancedMicrophone(0);
+			mic= Microphone.getMicrophone();
 			if (camera) {
 				camera.setMode(320, 240, 12);
 				camera.setQuality(0, 80);
@@ -414,16 +414,6 @@
 				mic.encodeQuality = 10;
 				// 在SPEEX下使用,默认2,值越小延迟越少,消耗带宽越高
 				mic.framesPerPacket = 2;
-				// 麦克风属性设置
-				var options:MicrophoneEnhancedOptions = new MicrophoneEnhancedOptions();
-				// 是否启用自动增益控制
-				options.autoGain = true;
-				// 回声路径,值越大，回声抑制效果越好，但声音的延迟会越大
-				// 消耗的资源会越多，值取128或256
-				// options.echoPath = 256;
-				// 非线性处理，处理乐音时最好关闭
-				options.nonLinearProcessing = true;
-				mic.enhancedOptions=options;
 				// 设置是否本地可听到声音
 				mic.setLoopBack(false);
 				// 麦克风捕获声音的频率
@@ -434,10 +424,6 @@
 				mic.noiseSuppressionLevel = -30;
 				// 使用回声抑制功能
 				mic.setUseEchoSuppression(true);
-				//mic.codec = SoundCodec.SPEEX;
-				//mic.framesPerPacket = 1;
-				//mic.encodeQuality = 10;
-				//mic.setSilenceLevel(0);
 			}
 			if (type=="fms") {
 				outgoingStreamFMS = new NetStream(fmsConnection);
@@ -457,12 +443,13 @@
 				if (mic != null) {
 					outgoingStreamp2p.attachAudio(mic);
 				}
-				outgoingStreamp2p.publish( _netGroup.convertPeerIDToGroupAddress(_nearID));
+				outgoingStreamp2p.publish(_netGroup.convertPeerIDToGroupAddress(_nearID));
+				Alert.show(""+_netGroup.convertPeerIDToGroupAddress(_nearID));
 			}
 		}
-		private function recieveVideo(type:String,i:String):void {
+		private function recieveVideo(type:String, i:String):void {
 			//播放接受到的音视频	
-			incomingStreamp2p = new NetStream( p2pConnection, _groupSpec );
+			incomingStreamp2p = new NetStream(p2pConnection, _groupSpec);
 			incomingStreamp2p.play(i);					
 			var remoteVideo:Video = new Video();				
 			remoteVideo.width = remoteVideoDisplay.width;
@@ -497,13 +484,13 @@
 						sharedObj.addEventListener(SyncEvent.SYNC, _netSync);
 						sharedObj.connect(fmsConnection);
 					 }
-				break; 
+				break;
 				case "NetConnection.Connect.Closed":
-				break; 
+				break;
 				case "NetStream.Connect.Success":
-				break; 
+				break;
 				case "NetConnection.Connect.Failed":
-				break; 
+				break;
 				case "NetStream.Connect.Closed":
 				break;
 			}
@@ -752,7 +739,7 @@
 		}	
 		//初始化音视频
 		private function initAudio():void {
-			mic= Microphone.getEnhancedMicrophone(0);
+			mic= Microphone.getMicrophone();
 			audioInd=new Indicator(70,7,0x000000,0xffffff);
 			audioInd.Current = 0.05 + mic.activityLevel/100;
 			uc.addChild(audioInd);
@@ -921,6 +908,7 @@
 		<tchId>{myId}</tchId>
 		<fee>{roomFee}</fee>
 		<insertDate>{periodDate}</insertDate>
+		<platformDate>{platformDate}</platformDate>
 	</mx:request>
 </mx:HTTPService>
 <!-- 平台费处理 -->
