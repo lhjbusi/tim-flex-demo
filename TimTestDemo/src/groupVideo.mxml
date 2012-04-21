@@ -439,10 +439,10 @@
 			}
 		]]>
 		</mx:Script>
-<mx:Panel title="ChineseGreat" titleIcon="@Embed(source='assert/logo.jpg')" borderStyle="none" layout="vertical" width="489" height="515" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#ffffff" paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial" themeColor="#F7FAFF">		
+<mx:Panel title="ChineseGreat" titleIcon="@Embed(source='assert/logo.jpg')" borderStyle="none" layout="vertical" width="489" height="515" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#ffffff" paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial">		
 
 <mx:VBox paddingLeft="10" >
-<mx:Canvas borderStyle="solid" cornerRadius="2" id="test" height="230" borderColor="#B7BABC" borderThickness="1" width="438">
+<mx:Canvas borderStyle="solid" cornerRadius="2" id="test" height="230" borderColor="#B7BABC" width="438">
 </mx:Canvas></mx:VBox>
 <mx:VBox>
 <mx:HBox width="489" paddingLeft="10">
@@ -461,8 +461,8 @@
 	<mx:RichTextEditor borderStyle="none" id="message" creationComplete="showControlBar();" width="380" height="120" paddingBottom="-12" backgroundColor="#ffffff" textAlign="left" fontStyle="normal" fontFamily="Verdana" horizontalScrollPolicy="off" verticalScrollPolicy="off" paddingLeft="0" paddingRight="0" headerHeight="0" fontSize="12"/>
 	<mx:VBox paddingTop="30" id="buttonArea">		
 <mx:VBox paddingTop="3">
-  <mx:Button id="closeBtn" label="发送" click="onPostMessage()" fontFamily="Arial" width="60" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
-  <mx:Button id="sendMessageBtn" label="关闭" width="60" click="close(1)" fillAlphas="[0.77, 0.89, 0.45, 0.45]" fillColors="[#D3E7F7, #FCFCFC]" alpha="0.8" fontFamily="Arial" fontSize="12" cornerRadius="5" fontWeight="bold"/>		 
+  <mx:Button id="closeBtn" label="发送" click="onPostMessage()" fontFamily="Arial" width="60" alpha="0.8" fontSize="12" cornerRadius="5" fontWeight="bold"/>
+  <mx:Button id="sendMessageBtn" label="关闭" width="60" click="close(1)" alpha="0.8" fontFamily="Arial" fontSize="12" cornerRadius="5" fontWeight="bold"/>		 
 </mx:VBox>
 </mx:VBox></mx:HBox></mx:VBox>		
 </mx:Panel>	

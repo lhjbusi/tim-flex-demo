@@ -35,7 +35,6 @@
 		private var currPeriodSec:int = 0;
 		// 发送流
 		private var sendStream:NetStream;
-		private var micPhone:Microphone;
 		// 接收流
 		private var receiveStream:NetStream;
 		private var keyCode:int;
@@ -44,8 +43,8 @@
 		private var NetStreamClose:int;
 		private var remoteVideo:Video;
 		private var localVideo:Video;
-		private var audioInd:Indicator;
-		private var audioInd1:Indicator;
+		private var micIndicator:Indicator;
+		private var speakerIndicator:Indicator;
 		private var uc:UIComponent= new UIComponent();
 		// 开始时间
 		private var startDate:Number = 0;
@@ -105,8 +104,8 @@
 		public function returnUserName():void {
 			// 初始化麦克风设置
 			initAudio();
-			//var ss:String="qiu;725;10;137;50000";
-			var ss:String="test;725;50000";
+			var ss:String="qiu;725;10;137;50000";
+			//var ss:String="test;725;50000";
 			var ss1:Array=ss.split(";");
 			userName.text=ss1[0];
 			if (ss1[3] != null) {
@@ -133,24 +132,24 @@
 		 * 初始化麦克风设置.
 		 */
 		private function initAudio():void {
-			micPhone=getMicrophone();
+			var mic:Microphone=getMicrophone();
 
-			audioInd=new Indicator(70,7,0x000000,0xffffff);
-			audioInd.Current = 0.05 + micPhone.activityLevel/100;
-			uc.addChild(audioInd);
-		 	uc.x=35;
+			micIndicator=new Indicator(100,7,0x000000,0xffffff);
+			micIndicator.Current = 0.05 + mic.activityLevel/100;
+			uc.addChild(micIndicator);
+		 	uc.x=50;
 		 	uc.y=13;
 		 	micVolumeSlider.addChildAt(uc,0);
-		 	audioInd1=new Indicator(70,7,0x000000,0xffffff);
-		 	audioInd1.Current = 0.05 + speakerVolumeSlider.value;
+
+		 	speakerIndicator=new Indicator(100,7,0x000000,0xffffff);
+		 	speakerIndicator.Current = 0.05 + speakerVolumeSlider.value;
 		 	var uc1:UIComponent=new UIComponent();
-			uc1.addChild(audioInd1);
-		 	uc1.x=35;
+			uc1.addChild(speakerIndicator);
+		 	uc1.x=50;
 		 	uc1.y=13;
 		 	speakerVolumeSlider.addChildAt(uc1,0);
-		 	
-		 	// 下面这句居然没用
-			micPhone.addEventListener(ActivityEvent.ACTIVITY, activity);
+			// 下面这句居然没用
+		 	mic.addEventListener(ActivityEvent.ACTIVITY, activity);
 		}
 		/**
 		 * 获取麦克风.
@@ -450,9 +449,8 @@
 		private function publishAudio():void {
 			var mics:Array = Microphone.names;
 			if (mics && mics.length>0) {
-				if (micPhone == null) {
-					micPhone = getMicrophone();
-				}
+				// 获取增强类型的对象
+				var micPhone:Microphone= getMicrophone();
 				// 使用Speex编码，无需指定取样速率
 				micPhone.codec = SoundCodec.SPEEX;
 				// 设置可认定为有声的最低音量输入水平，可选值0~100
@@ -625,7 +623,7 @@
 			addEventListener(Event.ENTER_FRAME, init1);
 		}
 		private function init1(event:Event):void {
-			audioInd.Current = 0.05 + micPhone.activityLevel/100;
+			micIndicator.Current = 0.05 + getMicrophone().activityLevel/100;
 		}
 	 	private function closeMessage():void {
 		}
@@ -634,13 +632,14 @@
 			if (receiveStream) {
 				var st:SoundTransform = new SoundTransform(e.value);
 				receiveStream.soundTransform = st;
-				audioInd1.Current = 0.05 + e.value;
+				speakerIndicator.Current = 0.05 + e.value;
 			}
 		}
 		// 耳麦音量调节
 		private function micVolumeChanged(e:SliderEvent):void {
-			if (micPhone) {
-				micPhone.gain = e.value;
+			var mic:Microphone = getMicrophone();
+			if (mic) {
+				mic.gain = e.value;
 			}
 		}
 		private function alertClickHandler(event:CloseEvent):void {
@@ -797,11 +796,18 @@
 		<mx:VideoDisplay click="fullVideo();" resize="resizeRemoteVideo();" id="remoteVideoDisplay" width="267" height="200"/>
 		<mx:VBox>
 			<mx:VideoDisplay id="localVideoDisplay" width="133" height="100"/>
-			<mx:Image source="@Embed('/assert/video.jpg')" useHandCursor="true" buttonMode="true" id="stopVideoButton" click="stopVideo(flag)" height="22"/> 
+
+			<mx:HBox><mx:Image source="@Embed('/assert/video.jpg')" id="stopVideoButton" click="stopVideo(flag)" height="22"/>
+				<mx:HSlider id="cameraQuality" thumbSkin="@Embed('/assert/icon.png')" trackSkin="STSliderTrackSkin" value="80" width="100" showDataTip="false" minimum="0" maximum="100"/>
+			</mx:HBox>
+
 			<mx:HBox><mx:Image source="@Embed('/assert/micVol.jpg')" height="22"/> 
-			<mx:HSlider id="micVolumeSlider" thumbSkin="@Embed('/assert/icon.png')" trackSkin="STSliderTrackSkin" value="90" width="72" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/></mx:HBox>
+				<mx:HSlider id="micVolumeSlider" thumbSkin="@Embed('/assert/icon.png')" trackSkin="STSliderTrackSkin" value="90" width="100" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/>
+			</mx:HBox>
+
 			<mx:HBox><mx:Image source="@Embed('/assert/speakVol.jpg')" height="22"/> 
-			<mx:HSlider id="speakerVolumeSlider" thumbSkin="@Embed('/assert/icon.png')" trackSkin="STSliderTrackSkin" showDataTip="false" value="0.9" width="72" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/></mx:HBox>
+				<mx:HSlider id="speakerVolumeSlider" thumbSkin="@Embed('/assert/icon.png')" trackSkin="STSliderTrackSkin" showDataTip="false" value="0.9" width="100" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/>
+			</mx:HBox>
 		</mx:VBox>
 	</mx:HBox>
 	<mx:VBox paddingTop="10">

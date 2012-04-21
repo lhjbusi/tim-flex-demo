@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init();" width="400" height="300">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			// 当前秒数
+			private var currSec:int = 0;
+			// 播放时长-秒数
+			private var playSec:int = 60;
+			// 初始化一个声音对象
+			private var sound:Sound;
+			// 初始化一个定时器
+			private var timer:Timer;
+			private var channel:SoundChannel;
+			private var loadComplete:Boolean = false;
+
+			private function init():void {
+				ExternalInterface.addCallback("playSound", playSound);
+				ExternalInterface.addCallback("closeSound", closeSound);
+			}
+			private function playSound(url:String, seconds:int):void {
+				// 重设播放时长
+				playSec = seconds;
+				var fileUrl:URLRequest = new URLRequest(url);
+				sound = new Sound();
+				sound.addEventListener(Event.COMPLETE, loadSoundComplete);
+				sound.load(fileUrl);
+				timer = new Timer(1000);
+				timer.addEventListener(TimerEvent.TIMER, playHandler);
+				channel = sound.play(0, int.MAX_VALUE);
+				timer.start();
+				channel.soundTransform.volume = 1;
+			}
+private function closeSound():void {
+	Alert.show("关闭提示声音");
+	// 关闭声音
+	channel.stop();
+	if (!loadComplete) {
+		sound.close();
+	}
+	sound = null;
+	if (timer.running) {
+		// 停止计时器
+		timer.stop();
+	}
+	timer = null;
+	currSec = 0;
+}
+			private function loadSoundComplete(event:Event):void {
+				loadComplete = true;
+			}
+			private function playHandler(event:TimerEvent):void {
+				currSec++;
+				if (currSec == playSec) {
+					closeSound();
+				}
+			}
+		]]>
+	</mx:Script>
+	<mx:Button x="31" y="243" label="开始播放" click="playSound('Ring.mp3', 50);"/>
+	<mx:Button x="109" y="243" label="停止播放" click="closeSound();"/>
+</mx:Application>

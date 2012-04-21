@@ -1,106 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>   
 <mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="myInit()">   
- <mx:Script>   
-  <![CDATA[   
-  import flash.events.*;   
-  import flash.net.URLRequest;   
-  import flash.media.Sound;   
-  import flash.media.SoundChannel;   
-  import flash.media.SoundTransform;   
-  import flash.utils.Timer;   
-  import flash.events.TimerEvent;   
-  import mx.controls.Alert;   
-    
-  //mp3 的 url 地址   
-  private var soundURL:String = "asflex.mp3";   
-  //访问 url 上的东西都用 URLRequest 了   
-  private var request:URLRequest = new URLRequest(soundURL);   
-  private var my_sound:Sound=new Sound(); // 新建 Sound 对象   
-  //声明 SoundChannel 类型的变量 my_channel   
-  private var my_channel:SoundChannel;   
-  //新建 myTimer 对象并定义循环的时间间隔为10毫秒,循环次数为无限次(参数中的0表示无限次)   
-  private var myTimer:Timer = new Timer(10, 0);   
-      
-  private function myInit():void{   
-   my_sound.load(request); // 载入外部 mp3: She is my sin.mp3   
-   }   
-  //播放音乐:   
-  private function playSound(): void{   
-   Alert.show(my_sound.length.toString());   
-   my_channel = my_sound.play(); // 音乐正式开始播放   
-   //添加事件侦听器, 功能: 循环执行 timerHandler 函数(但这里还没有开始循环执行)   
-   myTimer.addEventListener(TimerEvent.TIMER, timerHandler);   
-   myTimer.start(); // 这里才开始循环执行 timerHandler 函数   
-  }   
-  //停止音乐:   
-  private function stopSound():void{   
-   //停止对函数 timerHandler 的循环执行, 因为音乐开始时 myTimer 对象就对函数 timerHandler 循环执行了   
-   myTimer.stop();   
-   my_channel.stop(); // 正式停止音乐   
-   progress_hs.value = 0; // 使那"播放进度"条的值回到0,即回到最左端   
-  }   
-  //定义被 myTimer 循环执行的函数 timerHandler   
-  private function timerHandler(event:TimerEvent):void{   
-  //功能: 显示音乐的播放进度, 进度条会随着音乐的继续播放而向右缓缓移动;   
-  //把这个公式翻译为中文: 播放进度条的值=当前音乐播放时间/音乐的总时间   
-   progress_hs.value = my_channel.position/my_sound.length;   
-  }   
-  //改变播放进度: 每当 "播放进度" 条被用户拉动过而使其值改变时,就执行以下函数   
-  private function changeProgress():void{   
-   //音乐停止且必须停止,是为了从新的播放时间点开始播放   
-   //(感觉这里麻烦了点, 如果有更好的方法,恳请高手指点!请联系我:   
-   // www.Y-boy.cn 或 www.RiaHome.cn ,谢谢!)   
-   my_channel.stop();   
-   //使音乐从新的时间点开始播放,新的时间点是小括号内的值,   
-   //即:"播放进度"条的值*音乐的总时间, 为什么会这样呢?   
-   //因为 HSlider 控件(那条"播放进度")的长度在下面被定义为1,   
-   //使得"播放进度"条的值在闭区间[0,1]内, 所以只需再乘以音乐的总时间就行了   
-   my_channel = my_sound.play(progress_hs.value*my_sound.length);   
-  }   
-  //改变音量: 每当 "音量大小" 控制条被用户拉动过而使其值改变时,就执行以下函数   
-  private function changeVolume():void{   
-   //把 my_channel.soundTransform 赋值给 my_transform   
-   var my_transform:SoundTransform = my_channel.soundTransform;   
-   my_transform.volume = volume_hs.value; // 把"音量大小"控制条当前值赋给 my_transform.volume   
-   my_channel.soundTransform = my_transform; // 给 my_channel.soundTransform 赋值   
-   /*   
-        这里的用法很特别, 像使用 AS2.0 里面的滤镜(Filters)那样, 先创建一个 "第三者",   
-    对 "第三者" 进行操作, 最后才把 "第三者" 赋值给 "当事人" . AS2.0 里面的滤镜的 "第三者"  
-    是数组, 这里的 "第三者" 是 my_transform . 这里不能跟 AS2.0 里面的滤镜相比, 只不过为   
-    了方便理解, 才这么说. (个人见解, 如有错请指出!)   
-   */   
-  }   
-  //改变左右声道: 每当 "左右声道" 控制条被用户拉动过而使其值改变时,就执行以下函数   
-  private function changePan():void{   
-   //此处用法与上面的 改变音量 相同, 理解 改变音量 的, 就能理解这里   
-   var my_transform:SoundTransform = my_channel.soundTransform;   
-   my_transform.pan = pan_vs.value;   
-   my_channel.soundTransform = my_transform;   
-  }    
-    
-  ]]>   
- </mx:Script>   
-    
- <!-- 显示歌曲名称 -->   
- <mx:Label text="歌曲:She is my sin" fontSize="12"/>   
-    
- <!-- 播放进度条 -->   
- <mx:Label text="播放进度:" fontSize="12" y="25"/>   
- <mx:HSlider id="progress_hs" width="100" minimum="0" maximum="1"  
-  x="60" y="25" mouseDown="myTimer.stop()" mouseUp="myTimer.start()"  
-  change="changeProgress()"/>   
-    
- <!-- 音量控制条 -->   
- <mx:Label text="音量大小:" fontSize="12" y="52"/>   
- <mx:HSlider id="volume_hs" width="100" minimum="0" maximum="1"  
-  y="52" x="60" value="0.8" change="changeVolume()"/>   
-    
- <!-- 左右声道控制条 -->   
- <mx:Label text="左右声道:" fontSize="12" x="-1" y="78"/>   
- <mx:HSlider id="pan_vs" width="100" minimum="-1" maximum="1"  
-  x="60" y="80" value="0" change="changePan()"/>   
-    
- <!-- 播放和停止按钮 -->   
- <mx:Button label="play" y="116" x="50" click="playSound()"/>   
- <mx:Button label="stop" y="116" x="109" click="stopSound()"/>   
+<mx:Script>
+	<![CDATA[
+		import flash.events.*;
+		import flash.net.URLRequest;
+		import flash.media.Sound;
+		import flash.media.SoundChannel;
+		import flash.media.SoundTransform;
+		import flash.utils.Timer;
+		import flash.events.TimerEvent;
+		import mx.controls.Alert;   
+
+		//mp3 的 url 地址   
+		private var soundURL:String = "asflex.mp3";
+		//访问 url 上的东西都用 URLRequest 了
+		private var request:URLRequest = new URLRequest(soundURL);
+		private var my_sound:Sound=new Sound();// 新建 Sound 对象
+		//声明 SoundChannel 类型的变量 my_channel
+		private var my_channel:SoundChannel;
+		//新建 myTimer 对象并定义循环的时间间隔为10毫秒,循环次数为无限次(参数中的0表示无限次)
+		private var myTimer:Timer = new Timer(10, 0);   
+
+		private function myInit():void {
+			my_sound.load(request);// 载入外部 mp3: She is my sin.mp3
+		}
+		//播放音乐:
+		private function playSound(): void {
+			Alert.show(my_sound.length.toString());
+			my_channel = my_sound.play();// 音乐正式开始播放
+			//添加事件侦听器, 功能: 循环执行 timerHandler 函数(但这里还没有开始循环执行)
+			myTimer.addEventListener(TimerEvent.TIMER, timerHandler);
+			myTimer.start(); // 这里才开始循环执行 timerHandler 函数
+		}
+		//停止音乐:
+		private function stopSound():void {
+			//停止对函数 timerHandler 的循环执行, 因为音乐开始时 myTimer 对象就对函数 timerHandler 循环执行了   
+			myTimer.stop();
+			my_channel.stop();// 正式停止音乐
+			progress_hs.value = 0;// 使那"播放进度"条的值回到0,即回到最左端
+		}
+		//定义被 myTimer 循环执行的函数 timerHandler
+		private function timerHandler(event:TimerEvent):void {
+			//功能: 显示音乐的播放进度, 进度条会随着音乐的继续播放而向右缓缓移动;
+			//把这个公式翻译为中文: 播放进度条的值=当前音乐播放时间/音乐的总时间
+			progress_hs.value = my_channel.position/my_sound.length;
+		}
+		//改变播放进度: 每当 "播放进度" 条被用户拉动过而使其值改变时,就执行以下函数
+		private function changeProgress():void {
+			//音乐停止且必须停止,是为了从新的播放时间点开始播放
+			//(感觉这里麻烦了点, 如果有更好的方法,恳请高手指点!请联系我:
+			// www.Y-boy.cn 或 www.RiaHome.cn ,谢谢!)
+			my_channel.stop();
+			//使音乐从新的时间点开始播放,新的时间点是小括号内的值,
+			//即:"播放进度"条的值*音乐的总时间, 为什么会这样呢?
+			//因为 HSlider 控件(那条"播放进度")的长度在下面被定义为1,
+			//使得"播放进度"条的值在闭区间[0,1]内, 所以只需再乘以音乐的总时间就行了
+			my_channel = my_sound.play(progress_hs.value*my_sound.length);
+		}
+		//改变音量: 每当 "音量大小" 控制条被用户拉动过而使其值改变时,就执行以下函数
+		private function changeVolume():void {
+			//把 my_channel.soundTransform 赋值给 my_transform
+			var my_transform:SoundTransform = my_channel.soundTransform;
+			my_transform.volume = volume_hs.value; // 把"音量大小"控制条当前值赋给 my_transform.volume
+			my_channel.soundTransform = my_transform; // 给 my_channel.soundTransform 赋值
+			/**
+			 * 这里的用法很特别, 像使用 AS2.0 里面的滤镜(Filters)那样, 先创建一个 "第三者",
+			 * 对 "第三者" 进行操作, 最后才把 "第三者" 赋值给 "当事人" . AS2.0 里面的滤镜的 "第三者"是数组,
+			 * 这里的 "第三者" 是 my_transform . 这里不能跟 AS2.0 里面的滤镜相比, 只不过为了方便理解,
+			 * 才这么说. (个人见解, 如有错请指出!)
+			 */
+		}
+		//改变左右声道: 每当 "左右声道" 控制条被用户拉动过而使其值改变时,就执行以下函数
+		private function changePan():void {
+			//此处用法与上面的 改变音量 相同, 理解 改变音量 的, 就能理解这里
+			var my_transform:SoundTransform = my_channel.soundTransform;
+			my_transform.pan = pan_vs.value;
+			my_channel.soundTransform = my_transform;
+		}
+	]]>
+</mx:Script>   
+
+<!-- 显示歌曲名称 -->
+<mx:Label text="歌曲:She is my sin" fontSize="12"/>
+<!-- 播放进度条 -->
+<mx:Label text="播放进度:" fontSize="12" y="25"/>
+<mx:HSlider id="progress_hs" width="100" minimum="0" maximum="1" x="60" y="25" mouseDown="myTimer.stop()" mouseUp="myTimer.start()" change="changeProgress()"/>
+
+<!-- 音量控制条 -->
+<mx:Label text="音量大小:" fontSize="12" y="52"/>
+<mx:HSlider id="volume_hs" width="100" minimum="0" maximum="1" y="52" x="60" value="0.8" change="changeVolume()"/>   
+
+<!-- 左右声道控制条 -->   
+<mx:Label text="左右声道:" fontSize="12" x="-1" y="78"/>   
+<mx:HSlider id="pan_vs" width="100" minimum="-1" maximum="1" x="60" y="80" value="0" change="changePan()"/>   
+
+<!-- 播放和停止按钮 -->   
+<mx:Button label="play" y="116" x="50" click="playSound()"/>   
+<mx:Button label="stop" y="116" x="109" click="stopSound()"/>   
 </mx:Application>
