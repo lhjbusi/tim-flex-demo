@@ -1,17 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init();">
 	<mx:Script>
 		<![CDATA[
+			import mx.controls.Alert;
 			import mx.collections.ArrayCollection;
 
+			private var urlLoader:URLLoader = new URLLoader();
+			private var timer:Timer = new Timer(1000);
+
 			[Bindable]
-			private var expensesAC:ArrayCollection = new ArrayCollection([
-				{Month:"Jan", Profit:2000, Expenses:1500, Amount:450},
+			private var expensesAC:ArrayCollection = new ArrayCollection(
+				/**[{Month:"Jan", Profit:2000, Expenses:1500, Amount:450},
 				{Month:"Feb", Profit:1000, Expenses:200, Amount:600},
 				{Month:"Mar", Profit:1500, Expenses:500, Amount:300},
 				{Month:"Apr", Profit:1800, Expenses:1200, Amount:900},
-				{Month:"May", Profit:2400, Expenses:575, Amount:500}
-			]);
+				{Month:"May", Profit:2400, Expenses:575, Amount:500}]*/
+			);
+
+			private function init():void {
+				var requestUrl:URLRequest = new URLRequest();
+				requestUrl.url = "assets/data/data.xml";
+				urlLoader.load(requestUrl);
+				urlLoader.addEventListener(Event.COMPLETE, loadXmlComplete);
+			}
+
+			/**
+			 * 加载Xml完成.
+			 */
+			private function loadXmlComplete(event:Event):void {
+				var xmlDoc:XMLDocument = new XMLDocument();
+				xmlDoc.parseXML(urlLoader.data);
+				xmlDoc.ignoreWhite = true;
+				var xmlNode:XMLNode = xmlDoc.firstChild;
+				for each (var data:XMLNode in xmlNode.childNodes) {
+					parseData(data);
+				}
+				timer.addEventListener(TimerEvent.TIMER, timerHandler);
+				timer.start();
+			}
+
+			private function timerHandler(event:TimerEvent):void {
+				// 获取第一个元素
+				var item:Object = expensesAC.getItemAt(0);
+				expensesAC.removeItemAt(0);
+				item.Profit = Number(item.Profit)+10;
+				expensesAC.addItem(item);
+			}
+
+			private function parseData(node:XMLNode):void {
+				var data:Object = new Object();
+				for each (var item:XMLNode in node.childNodes) {
+					data[item.nodeName] = item.firstChild.nodeValue;
+				}
+				expensesAC.addItem(data);
+			}
 		]]>
 	</mx:Script>
 
@@ -35,7 +77,7 @@
 			</mx:series>
 		</mx:LineChart>
 		<mx:Legend dataProvider="{linechart}"/>
-		
+
 		<mx:AreaChart id="Areachart" height="100%" width="45%" paddingLeft="5" paddingRight="5" showDataTips="true" dataProvider="{expensesAC}">
 			<mx:horizontalAxis><mx:CategoryAxis categoryField="Month"/></mx:horizontalAxis>
 			<mx:series>
