@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="400" height="300" creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			private var timer1:Timer = new Timer(1000);
+			private var timer2:Timer = new Timer(1000);
+			private var num1:int = 0, num2:int = 0;
+		
+			private function init():void {
+				timer1.addEventListener(TimerEvent.TIMER, timer1Handler);
+				timer2.addEventListener(TimerEvent.TIMER, timer2Handler);
+				timer1.start();
+				timer2.start();
+			}
+			private function timer1Handler(event:TimerEvent):void {
+				num1++;
+				lbl1.text = ""+num1;
+			}
+			private function timer2Handler(event:TimerEvent):void {
+				num2++;
+				lbl2.text = ""+num2;
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Label x="10" y="10" text="Label" width="380" height="23" fontSize="16" id="lbl1"/>
+	<mx:Label x="10" y="54" text="Label" width="380" fontSize="16" id="lbl2"/>
+	
+</mx:Application>
