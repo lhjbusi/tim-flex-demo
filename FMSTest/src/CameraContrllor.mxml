@@ -1,0 +1,603 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application backgroundColor="#ffffff" borderStyle="none" width="430" height="700" layout="absolute" creationComplete="returnUserName()" xmlns:mx="http://www.adobe.com/2006/mxml">
+<mx:Style>
+	VideoDisplay{background-size:"100%"; background-image:"/assert/1.jpg"; border-style:"solid"; border-thickness:4; corner-radius:5; border-color:"#A3A4A9";}
+	Button{fill-alphas:"[0.77, 0.89, 0.45, 0.45]"; fill-colors:"[#D3E7F7, #FCFCFC]"; font-family:"Arial"; font-weight:"bold"; alpha:0.8; corner-radius:5; font-size:"12";}
+</mx:Style>
+<mx:Script>
+	<![CDATA[
+		import mx.collections.ArrayCollection;
+		import flash.utils.setInterval;
+		import mx.rpc.events.FaultEvent;
+		import mx.rpc.http.HTTPService;
+		import mx.rpc.events.ResultEvent;
+		import com.util.fullscreen.FullScreenUtil;
+		import mx.controls.Alert;
+		import mx.events.FlexEvent;
+		import mx.formatters.DateFormatter;
+		import flash.utils.Timer;
+		import flash.events.TimerEvent;
+		import mx.events.CloseEvent;
+		import mx.controls.dataGridClasses.DataGridColumn;
+		import mx.events.SliderEvent;
+		import mx.core.UIComponent;
+
+		private const StratusAddress:String = "rtmfp://stratus.adobe.com";
+		private const DeveloperKey:String = "6b754e9d85b872b8f9c55a69-da4e8ad8ec29";
+
+		private var netConnection:NetConnection;
+		private var myStream:NetStream;
+		private var controlStream:NetStream;
+		// 发送流
+		private var sendStream:NetStream;
+		private var micPhone:Microphone;
+		// 接收流
+		private var receiveStream:NetStream;
+		private var keyCode:int;
+		private var shiftKey:Boolean;
+		private var ctrlKey:Boolean;
+		private var NetStreamClose:int;
+		private var remoteVideo:Video;
+		private var localVideo:Video;
+		private var audioInd:Indicator;
+		private var audioInd1:Indicator;
+		private var uc:UIComponent= new UIComponent();
+
+		// 自身编号
+		[Bindable]private var myId:String;
+		// 另一用户编号
+		[Bindable]private var userId:String;
+		// 视频关闭按钮标识 0 发送视频 ，1 停止视频
+		[Bindable]private var flag:Number=0;
+		[Bindable]private var UserName:String;
+		[Bindable]private var studentName:String;
+		[Bindable]private var rateArray:ArrayCollection = new ArrayCollection([
+			{label:5, data:5}, {label:8, data:8}, {label:11, data:11}, {label:22, data:22}, {label:44, data:44}
+		]);
+		[Bindable]private var micCodecArr:ArrayCollection = new ArrayCollection([
+			{label:"Speex", data:SoundCodec.SPEEX}, {label:"NELLYMOSER", data:SoundCodec.NELLYMOSER},
+			{label:"PCMA", data:SoundCodec.PCMA}, {label:"PCMU", data:SoundCodec.PCMU}
+		]);
+
+		public function returnUserName():void {
+			// 初始化麦克风设置
+			initAudio();
+			//var ss:String="qiu;725;10;137;50000";
+			var ss:String="test;725;50000";
+			var ss1:Array=ss.split(";");
+			userName.text=ss1[0];
+			if (ss1[3] != null) {
+				// 设置自身ID
+				myId=ss1[3];
+			} else {// 学生权限
+				myId=ss1[1];
+			}
+			init();
+		}
+		/**
+		 * 初始化麦克风设置.
+		 */
+		private function initAudio():void {
+			micPhone=getMicrophone();
+
+			audioInd=new Indicator(70,7,0x000000,0xffffff);
+			audioInd.Current = 0.05 + micPhone.activityLevel/100;
+			uc.addChild(audioInd);
+		 	uc.x=35;
+		 	uc.y=13;
+		 	micVolumeSlider.addChildAt(uc,0);
+		 	audioInd1=new Indicator(70,7,0x000000,0xffffff);
+		 	audioInd1.Current = 0.05 + speakerVolumeSlider.value;
+		 	var uc1:UIComponent=new UIComponent();
+			uc1.addChild(audioInd1);
+		 	uc1.x=35;
+		 	uc1.y=13;
+		 	speakerVolumeSlider.addChildAt(uc1,0);
+		 	
+		 	// 下面这句居然没用
+			micPhone.addEventListener(ActivityEvent.ACTIVITY, activity);
+		}
+		/**
+		 * 获取麦克风.
+		 */
+		private function getMicrophone():Microphone {
+			return Microphone.getEnhancedMicrophone(0);
+		}
+		/**
+		 * 获取用户可用麦克风.
+		 */
+		private function getCamera():Camera {
+			return Camera.getCamera();
+		}
+		private function init():void {
+			if (userName.text == "") {
+				Alert.show("请输入任意用户名", "错误");
+				return
+			}
+			netConnection = new NetConnection();
+			netConnection.addEventListener(NetStatusEvent.NET_STATUS, netConnectionHandler);
+			netConnection.connect(StratusAddress + "/" + DeveloperKey); //服务器地址里需要开发者Key
+		}
+		private function netConnectionHandler(e:NetStatusEvent):void {
+			switch (e.info.code) {
+				case "NetConnection.Connect.Success":
+					info.text = "你好 "+userName.text+", 你已链接上Stratus服务器\n\n"
+					info.text += "你的PeerId是:\n"+netConnection.nearID+"\n对方可以用这个ID呼叫你\n\n" 
+					initSendStream();
+					info.addEventListener(FlexEvent.UPDATE_COMPLETE,handleMessage);
+					message.textArea.addEventListener(KeyboardEvent.KEY_DOWN,onKeyDown);
+					message.textArea.addEventListener(TextEvent.TEXT_INPUT,onTextInput);
+				break;
+				case "NetConnection.Connect.Failed":
+					Alert.show("连接错误","连接错误")
+				break;
+				case "NetConnection.Connect.Closed":
+				break;
+				case "NetStream.Connect.Success":
+				break;
+				case "NetStream.Connect.Closed":
+					NetStreamClose=NetStreamClose+1;
+					if (NetStreamClose==1) {
+						Alert.yesLabel="确定";
+						Alert.noLabel="取消";
+						Alert.show("是否要关闭本窗口?", "对方已断开连接", 3, null, alertClickHandler);
+						remoteVideoDisplay.visible=false;
+						//videoArea.setStyle("paddingLeft","-90");
+					}
+				break;
+				case "NetStream.Play.Switch":
+				// 用户从一个播放流切换至另一个播放流
+				break;
+				case "NetStream.Play.Complete":
+				// 播放结束
+				break;
+			}
+		}
+		/**
+		 * 初始化发送流.
+		 */
+		private function initSendStream():void {	
+			myStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+			myStream.publish(netConnection.nearID);	
+			//监听onPeerConnect事件
+			var o:Object = new Object();
+			o.onPeerConnect = function(subscriberStream:NetStream):Boolean {		
+				receiveStream = new NetStream(netConnection,subscriberStream.farID);
+				receiveStream.play("caller");
+
+				receiveStream.receiveAudio(true);
+				receiveStream.receiveAudio(true);
+
+				var i:Object = getCommonReciveStreamHandler();
+				//监听onIncomingCall事件，用于确定链接成功
+				i.onIncomingCall = function(name:String):void {
+					studentName = name;
+					accpetHandle();
+					sendStream.send("onConnectSuccess", userName.text, myId);
+				}
+				receiveStream.client = i;
+				return true;
+			}
+			myStream.client = o; 
+		}
+		/**
+		 * 用户充值.
+		 */
+		private function charge(event:CloseEvent):void {
+		}
+		/**
+		 * 呼叫者开始播放流.
+		 */
+		private function sendStreamHandler(e:NetStatusEvent):void {
+			if (e.info.code == "NetStream.Play.Start") {
+				sendStream.send("onIncomingCall", userName.text)
+			}
+		}
+		/**
+		 * 对外呼叫.
+		 */
+		private function call():void {
+			controlStream = new NetStream(netConnection, peerId.text);
+			controlStream.play(peerId.text);
+
+			// 同时对外发布呼叫者的信息流
+			sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+			sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
+			sendStream.publish("caller");
+
+			publishVideo();
+			publishAudio();
+
+			// 尝试播放被呼叫者的信息流
+			receiveStream = new NetStream(netConnection, peerId.text);
+			receiveStream.play("callee");
+			var i:Object = getCommonReciveStreamHandler();
+			//监听onConnectSuccess事件，确定链接成功
+			i.onConnectSuccess=function(name:String, userid:String):void {
+				info.text += "与"+name + "链接成功\n";
+				// 设置学生姓名
+				studentName=name;
+				userId=userid;
+				receiveStream.receiveAudio(true)
+				receiveStream.receiveAudio(true)
+				remoteVideo=new Video();
+				remoteVideo.width=remoteVideoDisplay.width;
+				remoteVideo.height=remoteVideoDisplay.height;
+				remoteVideo.attachNetStream(receiveStream);
+				remoteVideoDisplay.addChild(remoteVideo);
+			}
+		 	receiveStream.client=i;
+		}
+		private function getCommonReciveStreamHandler():Object {
+			var i:Object = new Object;
+			// 监听信息发布事件
+			i.onIm=function(name:String, value:String):void {
+				var dateFormatter:DateFormatter = new DateFormatter();
+				dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
+				var time:String=new Date().toLocaleTimeString();
+				var date:String=dateFormatter.format(new Date());
+				info.htmlText+="<font color='#0000ff' face='Arial' size='13'>"+name +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>" + value +"</textformat>";
+			}
+			i.onHangup = function():void {
+				//hangup()
+			}
+			return i;
+		}
+		//用sendStream对外接受信息流
+	 	private function accpetHandle():void {
+	 		sendStream = new NetStream(netConnection, NetStream.DIRECT_CONNECTIONS);
+			sendStream.addEventListener(NetStatusEvent.NET_STATUS, sendStreamHandler);
+			sendStream.publish("callee");
+			publishAudio();
+			publishVideo();
+			receiveStream.receiveAudio(true);
+			receiveStream.receiveVideo(true);
+			remoteVideo = new Video();
+			remoteVideo.width = remoteVideoDisplay.width;
+			remoteVideo.height = remoteVideoDisplay.height;
+			// 指定播放视频时使用平滑处理(插补数据)
+			remoteVideo.smoothing = true;
+			remoteVideo.attachNetStream(receiveStream);
+			remoteVideoDisplay.addChild(remoteVideo);
+		}
+		//用sendStream对外发布信息流
+		private function send():Boolean {
+			if (message.text=="") {
+				return false;
+			} else {
+				var dateFormatter:DateFormatter = new DateFormatter();
+				dateFormatter.formatString = "YYYY/MM/DD HH:NN:SS";
+				var time:String = new Date().toLocaleTimeString();
+				var date:String = dateFormatter.format(new Date());
+				info.htmlText+="<font color='#008040' face='Arial' size='13'>"+userName.text +"&nbsp;&nbsp;&nbsp;"+date+ "</font>\n" +"<textformat leftMargin='20'>"+ message.htmlText + "</textformat>";
+				sendStream.send("onIm",userName.text,message.htmlText);
+				message.text="";
+				return true;
+			}
+		}
+		// 发布视频
+		private function publishVideo():void {
+			var camera:Camera=getCamera();
+			if (camera == null) {
+				Alert.show("无法获取摄像头\n请检查是否连接摄像头或是否被其它程序占用");
+			}
+			if (camera) {
+				camera.setMode(160, 120, 15);
+				camera.setQuality(0, 80);
+				// 设置关键帧
+				//var h264Setting:H264VideoStreamSettings = new H264VideoStreamSettings();
+				//h264Setting.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_5_1);
+				// 设置拍摄模式
+				//h264Setting.setMode(200, 150, 12);
+				// 设置视频品质
+				//h264Setting.setQuality(0, 100);
+				// 设置视频编码方式
+				//sendStream.videoStreamSettings = h264Setting;
+
+				//sendStream.bufferTime = 0.1;
+
+				sendStream.attachCamera(camera);
+
+				localVideo = new Video();
+				localVideo.width = localVideoDisplay.width;
+				localVideo.height = localVideoDisplay.height;
+				localVideo.x=0;
+				localVideo.y=0;
+				// 指定播放视频时使用平滑处理(插补数据)
+				localVideo.smoothing = true;
+				localVideo.attachCamera(camera);
+				localVideoDisplay.addChild(localVideo);
+			}
+		}
+		// 发布音频
+		private function publishAudio():void {
+			var mics:Array = Microphone.names;
+			if (mics && mics.length>0) {
+				if (micPhone == null) {
+					micPhone = getMicrophone();
+				}
+				// 使用Speex编码，无需指定取样速率
+				micPhone.codec = SoundCodec.SPEEX;
+				// 设置可认定为有声的最低音量输入水平，可选值0~100
+            	// 以及实际静音前需经历的无声时间长度(毫秒)
+				micPhone.setSilenceLevel(40, 1000);
+				// 只在SPEEX下使用
+				micPhone.enableVAD = true;
+				// 设置声音比特率,只在SPEEX下使用,0~10,默认6
+				// 值越大，声音品质越高，消耗的带宽也越高
+				micPhone.encodeQuality = 10;
+				// 在SPEEX下使用,默认2,值越小延迟越少,消耗带宽越高
+				micPhone.framesPerPacket = 2;
+				// 麦克风属性设置
+				var options:MicrophoneEnhancedOptions = new MicrophoneEnhancedOptions();
+				// USB类型麦克风
+				if (micPhone.name.toLowerCase().indexOf("usb") != -1) {
+					// USB麦克风默认值
+					options.mode = MicrophoneEnhancedMode.HALF_DUPLEX;
+				} else {
+					// 非USB麦克风默认值
+					options.mode = MicrophoneEnhancedMode.FULL_DUPLEX;
+				}
+				// 是否启用自动增益控制
+				options.autoGain = true;
+				// 回声路径,值越大，回声抑制效果越好，但声音的延迟会越大
+				// 消耗的资源会越多，值取128或256
+				// options.echoPath = 256;
+				// 非线性处理，处理乐音时最好关闭
+				options.nonLinearProcessing = true;
+				micPhone.enhancedOptions=options;
+				// 设置是否本地可听到声音
+				micPhone.setLoopBack(false);
+				// 麦克风捕获声音的频率
+				// micPhone.rate = 44;
+				// 麦克风增益0~100
+				micPhone.gain = 100;
+				// 设置噪音衰减分贝数，可选值：-30~0(不衰减)
+				micPhone.noiseSuppressionLevel = -30;
+				// 使用回声抑制功能
+				micPhone.setUseEchoSuppression(true);
+
+				sendStream.attachAudio(micPhone);
+			}
+		}
+		//显示文本控制按钮
+		private function showControlBar():void {
+			message.toolbar.parent.removeChild(message.toolbar);
+			message.toolbar.removeChild(message.linkTextInput);
+			message.toolbar.removeChild(message.bulletButton);
+			message.toolbar.removeChild(message.alignButtons);
+			message._RichTextEditor_VRule1.visible=false;
+			message._RichTextEditor_VRule2.visible=false;
+			message.fontFamilyArray.push("宋体");
+			message.fontFamilyArray.push("黑体");
+			message.fontFamilyCombo.width=145;
+			message.textArea.height=60;
+			message.colorPicker.width=24;
+			message.colorPicker.height=24;
+			message.italicButton.width=24;
+			message.italicButton.height=24;
+			message.boldButton.width=24;
+			message.boldButton.height=24;
+			message.underlineButton.width=24;
+			message.underlineButton.height=24;
+			message.addChildAt(message.toolbar,0);
+		}
+		private function activity(event:ActivityEvent):void {
+			addEventListener(Event.ENTER_FRAME, init1);
+		}
+		private function init1(event:Event):void {
+			audioInd.Current = 0.05 + micPhone.activityLevel/100;
+		}
+	 	private function closeMessage():void {
+		}
+		// 说话音量调节
+		private function speakerVolumeChanged(e:SliderEvent):void {
+			if (receiveStream) {
+				var st:SoundTransform = new SoundTransform(e.value);
+				receiveStream.soundTransform = st;
+				audioInd1.Current = 0.05 + e.value;
+			}
+		}
+		// 耳麦音量调节
+		private function micVolumeChanged(e:SliderEvent):void {
+			if (micPhone) {
+				micPhone.gain = e.value;
+			}
+		}
+		private function alertClickHandler(event:CloseEvent):void {
+			if (event.detail==Alert.YES) {
+				closeMessage();
+			} 
+		}
+		private function handleMessage(event:Event):void { 
+			if (info.verticalScrollPosition < info.maxVerticalScrollPosition) { 
+				info.verticalScrollPosition = info.maxVerticalScrollPosition; 
+			}
+		}
+		private function onKeyDown(e:KeyboardEvent):void{	 
+			//如果按下Enter时还按下Shift/Ctrl，则换行	 
+			if (e.keyCode==Keyboard.ENTER && (e.shiftKey || e.ctrlKey)) {		
+				callLater(function():void { //注意这个callLater				 
+					var msg:String = message.text;				 
+					var part1:String = msg.substring(0, message.textArea.selectionBeginIndex);			 
+					var part2:String = msg.substring(message.textArea.selectionEndIndex, 0x7fffffff);			 
+					var selIndex:int = message.textArea.selectionBeginIndex + 1;		
+					message.text = part1 + "\n" + part2;
+					message.textArea.setSelection(selIndex,selIndex);		
+				});		 
+				keyCode = -1; //标识本次按键不需要TEXT_INPUT事件配合处理			 
+				return;	 
+			}	 
+			shiftKey = e.shiftKey;
+			ctrlKey = e.ctrlKey;
+			keyCode = e.keyCode;
+		}
+		private function onTextInput(evt:TextEvent):void{	 
+			if (keyCode == -1)
+				return;
+			if (keyCode==Keyboard.ENTER && !shiftKey && !ctrlKey && message.text !="") {
+				evt.preventDefault();
+				callLater(function():void {
+					//sendMessage()即为发送消息的方法，它应该返回一个Boolean值，以此来决定是否清空消息框 
+					if(send()) {
+						message.text = "";
+						message.htmlText = "";
+						message.textArea.setSelection(0,0);		 
+					}
+				});
+			}
+		}
+		//停止发送视频
+		private function stopVideo(num:Number):void {
+			//0 发送视频， 1 停止视频
+			if (num==0) {
+				flag=1;
+				stopVideoButton.source='assert/video2.jpg';
+				localVideoDisplay.setStyle("backgroundImage","assert/1.jpg");
+				sendStream.attachCamera(null);
+			} else {
+				flag=0;
+				stopVideoButton.source='assert/video.jpg';	
+				var camera:Camera=getCamera();
+				sendStream.attachCamera(camera);
+			}
+		}
+		private function fullVideo():void {
+			if (FullScreenUtil.isFullScreen) {
+				// 退出全屏
+				FullScreenUtil.exitFullScreen();
+			} else {
+				FullScreenUtil.goFullScreen();
+				// 加入要全屏的对像．videoDisplay
+				FullScreenUtil.addChild(remoteVideoDisplay, true, true, true);
+			}
+		}
+		/**
+		 * 重设远程Video尺寸.
+		 */
+		private function resizeRemoteVideo():void {
+			if (remoteVideo != null) {
+				remoteVideo.width = remoteVideoDisplay.width;
+				remoteVideo.height = remoteVideoDisplay.height;
+			}
+		}
+		private function setAutoGain():void {
+			if (micAutoGain.selected){
+			}
+		}
+		private function setLoopBack():void {
+			micPhone.setLoopBack(micLoopBack.selected);
+		}
+		private function setHeightMic():void {
+			if (heightMic.selected) {
+			}
+		}
+		private function setEcho():void {
+			micPhone.setUseEchoSuppression(micEcho.selected);
+		}
+		private function setMicRate():void {
+			
+		}
+		// 修改音频编码.
+		private function changeMicCodec():void {
+			var value:String = micCodec.value.toString();
+			var isSpeex:Boolean = (value == SoundCodec.SPEEX);
+			micAutoGain.enabled = isSpeex;
+			framePackage.enabled = isSpeex;
+			soundQuality.enabled = isSpeex;
+			if (isSpeex) {
+				if (micPhone != null)
+					// 捕获频率
+					micPhone.rate = 16;
+			}
+
+			if (micPhone != null)
+				micPhone.codec = value;
+		}
+	]]>
+</mx:Script>
+
+<mx:Panel borderStyle="none" layout="vertical" width="430" height="700" horizontalScrollPolicy="off" verticalScrollPolicy="off" id="totalArea" backgroundColor="#f2f2f2" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="0" backgroundAlpha="0.92" alpha="1.0" fontSize="12" fontFamily="Arial">
+	<mx:HBox id="videoArea">
+		<mx:VideoDisplay click="fullVideo();" resize="resizeRemoteVideo();" id="remoteVideoDisplay" width="267" height="200"/>
+		<mx:VBox>
+			<mx:VideoDisplay id="localVideoDisplay" width="133" height="100"/>
+			<mx:Image source="@Embed('/assert/video.jpg')" useHandCursor="true" buttonMode="true" id="stopVideoButton" click="stopVideo(flag)" height="22"/> 
+			<mx:HBox><mx:Image source="@Embed('/assert/micVol.jpg')" height="22"/> 
+			<mx:HSlider id="micVolumeSlider" thumbSkin="@Embed('/assert/icon.png')" trackSkin="STSliderTrackSkin" value="90" width="72" showDataTip="false" minimum="0" maximum="100" change="micVolumeChanged(event)"/></mx:HBox>
+			<mx:HBox><mx:Image source="@Embed('/assert/speakVol.jpg')" height="22"/> 
+			<mx:HSlider id="speakerVolumeSlider" thumbSkin="@Embed('/assert/icon.png')" trackSkin="STSliderTrackSkin" showDataTip="false" value="0.9" width="72" minimum="0" maximum="1" change="speakerVolumeChanged(event)"/></mx:HBox>
+		</mx:VBox>
+	</mx:HBox>
+	<mx:VBox paddingTop="10">
+		<mx:TextArea id="info" width="410" height="90" editable="false"/>
+		<mx:HBox>
+			<mx:VBox>
+				<mx:HBox paddingLeft="-10" paddingBottom="-22"><mx:RichTextEditor borderStyle="none" id="message" creationComplete="showControlBar();" width="350" height="120" backgroundColor="#f2f2f2" textAlign="left" fontStyle="normal" fontFamily="Verdana" horizontalScrollPolicy="off" verticalScrollPolicy="off" paddingLeft="0" paddingRight="0" headerHeight="0" fontSize="12"/></mx:HBox>
+			</mx:VBox>
+			<mx:VBox paddingTop="3">	
+				<mx:Button id="sendMessageBtn" label="发送" width="60" click="send()"/>
+				<mx:Button id="closeBtn" click="closeMessage();" label="关闭" width="60"/>
+			 </mx:VBox>
+		</mx:HBox>
+	</mx:VBox>
+
+	<mx:VBox>
+		<mx:HBox width="400">
+			<mx:Label text="Name"/><mx:TextInput id="userName" width="100"/>
+			<mx:Label text="PeerID"/><mx:TextInput id="peerId" width="100"/>
+			<mx:Button label="连接" click="call()"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+	<mx:VBox>
+		<mx:HBox width="400">
+			<mx:VBox>
+				<mx:HBox>
+					<mx:CheckBox id="heightMic" click="setHeightMic()"/><mx:Label text="保真"/>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:CheckBox id="micLoopBack" click="setLoopBack()"/><mx:Label text="回放"/>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:CheckBox id="micEcho" click="setEcho()"/><mx:Label text="抑制"/>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:VBox>
+				<mx:HBox>
+					<mx:Label text="无声设置"/>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:Label text="音量"/><mx:TextInput id="noSoundLevel" width="40" text="10" height="19"/>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:Label text="时长"/><mx:TextInput id="noSoundTime" width="40" text="1000" height="19"/>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:VBox>
+				<mx:HBox>
+					<mx:Label text="编码"/>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:ComboBox id="micCodec" dataProvider="{micCodecArr}" change="changeMicCodec()"/>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:Label text="频率"/><mx:ComboBox id="micRate" dataProvider="{rateArray}" change="setMicRate()"/>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:VBox width="130">
+				<mx:HBox>
+					<mx:Label text="数据量"/><mx:TextInput id="framePackage" width="28" text="2" height="19"/>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:CheckBox id="micAutoGain" click="setAutoGain()"/><mx:Label text="增益"/>
+					<mx:Label text="衰减"/><mx:TextInput id="noiseLevel" text="30" width="30" height="19"/>
+				</mx:HBox>
+				<mx:HBox>
+					<mx:Label text="音质"/><mx:TextInput id="soundQuality" width="28" text="6" height="19"/>
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Panel>
+</mx:Application>
