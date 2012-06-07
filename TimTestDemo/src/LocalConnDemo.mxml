@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			// 简单本地连接.
+			private var simpleLocalConn:LocalConnection;
+			// 本地连接名.
+			private var localConnName:String;
+
+			/**
+			 * Flash初始化.
+			 */
+			private function init():void {
+				// 获取Flash加载参数.
+				// Flex-获取请求参数
+				var params:String = Application.application.parameters.initValue;
+				simpleLocalConn = new LocalConnection();
+				try {
+					simpleLocalConn.connect(localConnName);
+					simpleLocalConn.client = this;
+				} catch (e:ArgumentError) {
+					simpleLocalConn = new LocalConnection();
+					// 暴露JS测试方法.
+					ExternalInterface.addCallback("sendProxy", sendProxy);
+				}
+			}
+			/**
+			 * 发送代理.目前仅支持调用其它Flash方法.
+			 */
+			public function sendProxy(params:Object):void {
+				simpleLocalConn.send("timTest", "reciveProxy", params);
+			}
+			/**
+			 * 接收代理.目前仅支持对外调用JS.
+			 */
+			public function reciveProxy(params:Object):void {
+				ExternalInterface.call(params.jsMethodName, params.data);
+			}
+		]]>
+	</mx:Script>
+</mx:Application>

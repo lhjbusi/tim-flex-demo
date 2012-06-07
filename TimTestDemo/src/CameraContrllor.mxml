@@ -105,8 +105,8 @@
 		public function returnUserName():void {
 			// 初始化麦克风设置
 			initAudio();
-			//var ss:String="qiu;725;10;137;50000";
-			var ss:String="test;725;50000";
+			var ss:String="qiu;725;10;137;50000";
+			//var ss:String="test;725;50000";
 			var ss1:Array=ss.split(";");
 			userName.text=ss1[0];
 			if (ss1[3] != null) {
@@ -425,7 +425,8 @@
 				var h264Setting:H264VideoStreamSettings = new H264VideoStreamSettings();
 				h264Setting.setProfileLevel(H264Profile.MAIN, H264Level.LEVEL_5_1);
 				// 设置拍摄模式
-				h264Setting.setMode(200, 150, 12);
+				h264Setting.setMode(400, 300, 12);
+				h264Setting.setKeyFrameInterval(15);
 				// 设置视频品质
 				h264Setting.setQuality(0, 100);
 				// 设置视频编码方式
