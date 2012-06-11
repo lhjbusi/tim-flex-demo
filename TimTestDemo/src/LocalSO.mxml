@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init();" width="300" height="300">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			private var localSO:SharedObject;
+			
+			private function init():void {
+				localSO = SharedObject.getLocal("timTestSOName");
+				localSO.client = this;
+				ExternalInterface.addCallback("sendProxy", sendProxy);
+			}
+
+			public function sendProxy(param:Object):void {
+				Alert.show("sendProxy");
+				localSO.send("reciveProxy", param);
+			}
+
+			public function reciveProxy(param:Object):void {
+				Alert.show("reciveProxy");
+				ExternalInterface.call(param.methodName, param.data);
+			}
+		]]>
+	</mx:Script>
+</mx:Application>
