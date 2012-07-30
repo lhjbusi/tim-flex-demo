@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="620" height="470" creationComplete="init();">
+	<mx:Style>
+		TextInput{border-style:solid; border-color:black; font-size:16; corner-radius:4;}
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Label;
+			import mx.controls.Alert;
+			import mx.controls.TextInput;
+
+			private var tempInput:TextInput;
+			private function init():void {
+				mainCanvas.addEventListener(MouseEvent.CLICK, mainCanvasClickHandler);
+			}
+			/**
+			 * 在主面板上插入输入框.
+			 */
+			private function mainCanvasClickHandler(event:MouseEvent):void {
+				tempInput = new TextInput();
+				// 获取当前鼠标坐标.
+				var pointX:Number = mainCanvas.mouseX;
+				var pointY:Number = mainCanvas.mouseY;
+
+				tempInput.x = pointX;
+				tempInput.y = pointY;
+
+				mainCanvas.removeEventListener(MouseEvent.CLICK, mainCanvasClickHandler);
+				tempInput.addEventListener(MouseEvent.CLICK, inputOutClickHandler);
+				mainCanvas.addEventListener(MouseEvent.CLICK, insertString);
+
+				mainCanvas.addChild(tempInput);
+				tempInput.setFocus();
+			}
+			/**
+			 * 将主面板上的输入框的内容转写入主面板,并清除输入框.
+			 */
+			private function insertString(event:MouseEvent):void {
+				var tempLabel:Label = new Label();
+				tempLabel.x = tempInput.x;
+				tempLabel.y = tempInput.y;
+				tempLabel.text = tempInput.text;
+				tempLabel.truncateToFit = true;
+				// 这里设置宽度最好.
+				tempLabel.maxWidth = tempInput.width;
+				tempLabel.addEventListener(MouseEvent.CLICK, labelClickHandler);
+				// 清除输入框.
+				tempInput.removeEventListener(MouseEvent.CLICK, inputOutClickHandler);
+				mainCanvas.removeChild(tempInput);
+				tempInput = null;
+				// 添加文本.
+				mainCanvas.addChild(tempLabel);
+
+				mainCanvas.removeEventListener(MouseEvent.CLICK, insertString);
+				mainCanvas.addEventListener(MouseEvent.CLICK, mainCanvasClickHandler);
+			}
+			/**
+			 * 输入框被点击.
+			 */
+			private function inputOutClickHandler(event:MouseEvent):void {
+				event.stopPropagation();
+			}
+			/**
+			 * 文字标签被点击.
+			 */
+			private function labelClickHandler(event:MouseEvent):void {
+				// 停止事件传播.
+				event.stopPropagation();
+				var tempObj:DisplayObject = event.target as DisplayObject;
+				//var tempObj:Object = event.target;
+				if (tempObj != null) {
+					mainCanvas.removeEventListener(MouseEvent.CLICK, mainCanvasClickHandler);
+					mainCanvas.addEventListener(MouseEvent.CLICK, insertString);
+					var tempLabel:Label = tempObj.parent as Label;
+					tempInput = new TextInput();
+					tempInput.x = tempLabel.x;
+					tempInput.y = tempLabel.y;
+					tempInput.width = tempLabel.width;
+					tempInput.text = tempLabel.text;
+
+					tempLabel.removeEventListener(MouseEvent.CLICK, labelClickHandler);
+					mainCanvas.removeChild(tempLabel);
+					tempInput.addEventListener(MouseEvent.CLICK, inputOutClickHandler);
+					mainCanvas.addChild(tempInput);
+					tempInput.setFocus();
+				}
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Panel x="10" backgroundColor="red" title="画字符串" fontSize="16" y="10" width="600" height="450">
+		<mx:Canvas id="mainCanvas" width="580" height="404" backgroundColor="white" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+		</mx:Canvas>
+	</mx:Panel>
+</mx:Application>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init();">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			private var myTextBox1:TextField = new TextField();
+	        private var myTextBox2:TextField = new TextField();
+
+			private function init():void {
+				myTextBox1.type = TextFieldType.INPUT;
+				myTextBox1.width = 200;
+				myTextBox1.height = 20;
+				myTextBox1.background = true;
+				myTextBox1.border = true;
+
+				myTextBox2.x=220;
+
+				Alert.show(""+(myTextBox1 is DisplayObject));
+				//this.addChild(myTextBox1);
+				this.addChild(myTextBox2);
+				myTextBox1.addEventListener(TextEvent.TEXT_INPUT,textInputHandler);
+			}
+			public function textInputHandler(event:TextEvent):void {
+				myTextBox2.text=event.text;
+	        }
+		]]>
+	</mx:Script>
+</mx:Application>

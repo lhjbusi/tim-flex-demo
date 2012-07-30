@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init();">
+	<mx:Script>
+		<![CDATA[
+			import mx.core.UITextField;
+			import mx.controls.Alert;
+			private function init():void {
+				testPanel.alpha = alphaSlider.value/100;
+				scaleChange("X");
+				scaleChange("Y");
+				scaleChange("Z");
+				lblAlpha.addEventListener(MouseEvent.CLICK, alphaLblClickHandler);
+			}
+			private function scaleChange(action:String):void {
+				testPanel["scale"+action] = this["scale"+action+"Slider"].value/100;
+			}
+			private function alphaLblClickHandler(event:MouseEvent):void {
+				var obj:UITextField = event.target as UITextField;
+				if (obj != null) {
+					Alert.show("text: "+obj.text+"\n坐标: "+(obj is TextField));
+				} else {
+					Alert.show("事件源为空.....");
+				}
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Panel id="testPanel" layout="absolute" backgroundImage="@Embed(source='assert/1.jpg')" backgroundSize="100%" width="400" height="300" x="100" y="10" borderStyle="none">
+		<mx:Label text="什么东西？？" fontSize="40" x="64.5" y="77" color="#FC030F" fontWeight="bold"/>
+	</mx:Panel>
+
+	<mx:HSlider id="alphaSlider" minimum="0" maximum="100" value="60" x="184" y="318" width="316" height="26" change="init();"/>
+	<mx:HSlider id="scaleXSlider" minimum="0" maximum="150" value="60" x="184" y="349" width="316" height="26" change="scaleChange('X');"/>
+	<mx:HSlider id="scaleYSlider" minimum="0" maximum="150" value="60" x="184" y="379" width="316" height="26" change="scaleChange('Y');"/>
+	<mx:HSlider id="scaleZSlider" minimum="0" maximum="150" value="60" x="184" y="412" width="316" height="26" change="scaleChange('Z');"/>
+	<mx:Label y="318" text="透明度: " width="76" height="26" textAlign="right" fontSize="14" x="100" fontFamily="Arial" id="lblAlpha"/>
+	<mx:Label y="349" text="scaleX: " width="76" height="26" textAlign="right" fontSize="14" x="100" fontFamily="Arial"/>
+	<mx:Label y="379" text="scaleY: " width="76" height="26" textAlign="right" fontSize="14" x="100" fontFamily="Arial"/>
+	<mx:Label y="412" text="scaleZ: " width="76" height="26" textAlign="right" fontSize="14" x="100" fontFamily="Arial"/>
+</mx:Application>

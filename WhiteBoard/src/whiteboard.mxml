@@ -19,7 +19,7 @@
 
 			private var netConnection:NetConnection;
 			private var netStream:NetStream;
-			private var appServer:String="rtmp://192.168.1.199/whiteboard";
+			private var appServer:String="rtmp://tim/whiteboard";
 			//private var appServer:String="rtmp://www.chinesegreat.com:1935/whiteboard";
 			private var paint_so:SharedObject;	
 			private var responder:Responder;
@@ -362,31 +362,14 @@
 				boardSize.selectedIndex = index;
 				var zoom:Number = boardSize.selectedItem.data/100;
 				// 设置FlexPaper缩放比例
-				flexpaper.Zoom(zoom);
-				// 容器缩放
-				dr.width = (dr.width/oldZoom)*zoom;
-				dr.height = (dr.height/oldZoom)*zoom;
-				dr.x = (dr.x/oldZoom)*zoom;
-				
-				flexpaper.y = (flexpaper.y/oldZoom)*zoom;
-				flexpaper.x = (flexpaper.x/oldZoom)*zoom;
-
-				// 文档展示组件缩放
-				if (isFirstLoad) {
-					flexpaper.width = ((flexpaper.width)/oldZoom + 28)*zoom;
-					myPaper.width = (myPaper.width/oldZoom)*zoom;
-					isFirstLoad = false;
-				} else {
-					flexpaper.width = ((flexpaper.width)/oldZoom)*zoom;
-					myPaper.width = (myPaper.width/oldZoom)*zoom;
-				}
-				flexpaper.height = (flexpaper.height/oldZoom)*zoom;
-				// 画板缩放
-				myPaper.height = (myPaper.height/oldZoom)*zoom;
+				//flexpaper.Zoom(zoom);
+				// dr容器缩放.
+				dr.scaleX = (dr.scaleX/oldZoom)*zoom;
+				dr.scaleY = (dr.scaleY/oldZoom)*zoom;
 
 				// 将当前缩放比率设置为原有比率
 				oldZoom = zoom;
-
+				
 				// 重新定位写字板
 				// postionBoard();
 			}
@@ -449,7 +432,7 @@ private var startY:Number;
 	</mx:Script>
 
 	<mx:Panel id="mainPanel" titleIcon="@Embed(source='assert/logo.jpg')" title="ChineseGreat Online Classroom" x="1" y="1" fontFamily="_sans" fontSize="13" fontWeight="bold" width="600" height="550" layout="absolute" horizontalScrollPolicy="on" verticalScrollPolicy="on">
-		<mx:Canvas id="myPaper" width="585" height="850" top="22" backgroundAlpha="0" horizontalScrollPolicy="off" verticalScrollPolicy="off" styleName="paper" y="0" x="0"></mx:Canvas>
+		<mx:Canvas id="myPaper" width="585" height="850" top="22" horizontalScrollPolicy="off" verticalScrollPolicy="off" styleName="paper" y="0" x="0" backgroundAlpha="0"></mx:Canvas>
 		<mx:Canvas id="dr" width="600" height="850" left="-10" horizontalScrollPolicy="off" verticalScrollPolicy="off" backgroundSize="100%" backgroundAlpha="1.0"></mx:Canvas>
 	</mx:Panel>
 	<!-- 下面这句用在禁掉滚动条之后的情况 -->
