@@ -29,8 +29,6 @@
 			private var point_y:Number;
 			private var theId:uint=0;
 			private var flexpaper:FlexPaperViewer=new FlexPaperViewer();
-			// 画板区域原有控件的缩放比例
-			private var oldZoom:Number=1;
 			// 是否首次加载
 			private var isFirstLoad:Boolean=true;
 
@@ -54,7 +52,7 @@
 				netConnection.connect(appServer);
 				netConnection.addEventListener(NetStatusEvent.NET_STATUS,netStatusHandler);
 
-				flexpaper.width=600;
+				flexpaper.width=630;
 				flexpaper.height=1000;
 				flexpaper.Scale=1;
 
@@ -361,73 +359,13 @@
 			private function changeBoardSizeHandler(index:Number):void {
 				boardSize.selectedIndex = index;
 				var zoom:Number = boardSize.selectedItem.data/100;
-				// 设置FlexPaper缩放比例
-				//flexpaper.Zoom(zoom);
 				// dr容器缩放.
-				dr.scaleX = (dr.scaleX/oldZoom)*zoom;
-				dr.scaleY = (dr.scaleY/oldZoom)*zoom;
-
-				// 将当前缩放比率设置为原有比率
-				oldZoom = zoom;
+				dr.scaleX = zoom;
+				dr.scaleY = zoom;
 				
-				// 重新定位写字板
-				// postionBoard();
+				dr.y = -32*(zoom-1);
+				dr.height +=-32*(zoom-1);
 			}
-
-// 鼠标点下X坐标
-private var startX:Number;
-// 鼠标点下Y坐标
-private var startY:Number;
-			/**
-			 * 移动缩放的文件.
-			 */
-			/**private function moveBoardFileDown(event:MouseEvent):void {
-				if (controlBtn.label == "拖动") {
-					startX = mainPanel.mouseX;
-					startY = mainPanel.mouseY;
-					myPaper.visible = false;
-				}
-			}
-			private function moveBoardFileUp(event:MouseEvent):void {
-				if (controlBtn.label == "拖动") {
-					flexpaper.x += mainPanel.mouseX - startX;
-					flexpaper.y += mainPanel.mouseY - startY;
-					//postionBoard();
-					myPaper.visible = true;
-				}
-			}*/
-			/**
-			 * 定位写字板位置.
-			 */
-			private function postionBoard():void {
-				// 左移
-				if (((flexpaper.width-30)/oldZoom - flexpaper.x) > flexpaper.width) {// FlexPaper有缩放
-					flexpaper.x = (flexpaper.width-30)/oldZoom - flexpaper.width + 30;
-				} else if (flexpaper.x > 0) {// 右移
-					flexpaper.x = 0;
-				}
-
-				// 上移
-				if ((flexpaper.height/oldZoom - flexpaper.y) > flexpaper.height) {// FlexPaper有缩放
-					flexpaper.y = flexpaper.height/oldZoom - flexpaper.height;
-				} else if (flexpaper.y > 0) {
-					flexpaper.y = 0;
-				}
-			}
-			/**
-			 * 切换写字板画笔|移动.
-			 */
-			/**private function changePointDomain():void {
-				if (controlBtn.label == "拖动") {
-					controlBtn.label = "画笔";
-					mainPanel.useHandCursor = true;
-					myPaper.visible = false;
-				} else {
-					controlBtn.label = "拖动";
-					mainPanel.useHandCursor = false;
-					myPaper.visible = true;
-				}
-			}*/
 		]]>
 	</mx:Script>
 
