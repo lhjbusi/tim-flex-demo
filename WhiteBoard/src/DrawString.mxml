@@ -4,33 +4,120 @@
 		TextInput{border-style:solid; border-color:black; font-size:16; corner-radius:4;}
 	</mx:Style>
 	<mx:Script>
-		<![CDATA[
-			import mx.controls.Label;
+		<![CDATA[                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 			import mx.controls.Alert;
+			import mx.controls.Label;
 			import mx.controls.TextInput;
 
 			private var tempInput:TextInput;
+			// 标记之前选择的按钮引用.
+			private var tempBtn:Button;
 			private function init():void {
-				mainCanvas.addEventListener(MouseEvent.CLICK, mainCanvasClickHandler);
+				// 画线条.
+				lineBtn.addEventListener(MouseEvent.CLICK, drawBarBtnClick);
+				// 画字符串.
+				stringBtn.addEventListener(MouseEvent.CLICK, drawBarBtnClick);
+				// 画圆.
+				circleBtn.addEventListener(MouseEvent.CLICK, drawBarBtnClick);
+				// 画椭圆.
+				ellipseBtn.addEventListener(MouseEvent.CLICK, drawBarBtnClick);
+				// 画矩形.
+				rectBtn.addEventListener(MouseEvent.CLICK, drawBarBtnClick);
+				// 画圆角矩形.
+				roundRectBtn.addEventListener(MouseEvent.CLICK, drawBarBtnClick);
+				// 清除画板.
+				clearBtn.addEventListener(MouseEvent.CLICK, clearBtnClick);
+
+				// 默认画字符串.
+				drawContentCanvas.addEventListener(MouseEvent.CLICK, drawStringClickHandler);
+				stringBtn.enabled = false;
+				tempBtn = stringBtn;
 			}
 			/**
-			 * 在主面板上插入输入框.
+			 * 在主板上画线条-鼠标按下.
 			 */
-			private function mainCanvasClickHandler(event:MouseEvent):void {
+			private function drawLineDownHandler(event:MouseEvent):void {
+				// 获取当前鼠标坐标.
+				var pointX:Number = drawContentCanvas.mouseX;
+				var pointY:Number = drawContentCanvas.mouseY;
+				drawContentCanvas.graphics.lineStyle(2, 0xFFAACC, 1);
+				drawContentCanvas.graphics.moveTo(pointX, pointY);
+			}
+
+			/**
+			 * 在主板上画线条-鼠标移动.
+			 */
+			private function drawLineMoveHandler(event:MouseEvent):void {
+				if (event.buttonDown) {
+					// 获取当前鼠标坐标.
+					var pointX:Number = drawContentCanvas.mouseX;
+					var pointY:Number = drawContentCanvas.mouseY;
+					if (pointX<drawContentCanvas.width && pointY<drawContentCanvas.height)
+						drawContentCanvas.graphics.lineTo(pointX, pointY);
+				}
+			}
+			/**
+			 * 在主面板上画字符串-鼠标点击(在点击处插入输入框).
+			 */
+			private function drawStringClickHandler(event:MouseEvent):void {
 				tempInput = new TextInput();
 				// 获取当前鼠标坐标.
-				var pointX:Number = mainCanvas.mouseX;
-				var pointY:Number = mainCanvas.mouseY;
+				var pointX:Number = drawContentCanvas.mouseX;
+				var pointY:Number = drawContentCanvas.mouseY;
 
 				tempInput.x = pointX;
 				tempInput.y = pointY;
-
-				mainCanvas.removeEventListener(MouseEvent.CLICK, mainCanvasClickHandler);
+				// 删除主面板点击插入输入框处理.
+				drawContentCanvas.removeEventListener(MouseEvent.CLICK, drawStringClickHandler);
+				// 输入框添加点击事件.
 				tempInput.addEventListener(MouseEvent.CLICK, inputOutClickHandler);
-				mainCanvas.addEventListener(MouseEvent.CLICK, insertString);
+				// 主面板鼠标点击-将内容写入面板.
+				drawContentCanvas.addEventListener(MouseEvent.CLICK, insertString);
 
-				mainCanvas.addChild(tempInput);
+				drawContentCanvas.addChild(tempInput);
 				tempInput.setFocus();
+			}
+			/**
+			 * 在主面板上画圆.
+			 */
+			private function drawCircleClickHandler(event:MouseEvent):void {
+				// 获取当前鼠标坐标.
+				var pointX:Number = drawContentCanvas.mouseX;
+				var pointY:Number = drawContentCanvas.mouseY;
+				
+				//var tempCircle:Shape = new Shape();
+				drawContentCanvas.graphics.beginFill(0xFFAACC);
+				drawContentCanvas.graphics.lineStyle(1);
+				drawContentCanvas.graphics.drawCircle(pointX, pointY, 20);
+				drawContentCanvas.graphics.endFill();
+				//drawContentCanvas.addChild(tempCircle);
+			}
+			/**
+			 * 在主面板上画椭圆.
+			 */
+			private function drawEllipseClickHandler(event:MouseEvent):void {
+				// 获取当前鼠标坐标.
+				var pointX:Number = drawContentCanvas.mouseX;
+				var pointY:Number = drawContentCanvas.mouseY;
+				
+				//var tempCircle:Shape = new Shape();
+				drawContentCanvas.graphics.beginFill(0xFFAACC);
+				drawContentCanvas.graphics.lineStyle(1);
+				drawContentCanvas.graphics.drawEllipse(pointX, pointY, 190, 90);
+				drawContentCanvas.graphics.endFill();
+				//drawContentCanvas.addChild(tempCircle);
+			}
+			/**
+			 * 在主面板上画矩形.
+			 */
+			private function drawRectClickHandler(event:MouseEvent):void {
+				
+			}
+			/**
+			 * 在主面板上画圆角矩形.
+			 */
+			private function drawRoundRectClickHandler(event:MouseEvent):void {
+				
 			}
 			/**
 			 * 将主面板上的输入框的内容转写入主面板,并清除输入框.
@@ -46,13 +133,13 @@
 				tempLabel.addEventListener(MouseEvent.CLICK, labelClickHandler);
 				// 清除输入框.
 				tempInput.removeEventListener(MouseEvent.CLICK, inputOutClickHandler);
-				mainCanvas.removeChild(tempInput);
+				drawContentCanvas.removeChild(tempInput);
 				tempInput = null;
 				// 添加文本.
-				mainCanvas.addChild(tempLabel);
+				drawContentCanvas.addChild(tempLabel);
 
-				mainCanvas.removeEventListener(MouseEvent.CLICK, insertString);
-				mainCanvas.addEventListener(MouseEvent.CLICK, mainCanvasClickHandler);
+				drawContentCanvas.removeEventListener(MouseEvent.CLICK, insertString);
+				drawContentCanvas.addEventListener(MouseEvent.CLICK, drawStringClickHandler);
 			}
 			/**
 			 * 输入框被点击.
@@ -64,32 +151,87 @@
 			 * 文字标签被点击.
 			 */
 			private function labelClickHandler(event:MouseEvent):void {
-				// 停止事件传播.
-				event.stopPropagation();
-				var tempObj:DisplayObject = event.target as DisplayObject;
-				//var tempObj:Object = event.target;
-				if (tempObj != null) {
-					mainCanvas.removeEventListener(MouseEvent.CLICK, mainCanvasClickHandler);
-					mainCanvas.addEventListener(MouseEvent.CLICK, insertString);
-					var tempLabel:Label = tempObj.parent as Label;
-					tempInput = new TextInput();
-					tempInput.x = tempLabel.x;
-					tempInput.y = tempLabel.y;
-					tempInput.width = tempLabel.width;
-					tempInput.text = tempLabel.text;
-
-					tempLabel.removeEventListener(MouseEvent.CLICK, labelClickHandler);
-					mainCanvas.removeChild(tempLabel);
-					tempInput.addEventListener(MouseEvent.CLICK, inputOutClickHandler);
-					mainCanvas.addChild(tempInput);
-					tempInput.setFocus();
+				if (!stringBtn.enabled) {
+					// 停止事件传播.
+					event.stopPropagation();
+					var tempObj:DisplayObject = event.target as DisplayObject;
+					//var tempObj:Object = event.target;
+					if (tempObj != null) {
+						drawContentCanvas.removeEventListener(MouseEvent.CLICK, drawStringClickHandler);
+						drawContentCanvas.addEventListener(MouseEvent.CLICK, insertString);
+						var tempLabel:Label = tempObj.parent as Label;
+						tempInput = new TextInput();
+						tempInput.x = tempLabel.x;
+						tempInput.y = tempLabel.y;
+						tempInput.width = tempLabel.width;
+						tempInput.text = tempLabel.text;
+	
+						tempLabel.removeEventListener(MouseEvent.CLICK, labelClickHandler);
+						drawContentCanvas.removeChild(tempLabel);
+						tempInput.addEventListener(MouseEvent.CLICK, inputOutClickHandler);
+						drawContentCanvas.addChild(tempInput);
+						tempInput.setFocus();
+					}
 				}
+			}
+			private function drawBarBtnClick(event:MouseEvent):void {
+				var currBtn:Button = event.target as Button;
+				tempBtn.enabled = true;
+				currBtn.enabled = false;
+				if (tempBtn.id == "lineBtn") {
+					drawContentCanvas.removeEventListener(MouseEvent.MOUSE_MOVE, drawLineMoveHandler);
+				} else if (tempBtn.id == "stringBtn") {// 画字符串.
+					drawContentCanvas.removeEventListener(MouseEvent.CLICK, drawStringClickHandler);
+				} else if (tempBtn.id == "circleBtn") {
+					drawContentCanvas.removeEventListener(MouseEvent.CLICK, drawCircleClickHandler);
+				} else if (tempBtn.id == "ellipseBtn") {
+					drawContentCanvas.removeEventListener(MouseEvent.CLICK, drawEllipseClickHandler);
+				} else if (tempBtn.id =="rectBtn") {
+					drawContentCanvas.removeEventListener(MouseEvent.CLICK, drawRectClickHandler);
+				} else {
+					drawContentCanvas.removeEventListener(MouseEvent.CLICK, drawRoundRectClickHandler);
+				}
+				
+				if (currBtn.id == "lineBtn") {
+					drawContentCanvas.addEventListener(MouseEvent.MOUSE_DOWN, drawLineDownHandler);
+					drawContentCanvas.addEventListener(MouseEvent.MOUSE_MOVE, drawLineMoveHandler);
+				} else if (currBtn.id == "stringBtn") {
+					drawContentCanvas.addEventListener(MouseEvent.CLICK, drawStringClickHandler);
+				} else if (currBtn.id == "circleBtn") {
+					drawContentCanvas.addEventListener(MouseEvent.CLICK, drawCircleClickHandler);
+				} else if (currBtn.id == "ellipseBtn") {
+					drawContentCanvas.addEventListener(MouseEvent.CLICK, drawEllipseClickHandler);
+				} else if (currBtn.id == "rectBtn") {
+					drawContentCanvas.addEventListener(MouseEvent.CLICK, drawRectClickHandler);
+				} else {
+					drawContentCanvas.addEventListener(MouseEvent.CLICK, drawRoundRectClickHandler);
+				}
+				tempBtn = currBtn;
+			}
+			/**
+			 * 清除画板内容.
+			 */
+			private function clearBtnClick(event:MouseEvent):void {
+				drawContentCanvas.graphics.clear();
+				// 清除添加的Label.
+				drawContentCanvas.removeAllChildren();
 			}
 		]]>
 	</mx:Script>
 
-	<mx:Panel x="10" backgroundColor="red" title="画字符串" fontSize="16" y="10" width="600" height="450">
-		<mx:Canvas id="mainCanvas" width="580" height="404" backgroundColor="white" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+	<mx:Panel id="mainPanel" x="10" title="画字符串" backgroundAlpha="0" fontSize="16" y="10" width="600" height="450" horizontalGap="0" verticalGap="1">
+		<mx:Canvas id="drawBar" width="580" height="28" backgroundColor="white">
+			<mx:HBox>
+				<mx:Button id="lineBtn" label="线条"/>
+				<mx:Button id="stringBtn" label="字符串"/>
+				<mx:Button id="circleBtn" label="圆"/>
+				<mx:Button id="ellipseBtn" label="椭圆"/>
+				<mx:Button id="rectBtn" label="矩形"/>
+				<mx:Button id="roundRectBtn" label="圆角矩形"/>
+				<mx:Button id="clearBtn" label="清除"/>
+			</mx:HBox>
+		</mx:Canvas>
+		<mx:Canvas id="drawContentCanvas" width="580" height="375" backgroundColor="white" backgroundAlpha="0" horizontalScrollPolicy="off" verticalScrollPolicy="off">
 		</mx:Canvas>
 	</mx:Panel>
 </mx:Application>

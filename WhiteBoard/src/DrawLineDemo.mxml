@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			private function init():void {
+				this.addEventListener(MouseEvent.MOUSE_DOWN, mouseDownHandler);
+			}
+			private function mouseDownHandler(event:MouseEvent):void {
+				this.addEventListener(MouseEvent.MOUSE_MOVE, mouseMoveHandler);
+				this.removeEventListener(MouseEvent.MOUSE_DOWN, mouseDownHandler);
+			}
+			private function mouseMoveHandler(event:MouseEvent):void {
+				if (event.buttonDown) {
+					this.addEventListener(MouseEvent.MOUSE_UP, mouseUpHandler);
+				}
+			}
+			private function mouseUpHandler():void {
+				this.removeEventListener(MouseEvent.MOUSE_MOVE, mouseMoveHandler);
+				this.addEventListener(MouseEvent.MOUSE_DOWN, mouseDownHandler);
+			}
+		]]>
+	</mx:Script>
+</mx:Application>

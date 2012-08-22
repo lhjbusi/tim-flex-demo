@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.graphics.ImageSnapshot;
+
+			private function test():void {
+				var bmp:BitmapData = ImageSnapshot.captureBitmapData(panel);
+				img.source = new Bitmap(bmp);
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Image id="img" x="73" y="260" width="531" height="220"/>
+	<mx:Button x="73" y="488" label="截图" click="test()"/>
+	<mx:Panel id="panel" x="73" y="34" width="456" height="218" layout="absolute">
+		<mx:DataGrid id="dg" x="10" y="10"><mx:columns>
+			<mx:DataGridColumn headerText="Column 1" dataField="col1"/>
+			<mx:DataGridColumn headerText="Column 2" dataField="col2"/>
+			<mx:DataGridColumn headerText="Column 3" dataField="col3"/>
+		</mx:columns></mx:DataGrid>
+	</mx:Panel>
+</mx:Application>

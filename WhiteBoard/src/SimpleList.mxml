@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+	<mx:Script>
+        <![CDATA[
+            [Bindable]
+            public var selectedItem:Object;
+       ]]>
+    </mx:Script>
+
+    <mx:Model id="mystates">
+      <states>
+        <state label="Alabama" data="AL" timLbl="One"/>
+        <state label="Alaska" data="AK" timLbl="Two"/>
+        <state label="Arizona" data="AZ" timLbl="Three"/>
+        <state label="Arkansas" data="AR" timLbl="Four"/>
+        <state label="California" data="CA" timLbl="Five"/>
+        <state label="Colorado" data="CO" timLbl="Six"/>
+        <state label="Connecticut" data="CT" timLbl="Seven"/>
+      </states>
+    </mx:Model>
+
+    <mx:Panel title="List Control Example" height="75%" width="75%" 
+        paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
+
+        <mx:Label text="Select a state to see its abbreviation."/>
+
+        <mx:List id="source" width="100%" color="blue"
+            dataProvider="{mystates.state}"
+            change="this.selectedItem=List(event.target).selectedItem"/>
+
+        <mx:VBox width="100%">
+            <mx:Label text="Selected State: {selectedItem.label}"/>
+            <mx:Label text="State abbreviation: {selectedItem.data}"/>
+            <mx:Label text="timLbl: {selectedItem.timLbl}"/>
+        </mx:VBox>
+    </mx:Panel>
+</mx:Application>

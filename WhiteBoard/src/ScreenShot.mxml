@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+	<mx:Script>
+		<![CDATA[
+			import mx.graphics.codec.PNGEncoder;
+			import mx.utils.Base64Encoder;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			import mx.controls.Alert;
+			import mx.rpc.events.FaultEvent;
+			import mx.core.UIComponent;
+
+			public function takeSnapshot(target:UIComponent):void {
+				var bd:BitmapData = new BitmapData(target.width,target.height);
+				bd.draw(target);
+				var pe:PNGEncoder = new PNGEncoder();
+				var ba:ByteArray = pe.encode(bd);
+				var be:Base64Encoder = new Base64Encoder();
+				be.encodeBytes(ba);
+				// 获取编码后的字符串.
+				var encodedData:String = be.flush();
+			}
+			
+			private function showSnapshot(target:UIComponent):void {
+				var bitData:BitmapData = new BitmapData(target.width,target.height);
+				bitData.draw(target);
+				img.source = new Bitmap(bitData);
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Button click="showSnapshot(targetPanel)" label="Show Image" x="10" y="100"/>
+	<mx:Button click="takeSnapshot(targetPanel)" label="Save Image" x="128" y="100"/>
+	
+
+	<mx:Panel id="targetPanel" width="120" height="90">
+		<mx:Canvas backgroundColor="#EEEEEE"><mx:Label text="Hello World"/></mx:Canvas>
+	</mx:Panel>
+	<mx:Image id="img" x="128" y="0" width="120" height="90"/>
+</mx:Application>
